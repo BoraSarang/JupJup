@@ -13,7 +13,7 @@ import com.borasarang.macjupjup.util.Constants
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore("settings")
+private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore("mac_settings")
 
 /**
  * DataStore 설정 저장소. 포트·보관기간·자동시작·Watchdog 주기·GitHub 토큰.

@@ -15,3 +15,8 @@
 ### 마이그레이션
 - 데이터 마이그레이션 없음 (신규 설치 기준). 기존 앱 데이터 이관 미지원.
 - 메모리/성능 영향: 두 서버 동시 기동으로 약 2배 서버 프로세스(각자 CIO 엔진), DB 2개
+
+### 수정 (1.0.1)
+- **크래시 #1**: 두 서비스의 DataStore 파일명이 동일(`settings`) → `mac_settings`/`plan_settings`로 격리 (E-AND-STORE-0511)
+- **크래시 #2**: WorkManager `SystemForegroundService`에 `foregroundServiceType="dataSync"` 누락 → app manifest에서 `tools:node="merge"`로 주입 (E-AND-SYNC-0521)
+- 검증: 실기(LB-R5CT215F4QK) 포털 3000·3001 모두 HTTP 200, 크래시 없음
