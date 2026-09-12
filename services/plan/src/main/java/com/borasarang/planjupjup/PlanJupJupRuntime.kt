@@ -1,0 +1,99 @@
+package com.borasarang.planjupjup
+
+import android.content.Context
+import com.borasarang.planjupjup.data.db.PlanDatabase
+import com.borasarang.planjupjup.data.preferences.PreferencesManager
+import com.borasarang.planjupjup.data.repository.NotificationRepository
+import com.borasarang.planjupjup.data.repository.NotificationService
+import com.borasarang.planjupjup.data.repository.PlanRepository
+import com.borasarang.planjupjup.data.repository.SourceRepository
+import com.borasarang.planjupjup.data.repository.StatsRepository
+import com.borasarang.planjupjup.data.seed.InitialDataSeeder
+import com.borasarang.planjupjup.server.HttpServerService
+import com.borasarang.planjupjup.util.DebugLogger
+import com.borasarang.planjupjup.worker.CrawlScheduler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+
+/**
+ * 요금줍줍 서비스 런타임.
+ *
+ * Android Application은 앱당 1개 제약 때문에 통합 JupJup 앱은 단일 [com.borasarang.jupjup.JupJupApplication]만
+ * 사용한다. 서비스별 Application이 수행하던 초기화·의존성 주입·백그라운드 작업은 이 object의
+ * [initialize]로 이동했다. ViewModel/Fragment/Worker/HttpServerService는 Runtime 경유로 접근한다.
+ */
+object PlanJupJupRuntime {
+
+    private val initLock = Any()
+
+    @Volatile
+    private var initialized = false
+
+    private lateinit var appContext: Context
+
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    lateinit var database: PlanDatabase
+        private set
+    lateinit var planRepository: PlanRepository
+        private set
+    lateinit var sourceRepository: SourceRepository
+        private set
+    lateinit var statsRepository: StatsRepository
+        private set
+    lateinit var notificationRepository: NotificationRepository
+        private set
+    lateinit var notificationService: NotificationService
+        private set
+    lateinit var preferences: PreferencesManager
+        private set
+    lateinit var crawlScheduler: CrawlScheduler
+        private set
+
+    val context: Context
+        get() = appContext
+
+    val isInitialized: Boolean
+        get() = initialized
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+        if (initialized) return
+        synchronized(initLock) {
+            if (initialized) return
+            initialized = true
+        }
+        DebugLogger.init()
+        DebugLogger.i("앱", "알뜰요금줍줍 시작")
+
+        database = try {
+            PlanDatabase.getInstance(appContext)
+        } catch (e: Exception) {
+            // 마이그레이션 실패 등 DB 열기 불가 → 재생성 폴백 (앱 벽돌 방지)
+            DebugLogger.e("앱", "E-AND-DB-0403", "DB 열기 실패, 재생성: ${e.message}", e)
+            PlanDatabase.getInstanceFallback(appContext)
+        }
+        statsRepository = StatsRepository(database)
+        planRepository = PlanRepository(database, statsRepository)
+        sourceRepository = SourceRepository(database)
+        notificationRepository = NotificationRepository(database)
+        preferences = PreferencesManager.getInstance(appContext)
+        notificationService = NotificationService(database, planRepository, sourceRepository, preferences)
+        crawlScheduler = CrawlScheduler(appContext)
+
+        appScope.launch(Dispatchers.IO) {
+            InitialDataSeeder.seedIfEmpty(database)
+            crawlScheduler.scheduleAll()
+            crawlScheduler.scheduleDailySummary()
+            val settings = preferences.getSettings()
+            if (settings.autoStart) {
+                DebugLogger.i("앱", "자동 시작 설정 켜짐 — 서버 시작")
+                HttpServerService.start(appContext)
+            } else {
+                DebugLogger.i("앱", "자동 시작 꺼짐 — 서버 미시작")
+            }
+        }
+    }
+}

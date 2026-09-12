@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">줍줍</string>
+
+    <string name="nav_mac">맥줍줍</string>
+    <string name="nav_plan">요금줍줍</string>
+
+    <string name="tab_home">홈</string>
+    <string name="tab_source">수집 소스</string>
+    <string name="tab_notif">알림</string>
+    <string name="tab_settings">설정</string>
+</resources>

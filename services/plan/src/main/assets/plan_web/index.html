@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알뜰요금줍줍 - 알뜰폰 요금제 비교 포털</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <button class="logo logo-link" id="logoLink" type="button" title="전체 요금제로 이동" aria-label="알뜰요금줍줍 메인(전체 요금제)">📱 알뜰요금줍줍</button>
+            <div class="header-info">
+                <span id="lastUpdated">마지막 업데이트: -</span>
+                <button id="totalCount" class="badge badge-sync" type="button" title="지금 수집하기">총 0개</button>
+                <button id="notifBell" class="btn-notif" type="button" aria-label="알림 센터 열기">
+                    <span aria-hidden="true">🔔</span>
+                    <span id="notifBadge" class="notif-badge" hidden>0</span>
+                </button>
+            </div>
+        </div>
+        <nav class="top-nav" aria-label="포털 메뉴">
+            <nav class="curation-tags" id="curationTags" aria-label="사용패턴 큐레이션"></nav>
+            <button id="tabStats" class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="statsSection">📊 통계</button>
+        </nav>
+    </header>
+
+    <div class="backdrop" id="notifBackdrop" hidden></div>
+    <aside class="notif-panel" id="notifPanel" aria-label="알림 센터" hidden>
+        <div class="notif-head">
+            <h2>알림 센터</h2>
+            <div class="notif-actions">
+                <button id="notifReadAll" class="notif-link-btn" type="button">전체 읽음</button>
+                <button id="notifCleanup" class="notif-link-btn" type="button">보관일 삭제</button>
+                <button id="notifClose" class="btn-filter-close" type="button" aria-label="알림 닫기">✕</button>
+            </div>
+        </div>
+        <div class="notif-tabs" role="tablist">
+            <button class="notif-tab active" data-type="" type="button">전체</button>
+            <button class="notif-tab" data-type="NEW_PLANS_FOUND" type="button">신규 요금제</button>
+            <button class="notif-tab" data-type="CRAWL_COMPLETE" type="button">수집 완료</button>
+            <button class="notif-tab" data-type="CRAWL_FAILED_STREAK" type="button">수집 실패</button>
+        </div>
+        <div class="notif-list" id="notifList"></div>
+        <div class="notif-paging" id="notifPaging"></div>
+    </aside>
+
+    <dialog class="notif-modal" id="notifModal">
+        <div class="notif-modal-head">
+            <h2 id="notifModalTitle">알림 상세</h2>
+            <button id="notifModalClose" class="btn-filter-close" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="notif-modal-body" id="notifModalBody"></div>
+    </dialog>
+
+    <main class="main">
+        <div class="backdrop" id="backdrop" hidden></div>
+        <aside class="filter-panel" id="filterPanel" aria-label="필터 옵션">
+            <div class="filter-head">
+                <h2>상세 검색</h2>
+                <button id="filterClose" class="btn-filter-close" type="button" aria-label="필터 닫기">✕</button>
+            </div>
+            <div class="filter-section">
+                <h3>통신망</h3>
+                <div class="filter-chips" id="filterNetwork">
+                    <label><input type="checkbox" value="5G"> 5G</label>
+                    <label><input type="checkbox" value="LTE"> LTE</label>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>통신사</h3>
+                <div class="filter-chips" id="filterCarrier">
+                    <label><input type="checkbox" value="SKT"> SKT</label>
+                    <label><input type="checkbox" value="KT"> KT</label>
+                    <label><input type="checkbox" value="LGU+"> LGU+</label>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>데이터량</h3>
+                <input type="range" id="minData" min="0" max="150" value="0" step="1" aria-label="최소 데이터량">
+                <span id="minDataValue">0GB 이상</span>
+            </div>
+            <div class="filter-section">
+                <h3>월 요금</h3>
+                <input type="range" id="maxPrice" min="0" max="100000" value="100000" step="1000" aria-label="최대 월 요금">
+                <span id="maxPriceValue">100,000원 이하</span>
+            </div>
+            <button id="resetFilters" class="btn-reset" type="button">필터 초기화</button>
+        </aside>
+
+        <section class="stats-section" id="statsSection" aria-label="통계 대시보드" hidden>
+            <div class="stats-head">
+                <h2>📊 통계 대시보드</h2>
+                <span class="stats-cache-hint">서버 캐시 5분</span>
+            </div>
+            <nav class="stats-nav" id="statsNav" aria-label="통계 목차"></nav>
+            <div id="statsContent"><div class="empty-state">통계 불러오는 중…</div></div>
+        </section>
+
+        <section class="plan-grid-section" id="planGridSection">
+            <div class="grid-header">
+                <div class="grid-header-left">
+                    <button id="filterToggle" class="btn-filter-menu" type="button" aria-expanded="false" aria-controls="filterPanel">☰ 필터</button>
+                    <div class="sort-dropdown">
+                        <label for="sortSelect">정렬</label>
+                        <select id="sortSelect">
+                            <option value="price_asc">낮은 가격순</option>
+                            <option value="price_desc">높은 가격순</option>
+                            <option value="data_desc">데이터 많은순</option>
+                            <option value="newest">최신순</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-header-right">
+                    <div class="search-bar" role="search" aria-label="요금제 검색">
+                        <input type="search" id="keyword" class="search-input" placeholder="예: 5만원 이하 · 10기가 · 무제한 · ㄱㅅㅂ" aria-label="키워드 검색">
+                        <select id="brandFilter" class="inline-select" aria-label="브랜드 필터"><option value="">전체 브랜드</option></select>
+                    </div>
+                    <div id="visibleCount" class="visible-count">검색 결과 0개</div>
+                </div>
+            </div>
+            <div class="plan-grid" id="planGrid" role="list" aria-label="요금제 목록"></div>
+            <nav class="pagination" id="pagination" aria-label="페이지네이션"></nav>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

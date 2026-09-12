@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mac_app_name_launcher">맥줍줍</string>
+    <string name="mac_app_name_full">맥 앱 트렌드 레이더 맥줍줍</string>
+
+    <string name="mac_notif_channel_server">서버 실행 상태</string>
+    <string name="mac_notif_server_running">맥줍줍 서버 실행 중</string>
+    <string name="mac_notif_server_starting">맥줍줍 서버 시작 중…</string>
+    <string name="mac_notif_crawl_running">맥 앱 수집 중</string>
+
+    <string name="mac_nav_home">홈</string>
+    <string name="mac_nav_source">수집 소스</string>
+    <string name="mac_nav_notif">알림</string>
+    <string name="mac_nav_settings">설정</string>
+
+    <string name="mac_home_status_title">서버 상태</string>
+    <string name="mac_home_status_stopped">중지됨 (M1에서 서버 탑재 예정)</string>
+    <string name="mac_home_version">v0.1.0 · M0 스캐폴드</string>
+
+    <string name="mac_maker">BoRaSaRang</string>
+    <string name="mac_contact">leeborasarang@gmail.com</string>
+</resources>

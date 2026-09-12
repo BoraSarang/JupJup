@@ -1,0 +1,13 @@
+# Gradle
+.gradle/
+build/
+local.properties
+keystore.properties
+*.jks
+# Android Studio
+.idea/
+*.iml
+# OS
+.DS_Store
+# Agent 로그
+.agent/

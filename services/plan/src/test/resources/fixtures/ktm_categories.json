@@ -1,0 +1,58 @@
+[
+ {
+  "rateAdsvcCtgCd": "1",
+  "rateAdsvcCtgNm": "유심/eSIM 요금제",
+  "depthKey": 1,
+  "upRateAdsvcCtgCd": null,
+  "useYn": "Y",
+  "ctgOutputCd": "CO00130001"
+ },
+ {
+  "rateAdsvcCtgCd": "2",
+  "rateAdsvcCtgNm": "제휴 요금제",
+  "depthKey": 1,
+  "upRateAdsvcCtgCd": null,
+  "useYn": "Y",
+  "ctgOutputCd": "CO00130001"
+ },
+ {
+  "rateAdsvcCtgCd": "4",
+  "rateAdsvcCtgNm": "LTE 요금제",
+  "depthKey": 2,
+  "upRateAdsvcCtgCd": "1",
+  "useYn": "Y",
+  "ctgOutputCd": "CO00130001"
+ },
+ {
+  "rateAdsvcCtgCd": "5",
+  "rateAdsvcCtgNm": "5G 요금제",
+  "depthKey": 2,
+  "upRateAdsvcCtgCd": "1",
+  "useYn": "Y",
+  "ctgOutputCd": "CO00130001"
+ },
+ {
+  "rateAdsvcCtgCd": "9",
+  "rateAdsvcCtgNm": "모두다 맘껏",
+  "depthKey": 3,
+  "upRateAdsvcCtgCd": "4",
+  "useYn": "Y",
+  "ctgOutputCd": "CO00130001"
+ },
+ {
+  "rateAdsvcCtgCd": "14",
+  "rateAdsvcCtgNm": "초알뜰",
+  "depthKey": 3,
+  "upRateAdsvcCtgCd": "4",
+  "useYn": "Y",
+  "ctgOutputCd": "CO00130001"
+ },
+ {
+  "rateAdsvcCtgCd": "21",
+  "rateAdsvcCtgNm": "5G 모두다 맘껏",
+  "depthKey": 3,
+  "upRateAdsvcCtgCd": "5",
+  "useYn": "Y",
+  "ctgOutputCd": "CO00130001"
+ }
+]
