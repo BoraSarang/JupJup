@@ -37,6 +37,7 @@
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
+            tools:ignore="MissingClass"
             tools:node="merge" />
     </application>
 </manifest>

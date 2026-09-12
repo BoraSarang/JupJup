@@ -44,10 +44,15 @@
 - [x] lint 통과
 
 ## C1 CI/workflow
-- [ ] .github/workflows/ci.yml 통합 (Pages 제거)
-- [ ] .github/workflows/release.yml
+- [x] .github/workflows/ci.yml 통합 (Pages 제거)
+- [x] .github/workflows/release.yml
 
 ## R1 마무리
-- [ ] README.md (한) / README.en.md (영)
-- [ ] DoD 체크 + CHANGELOG 갱신
-- [ ] 첫 커밋
+- [x] README.md (한) / README.en.md (영)
+- [x] 실기 검증: 포털 3000·3001 HTTP 200, 크래시 없음 (`52ea844`)
+- [x] 최종 DoD 체크 + CHANGELOG 갱신 (1.0.1 수정·1.1.0 UI 개편 반영)
+- [x] 첫 커밋 (`c724b9f`)
+- [x] 통합 UI 개편: 하단 햄버거+기능 드로어, 앱바 서비스명, 아이콘 팩 적용
+
+## R2 1.1.0 UI 개편 (별도 커밋 진행)
+- [ ] 리디자인 코드 커밋

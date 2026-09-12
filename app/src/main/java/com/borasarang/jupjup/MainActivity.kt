@@ -2,6 +2,7 @@ package com.borasarang.jupjup
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import com.borasarang.jupjup.databinding.ActivityMainBinding
 import com.borasarang.macjupjup.ui.home.HomeFragment as MacHomeFragment
@@ -12,16 +13,12 @@ import com.borasarang.planjupjup.ui.home.HomeFragment as PlanHomeFragment
 import com.borasarang.planjupjup.ui.notif.NotificationFragment as PlanNotificationFragment
 import com.borasarang.planjupjup.ui.settings.SettingsFragment as PlanSettingsFragment
 import com.borasarang.planjupjup.ui.source.SourceManageFragment as PlanSourceManageFragment
-import com.google.android.material.tabs.TabLayout
 
 /**
  * 줍줍 시리즈 통합 홈.
  *
- * - 하단 네비게이션: 서비스 선택 (맥줍줍 / 요금줍줍, 추후 추가 서비스 확장 가능)
- * - 상단 탭: 기능 (홈 / 수집 소스 / 알림 / 설정)
- *
- * 서비스가 바뀌면 현재 기능 탭을 그 서비스의 프래그먼트로 교체하고, 기능 탭이 바뀌면
- * 현재 서비스의 프래그먼트로 교체한다. 프래그먼트는 캐시해 탭 오가는 손실을 줄인다.
+ * - 하단 BottomAppBar: 서비스 전환 (맥줍줍 / 요금줍줍) — 왼쪽 햄버거로 기능 드로어 열기
+ * - 기능 드로어: 홈 / 수집 소스 / 알림 / 설정
  */
 class MainActivity : AppCompatActivity() {
 
@@ -33,7 +30,6 @@ class MainActivity : AppCompatActivity() {
     private var currentService = Service.MAC
     private var currentTab = Tab.HOME
     private val fragCache = mutableMapOf<String, Fragment>()
-    private var ignoreTabEvent = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,30 +43,29 @@ class MainActivity : AppCompatActivity() {
             currentTab = it.getSerializable("tab") as? Tab ?: Tab.HOME
         }
 
-        binding.bottomNav.setOnItemSelectedListener { item ->
+        binding.bottomBar.setNavigationOnClickListener {
+            binding.drawerLayout.openDrawer(GravityCompat.START)
+        }
+
+        binding.bottomBar.setOnMenuItemClickListener { item ->
             currentService = if (item.itemId == R.id.nav_plan) Service.PLAN else Service.MAC
-            showFragment()
+            refresh()
             true
         }
 
-        binding.tabs.apply {
-            addTab(newTab().setText(R.string.tab_home))
-            addTab(newTab().setText(R.string.tab_source))
-            addTab(newTab().setText(R.string.tab_notif))
-            addTab(newTab().setText(R.string.tab_settings))
-            addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-                override fun onTabSelected(tab: TabLayout.Tab?) {
-                    if (ignoreTabEvent) return
-                    tab?.let { currentTab = Tab.values()[it.position] }
-                    showFragment()
-                }
-
-                override fun onTabUnselected(tab: TabLayout.Tab?) = Unit
-                override fun onTabReselected(tab: TabLayout.Tab?) = Unit
-            })
+        binding.drawerNav.setNavigationItemSelectedListener { item ->
+            currentTab = when (item.itemId) {
+                R.id.nav_drawer_source -> Tab.SOURCE
+                R.id.nav_drawer_notif -> Tab.NOTIF
+                R.id.nav_drawer_settings -> Tab.SETTINGS
+                else -> Tab.HOME
+            }
+            binding.drawerLayout.closeDrawers()
+            refresh()
+            true
         }
 
-        showFragment()
+        refresh()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -79,15 +74,30 @@ class MainActivity : AppCompatActivity() {
         outState.putSerializable("tab", currentTab)
     }
 
+    private fun refresh() {
+        showFragment()
+        binding.toolbar.title = getString(serviceTitleRes())
+    }
+
+    private fun serviceTitleRes(): Int = when (currentService) {
+        Service.MAC -> R.string.nav_mac
+        Service.PLAN -> R.string.nav_plan
+    }
+
     private fun showFragment() {
         val tag = "${currentService.name}_${currentTab.name}"
         val frag = fragCache.getOrPut(tag) { createFragment() }
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, frag, tag)
             .commit()
-        ignoreTabEvent = true
-        binding.tabs.getTabAt(currentTab.ordinal)?.let { binding.tabs.selectTab(it) }
-        ignoreTabEvent = false
+        binding.drawerNav.setCheckedItem(drawerItemId(currentTab))
+    }
+
+    private fun drawerItemId(tab: Tab): Int = when (tab) {
+        Tab.HOME -> R.id.nav_drawer_home
+        Tab.SOURCE -> R.id.nav_drawer_source
+        Tab.NOTIF -> R.id.nav_drawer_notif
+        Tab.SETTINGS -> R.id.nav_drawer_settings
     }
 
     private fun createFragment(): Fragment = when (currentService) {
