@@ -1,5 +1,6 @@
 package com.borasarang.planjupjup.data.repository
 
+import com.borasarang.common.cache.StatsCache
 import com.borasarang.planjupjup.data.db.PlanDatabase
 import com.borasarang.planjupjup.data.db.dao.PlanStatsRow
 import com.borasarang.planjupjup.util.PlanMetrics

@@ -1,5 +1,6 @@
 package com.borasarang.macjupjup.data.repository
 
+import com.borasarang.common.cache.StatsCache
 import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.AppSourceMapping
@@ -10,7 +11,14 @@ import com.borasarang.macjupjup.util.TimeUtils
 import androidx.room.withTransaction
 
 /** 앱 저장·조회·병합·정리 */
-class AppRepository(private val db: MacDatabase) {
+class AppRepository(
+    private val db: MacDatabase,
+    private val cache: StatsCache = StatsCache(),
+) {
+
+    fun invalidateStats() {
+        cache.invalidate()
+    }
 
     suspend fun saveApps(
         apps: List<App>,
@@ -18,7 +26,7 @@ class AppRepository(private val db: MacDatabase) {
     ): SaveResult {
         if (apps.isEmpty()) return SaveResult(0, 0, 0)
         try {
-            return saveAppsInternal(apps, mappings)
+            return saveAppsInternal(apps, mappings).also { invalidateStats() }
         } catch (e: Exception) {
             DebugLogger.e("저장", "E-AND-DB-0402", "앱 저장 실패 ${apps.size}건: ${e.message}", e)
             throw e
@@ -145,34 +153,36 @@ class AppRepository(private val db: MacDatabase) {
         return withSources.toModel(versions)
     }
 
-    suspend fun overview(): AppStats {
+    suspend fun overview(): AppStats = cache.cached("overview") {
         val total = db.appDao().count()
         val active = db.crawlSourceDao().getEnabled().size
         val lastRun = db.crawlSourceDao().getAll().mapNotNull { it.lastRunAt }.maxOrNull()
-        return AppStats(total, active, lastRun)
+        AppStats(total, active, lastRun)
     }
 
     /** 일별 수집량 집계 (그래프용, days 1~30). 반환 = 오래된 순 */
     suspend fun collect(days: Int): List<DayCollect> {
         val d = days.coerceIn(1, 30)
-        val since = System.currentTimeMillis() - d * TimeUtils.MILLIS_PER_DAY
-        val rows = db.crawlLogDao().collectByDay(since)
-        return rows.groupBy { it.day }.toSortedMap().map { (day, rs) ->
-            DayCollect(
-                day = day,
-                found = rs.sumOf { it.found },
-                newCount = rs.sumOf { it.newCount },
-                updated = rs.sumOf { it.updated },
-                runs = rs.sumOf { it.runs },
-                bySource = rs.map {
-                    SourceCollect(it.sourceId, it.sourceName, it.found, it.newCount, it.updated)
-                }.sortedByDescending { it.found },
-            )
+        return cache.cached("collect:$d") {
+            val since = System.currentTimeMillis() - d * TimeUtils.MILLIS_PER_DAY
+            val rows = db.crawlLogDao().collectByDay(since)
+            rows.groupBy { it.day }.toSortedMap().map { (day, rs) ->
+                DayCollect(
+                    day = day,
+                    found = rs.sumOf { it.found },
+                    newCount = rs.sumOf { it.newCount },
+                    updated = rs.sumOf { it.updated },
+                    runs = rs.sumOf { it.runs },
+                    bySource = rs.map {
+                        SourceCollect(it.sourceId, it.sourceName, it.found, it.newCount, it.updated)
+                    }.sortedByDescending { it.found },
+                )
+            }
         }
     }
 
     /** 인사이트 조립 입력 (최근 7일 수집 + 24h 실패 + 번역 잔량) */
-    suspend fun insightsInput(): InsightsInput {
+    suspend fun insightsInput(): InsightsInput = cache.cached("insights") {
         val total = db.appDao().count()
         val trends = trends()
         val week = collect(7)
@@ -189,7 +199,7 @@ class AppRepository(private val db: MacDatabase) {
             .map { it.sourceName }
         val topCat = trends.byCategory.maxByOrNull { it.value }
         val share = if (total > 0 && topCat != null) (topCat.value * 100 / total) else 0
-        return InsightsInput(
+        InsightsInput(
             totalApps = total,
             newLast7d = trends.newLast7d,
             bumpsLast7d = trends.versionBumpsLast7d,
@@ -207,10 +217,10 @@ class AppRepository(private val db: MacDatabase) {
     }
 
     /** 트렌드 대시보드 집계 (T-041) */
-    suspend fun trends(): TrendStats {
+    suspend fun trends(): TrendStats = cache.cached("trends") {
         val dao = db.appDao()
         val weekAgo = System.currentTimeMillis() - 7 * TimeUtils.MILLIS_PER_DAY
-        return TrendStats(
+        TrendStats(
             byCategory = dao.countByCategory().associate { it.name to it.cnt },
             byLicense = dao.countByLicense().associate { it.name to it.cnt },
             newLast7d = dao.countNewSince(weekAgo),
@@ -349,6 +359,7 @@ class AppRepository(private val db: MacDatabase) {
             DebugLogger.e("정리", "E-AND-DB-0402", "수집처 제거 실패 source=$sourceId: ${e.message}", e)
         }
         DebugLogger.i("정리", "[FEATURE] 수집처 제거 source=$sourceId 매핑 ${deletedMaps}건·앱 ${deletedApps}건·로그 ${deletedLogs}건")
+        invalidateStats()
         return deletedApps
     }
     /** isNew 정책 일괄 적용: 7일 경과 NEW 해제. 시작 시 + 보관 정리 시 호출 */
@@ -356,7 +367,10 @@ class AppRepository(private val db: MacDatabase) {
         val weekAgo = System.currentTimeMillis() - 7 * TimeUtils.MILLIS_PER_DAY
         return try {
             val n = db.appDao().clearStaleNew(weekAgo)
-            if (n > 0) DebugLogger.i("정리", "NEW 해제 ${n}건 (7일 경과)")
+            if (n > 0) {
+                DebugLogger.i("정리", "NEW 해제 ${n}건 (7일 경과)")
+                invalidateStats()
+            }
             n
         } catch (e: Exception) {
             DebugLogger.e("정리", "E-AND-DB-0402", "NEW 해제 실패: ${e.message}", e)
@@ -387,6 +401,7 @@ class AppRepository(private val db: MacDatabase) {
             DebugLogger.e("정리", "E-AND-DB-0402", "보관 정리 실패: ${e.message}", e)
         }
         DebugLogger.i("정리", "보관 ${retentionDays}일 초과 정리: 앱 ${deletedApps}건")
+        invalidateStats()
         return deletedApps
     }
 }

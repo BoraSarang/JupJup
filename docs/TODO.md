@@ -4,9 +4,9 @@
 
 ## R13 잔여 정리 (R7)
 - [x] PLAN_R7 초안
-- [ ] 7a 에러코드 조회/저장 분리 (0404 신규 + 조회 9곳)
-- [ ] 7b escape/envelope 통일 (공용 승격 + 바이트 동등)
-- [ ] 7c mac stats 캐시 (StatsCache 공용 승격 + 무효화)
+- [x] 7a 에러코드 조회/저장 분리 (0404 신규 + 조회 9곳)
+- [x] 7b escape/envelope 통일 (공용 승격 + 바이트 동등)
+- [x] 7c mac stats 캐시 (StatsCache 공용 승격 + 무효화)
 - [ ] 7d-1 본문 리소스화 / 7d-2 시드 영속화 / 7d-3 build-logic
 - [ ] 빌드 + 단위 + lint + 실기 검증 (health·크래시 0)
 - [ ] versionName 1.9.0 (versionCode 11)으로 bump
