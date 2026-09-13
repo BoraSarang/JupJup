@@ -79,3 +79,10 @@ JupJup/
 3. `settings.gradle.kts` include + `build_and_run.sh` 명령 추가
 4. app `JupJupApplication`에 Runtime 초기화 추가 + MainActivity에 탭 추가
 5. 기본 포트 신규 배정 (3000+n) + CHANGELOG 기록
+
+## 7. 후속 (v1.2 시리즈 인사이트, 2026-09-13 완료)
+- 시작 화면 = 인사이트 (`InsightFragment` + `InsightViewModel`, `:app` 소속)
+- 두 서비스 카드를 한 화면에 병렬 표시: 상태 도트(서비스별 색상 리소스)·주소·통계·[지금 수집][중지/재개][서버 시작/중지]
+- 하단 첫 탭 `서버 상태` → `인사이트`, 드로어에 `줍줍 시리즈` 항목 추가 (서비스 전환 시 인사이트 화면 유지 + `refreshData()`)
+- 서비스별 `DebugLogger` + 에러코드 (`0201/0211/0221`, `DB-0402`) — `:app`에는 공용 로거 없이 각 서비스 로거 사용
+- 기존 서비스 홈 화면은 유지 (수집 소스·알림·설정 탭에서 재사용)

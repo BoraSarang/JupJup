@@ -4,6 +4,10 @@
         android:id="@+id/group_services"
         android:checkableBehavior="single">
         <item
+            android:id="@+id/nav_series"
+            android:icon="@drawable/ic_nav_series"
+            android:title="@string/nav_series" />
+        <item
             android:id="@+id/nav_mac"
             android:icon="@drawable/ic_nav_mac"
             android:title="@string/nav_mac" />

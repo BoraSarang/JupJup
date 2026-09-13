@@ -6,7 +6,7 @@ A single APK that bundles **MacJupJup** (macOS app catalog collector) and **Plan
 - **Services**: MacJupJup (port 3000) + PlanJupJup (port 3001)
 - **Portal**: `http://<phone-ip>:3000/` / `http://<phone-ip>:3001/`
 
-Switch between services with the bottom navigation; use the top tabs to move between Home, Sources, Notifications, and Settings.
+The start screen **Insight** shows both services side by side (status, address, stats, crawl/server actions). Use the top drawer (Series/Mac/Plan) and bottom tabs (Insight/Sources/Notifications/Settings) to navigate.
 
 ## Architecture
 

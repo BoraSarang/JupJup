@@ -55,4 +55,13 @@
 - [x] 통합 UI 개편: 하단 햄버거+기능 드로어, 앱바 서비스명, 아이콘 팩 적용
 
 ## R2 1.1.0 UI 개편 (별도 커밋 진행)
-- [ ] 리디자인 코드 커밋
+- [x] 리디자인 코드 커밋
+
+## R3 1.2.0 시리즈 인사이트
+- [x] InsightFragment + InsightViewModel (두 서비스 병렬 카드·수집/서버 조작)
+- [x] 하단 인사이트 탭 + 드로어 시리즈 항목 + 앱바 타이틀 규칙
+- [x] 빌드 오류 수정 (TimeUtils·M3 스타일·non-transitive R·refreshData)
+- [x] 예외 처리 (서비스별 DebugLogger + 에러코드) + 화면 진입 로그
+- [x] 오타 수정 (줄줍→줍줍)
+- [x] 단위 테스트 + lint 통과, 실기 설치·크래시 확인
+- [x] 문서 갱신 (DESIGN·CHANGELOG·README 한/영·PLAN·세션 로그)
