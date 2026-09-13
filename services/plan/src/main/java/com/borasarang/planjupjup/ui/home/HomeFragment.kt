@@ -43,6 +43,7 @@ class HomeFragment : Fragment() {
         DebugLogger.i("홈", "홈 화면 진입")
 
         binding.planBtnManualCrawl.setOnClickListener { viewModel.triggerManualCrawl() }
+        binding.planBtnToggleCrawl.setOnClickListener { viewModel.toggleCrawl() }
         binding.planBtnCopyAddress.setOnClickListener { copyAddress() }
         binding.planBtnOpenPortal.setOnClickListener { openInBrowser() }
         // 주소 탭 → 브라우저로 포털 열기 (복사는 복사 버튼 유지)
@@ -84,8 +85,13 @@ class HomeFragment : Fragment() {
         setStat(binding.planStatSources, state.activeSources.toString(), "활성 소스")
         setStat(binding.planStatLastSync, TimeUtils.formatRelative(state.lastCollectedAt), "마지막 수집")
 
-        binding.planBtnManualCrawl.isEnabled = !state.isCrawling
-        binding.planBtnManualCrawl.text = if (state.isCrawling) "수집 예약 중…" else "지금 수집하기"
+        binding.planBtnManualCrawl.isEnabled = !state.isCrawling && state.crawlEnabled
+        binding.planBtnManualCrawl.text = when {
+            state.isCrawling -> "수집 예약 중…"
+            !state.crawlEnabled -> "수집 일시정지됨"
+            else -> "지금 수집하기"
+        }
+        binding.planBtnToggleCrawl.text = if (state.crawlEnabled) "수집 중지" else "수집 시작"
     }
 
     private fun setStat(statBinding: com.borasarang.planjupjup.databinding.PlanItemStatCardBinding, value: String, label: String) {

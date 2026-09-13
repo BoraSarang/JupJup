@@ -42,6 +42,7 @@ class HomeFragment : Fragment() {
         DebugLogger.i("홈", "홈 화면 진입")
 
         binding.macBtnManualCrawl.setOnClickListener { viewModel.triggerManualCrawl() }
+        binding.macBtnToggleCrawl.setOnClickListener { viewModel.toggleCrawl() }
         binding.macBtnCopyAddress.setOnClickListener { copyAddress() }
         binding.macBtnOpenPortal.setOnClickListener { openInBrowser() }
         // 주소 탭 → 브라우저로 포털 열기 (복사는 복사 버튼 유지)
@@ -83,8 +84,13 @@ class HomeFragment : Fragment() {
         setStat(binding.macStatSources, state.activeSources.toString(), "활성 소스")
         setStat(binding.macStatLastSync, TimeUtils.formatRelative(state.lastCollectedAt), "마지막 수집")
 
-        binding.macBtnManualCrawl.isEnabled = !state.isCrawling
-        binding.macBtnManualCrawl.text = if (state.isCrawling) "수집 예약 중…" else "지금 수집하기"
+        binding.macBtnManualCrawl.isEnabled = !state.isCrawling && state.crawlEnabled
+        binding.macBtnManualCrawl.text = when {
+            state.isCrawling -> "수집 예약 중…"
+            !state.crawlEnabled -> "수집 일시정지됨"
+            else -> "지금 수집하기"
+        }
+        binding.macBtnToggleCrawl.text = if (state.crawlEnabled) "수집 중지" else "수집 시작"
     }
 
     private fun setStat(statBinding: com.borasarang.macjupjup.databinding.MacItemStatCardBinding, value: String, label: String) {

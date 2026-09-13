@@ -18,6 +18,7 @@ data class HomeUiState(
     val activeSources: Int = 0,
     val lastCollectedAt: Long? = null,
     val isCrawling: Boolean = false,
+    val crawlEnabled: Boolean = true,
     val localIp: String? = null,
     val port: Int = 3000,
 )
@@ -46,6 +47,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     activeSources = stats.activeSources,
                     lastCollectedAt = stats.lastCollectedAt,
                     isCrawling = false,
+                    crawlEnabled = settings.crawlEnabled,
                     localIp = NetUtils.getLocalIp(getApplication()),
                     port = settings.port,
                 )
@@ -57,6 +59,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun triggerManualCrawl() {
         viewModelScope.launch {
+            if (!_uiState.value.crawlEnabled) {
+                DebugLogger.w("수동수집", "수집 일시정지 상태 — 수동 수집 스킵")
+                return@launch
+            }
             DebugLogger.i("수동수집", "수동 수집 버튼 클릭")
             _uiState.value = _uiState.value.copy(isCrawling = true)
             try {
@@ -78,6 +84,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun stopServer() {
         HttpServerService.stop(getApplication())
         refresh()
+    }
+
+    /** 수집 일시정지 토글. 중지 시 실행/예약 취소, 재개 시 주기 스케줄 재예약 */
+    fun toggleCrawl() {
+        viewModelScope.launch {
+            val enabled = !_uiState.value.crawlEnabled
+            try {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    app.preferences.setCrawlEnabled(enabled)
+                }
+                if (enabled) {
+                    app.crawlScheduler.scheduleAll(app.database)
+                    DebugLogger.i("수동수집", "수집 재개 — 주기 스케줄 재예약")
+                } else {
+                    app.crawlScheduler.cancelAll()
+                    DebugLogger.i("수동수집", "수집 일시정지 — 실행/예약 수집 취소")
+                }
+            } catch (e: Exception) {
+                DebugLogger.e("수동수집", "E-AND-CRAWL-0221", "수집 중지/재개 저장 실패: ${e.message}", e)
+            }
+            refresh()
+        }
     }
 
     /** 로컬 포트 개방 여부. 반드시 백그라운드 스레드에서 호출 */

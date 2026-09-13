@@ -85,9 +85,13 @@ object PlanJupJupRuntime {
 
         appScope.launch(Dispatchers.IO) {
             InitialDataSeeder.seedIfEmpty(database)
-            crawlScheduler.scheduleAll()
             crawlScheduler.scheduleDailySummary()
             val settings = preferences.getSettings()
+            if (settings.crawlEnabled) {
+                crawlScheduler.scheduleAll()
+            } else {
+                DebugLogger.i("수집", "수집 일시정지 상태 — 주기 스케줄 생략")
+            }
             if (settings.autoStart) {
                 DebugLogger.i("앱", "자동 시작 설정 켜짐 — 서버 시작")
                 HttpServerService.start(appContext)

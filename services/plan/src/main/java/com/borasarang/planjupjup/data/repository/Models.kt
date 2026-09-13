@@ -76,6 +76,7 @@ data class SettingsData(
     val notifCrawlComplete: Boolean = true,
     val notifNewPlan: Boolean = true,
     val notifFailure: Boolean = true,
+    val crawlEnabled: Boolean = true,
 )
 
 data class RecentLog(

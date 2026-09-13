@@ -116,10 +116,14 @@ object MacJupJupRuntime {
             } catch (e: Exception) {
                 DebugLogger.w("복구", "스크린샷 정리 스킵: ${e.message}")
             }
-            crawlScheduler.scheduleAll(database)
             crawlScheduler.scheduleDailySummary()
             crawlScheduler.scheduleTranslate()
             val settings = preferences.getSettings()
+            if (settings.crawlEnabled) {
+                crawlScheduler.scheduleAll(database)
+            } else {
+                DebugLogger.i("수집", "수집 일시정지 상태 — 주기 스케줄 생략")
+            }
             if (settings.autoStart) {
                 DebugLogger.i("앱", "자동 시작 설정 켜짐 — 서버 시작")
                 HttpServerService.start(appContext)

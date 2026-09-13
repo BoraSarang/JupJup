@@ -25,6 +25,7 @@ class PreferencesManager(private val context: Context) {
         val NOTIF_CRAWL_COMPLETE = booleanPreferencesKey("notif_crawl_complete")
         val NOTIF_NEW_PLAN = booleanPreferencesKey("notif_new_plan")
         val NOTIF_FAILURE = booleanPreferencesKey("notif_failure")
+        val CRAWL_ENABLED = booleanPreferencesKey("crawl_enabled")
     }
 
     suspend fun getSettings(): SettingsData {
@@ -37,6 +38,7 @@ class PreferencesManager(private val context: Context) {
                 notifCrawlComplete = prefs[Keys.NOTIF_CRAWL_COMPLETE] ?: true,
                 notifNewPlan = prefs[Keys.NOTIF_NEW_PLAN] ?: true,
                 notifFailure = prefs[Keys.NOTIF_FAILURE] ?: true,
+                crawlEnabled = prefs[Keys.CRAWL_ENABLED] ?: true,
             )
         }.first()
     }
@@ -51,6 +53,13 @@ class PreferencesManager(private val context: Context) {
             prefs[Keys.NOTIF_CRAWL_COMPLETE] = settings.notifCrawlComplete
             prefs[Keys.NOTIF_NEW_PLAN] = settings.notifNewPlan
             prefs[Keys.NOTIF_FAILURE] = settings.notifFailure
+        }
+    }
+
+    /** 수집 일시정지 플래그 단독 저장 (설정 화면 전체 저장과 독립) */
+    suspend fun setCrawlEnabled(enabled: Boolean) {
+        context.settingsStore.edit { prefs ->
+            prefs[Keys.CRAWL_ENABLED] = enabled
         }
     }
 

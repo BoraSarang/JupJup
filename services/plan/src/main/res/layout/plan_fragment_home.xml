@@ -102,11 +102,30 @@
                 android:layout_weight="1" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/plan_btn_manual_crawl"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="지금 수집하기"
-            android:textAppearance="?attr/textAppearanceTitleMedium" />
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/plan_btn_manual_crawl"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:text="지금 수집하기"
+                android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+            <Button
+                android:id="@+id/plan_btn_toggle_crawl"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:text="수집 중지"
+                android:textAppearance="?attr/textAppearanceTitleMedium" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

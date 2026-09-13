@@ -125,6 +125,7 @@ data class SettingsData(
     val notifCrawlComplete: Boolean = true,
     val notifNewApp: Boolean = true,
     val notifFailure: Boolean = true,
+    val crawlEnabled: Boolean = true,
 )
 
 /** 토큰 설정 여부만 노출 (값은 절대 외부 반환 금지) */
