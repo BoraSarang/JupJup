@@ -38,9 +38,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val fresh = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     val settings = app.preferences.getSettings()
                     val stats = app.appRepository.overview()
-                    Triple(settings, stats, isServiceRunning(settings.port))
+                    Triple(settings, stats, settings.port)
                 }
-                val (settings, stats, running) = fresh
+                val (settings, stats, port) = fresh
+                // 서버 기동 지연 대비 최대 5회·1초 간격으로 기동 완료를 폴링
+                val running = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    var up = false
+                    for (i in 1..5) {
+                        up = isServiceRunning(port)
+                        if (up) {
+                            if (i > 1) DebugLogger.i("홈", "서버 기동 감지 (${i - 1}회 폴링)")
+                            return@withContext up
+                        }
+                        kotlinx.coroutines.delay(1000)
+                    }
+                    up
+                }
                 _uiState.value = HomeUiState(
                     isServerRunning = running,
                     totalApps = stats.totalApps,
@@ -49,7 +62,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     isCrawling = false,
                     crawlEnabled = settings.crawlEnabled,
                     localIp = NetUtils.getLocalIp(getApplication()),
-                    port = settings.port,
+                    port = port,
                 )
             } catch (e: Exception) {
                 DebugLogger.e("홈", "E-AND-DB-0402", "홈 상태 조회 실패: ${e.message}", e)
