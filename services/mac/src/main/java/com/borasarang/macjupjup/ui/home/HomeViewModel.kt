@@ -79,7 +79,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             DebugLogger.i("수동수집", "수동 수집 버튼 클릭")
             _uiState.value = _uiState.value.copy(isCrawling = true)
             try {
-                app.crawlScheduler.triggerImmediate(app.database, null)
+                app.crawlScheduler.triggerImmediate(null)
             } catch (e: Exception) {
                 DebugLogger.e("수동수집", "E-AND-CRAWL-0201", "수동 수집 예약 실패: ${e.message}", e)
             } finally {
@@ -108,7 +108,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     app.preferences.setCrawlEnabled(enabled)
                 }
                 if (enabled) {
-                    app.crawlScheduler.scheduleAll(app.database)
+                    app.crawlScheduler.scheduleAll()
                     DebugLogger.i("수동수집", "수집 재개 — 주기 스케줄 재예약")
                 } else {
                     app.crawlScheduler.cancelAll()

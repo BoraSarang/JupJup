@@ -120,7 +120,7 @@ object MacJupJupRuntime {
             crawlScheduler.scheduleTranslate()
             val settings = preferences.getSettings()
             if (settings.crawlEnabled) {
-                crawlScheduler.scheduleAll(database)
+                crawlScheduler.scheduleAll()
             } else {
                 DebugLogger.i("수집", "수집 일시정지 상태 — 주기 스케줄 생략")
             }

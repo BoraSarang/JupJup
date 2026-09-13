@@ -9,11 +9,9 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.borasarang.macjupjup.data.db.MacDatabase
+import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.macjupjup.util.DebugLogger
-import java.util.concurrent.TimeUnit
-
-/**
+import java.util.concurrent.TimeUnit/**
  * 소스별 개별 주기 스케줄 + 즉시 실행.
  * WorkManager 최소 주기 15분 — 그 미만은 15분으로 올림.
  */
@@ -25,9 +23,9 @@ class CrawlScheduler(private val context: Context) {
         .build()
 
     /** 활성 소스 전체를 각자 주기로 예약 (앱 시작 시 1회) */
-    suspend fun scheduleAll(db: MacDatabase) {
+    suspend fun scheduleAll() {
         val wm = WorkManager.getInstance(context)
-        val sources = db.crawlSourceDao().getEnabled()
+        val sources = MacJupJupRuntime.database.crawlSourceDao().getEnabled()
         for (s in sources) {
             wm.enqueueUniquePeriodicWork(
                 "crawl_${s.id}",
@@ -66,11 +64,11 @@ class CrawlScheduler(private val context: Context) {
             .build()
     }
 
-    /** 즉시 수집: sourceId null이면 전체 활성 소스 */
-    suspend fun triggerImmediate(db: MacDatabase, sourceId: String?) {
+    /** 즉시 수집: sourceId null이면 전체 활성 소스 (R3: plan과 동일 시그니처) */
+    suspend fun triggerImmediate(sourceId: String?) {
         val wm = WorkManager.getInstance(context)
         val ids = if (sourceId.isNullOrBlank()) {
-            db.crawlSourceDao().getEnabled().map { it.id }
+            MacJupJupRuntime.database.crawlSourceDao().getEnabled().map { it.id }
         } else {
             listOf(sourceId)
         }

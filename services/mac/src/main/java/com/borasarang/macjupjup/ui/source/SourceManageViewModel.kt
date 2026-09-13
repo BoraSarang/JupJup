@@ -58,7 +58,7 @@ class SourceManageViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             DebugLogger.i("수동수집", "소스 즉시 실행 id=$id")
             try {
-                app.crawlScheduler.triggerImmediate(app.database, id)
+                app.crawlScheduler.triggerImmediate(id)
             } catch (e: Exception) {
                 DebugLogger.e("수동수집", "E-AND-CRAWL-0201", "즉시 실행 실패 id=$id: ${e.message}", e)
             }

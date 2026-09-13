@@ -62,4 +62,19 @@ object NetUtils {
             false
         }
     }
+
+    /**
+     * 로컬 포트 개방 확인 (서버 실행 여부).
+     * R3: 타임아웃 필수 — 무타임아웃 `Socket()`은 필터된 포트에서 OS 타임아웃까지 hang된다.
+     */
+    fun isPortOpen(port: Int, timeoutMs: Int = 500): Boolean {
+        return try {
+            java.net.Socket().use { socket ->
+                socket.connect(java.net.InetSocketAddress("127.0.0.1", port), timeoutMs)
+                true
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
 }

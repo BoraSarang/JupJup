@@ -361,7 +361,7 @@ class HttpServerService : Service() {
                     ) {
                         return@post call.respondNotFound("unknown sourceId")
                     }
-                    application.crawlScheduler.triggerImmediate(application.database, sourceId)
+                    application.crawlScheduler.triggerImmediate(sourceId)
                     call.respondText(
                         """{"accepted":true}""",
                         ContentType.Application.Json,

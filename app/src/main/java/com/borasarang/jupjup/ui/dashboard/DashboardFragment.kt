@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.borasarang.jupjup.R
 import com.borasarang.jupjup.databinding.FragmentDashboardBinding
+import com.borasarang.jupjup.ui.nav.Service
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
 import kotlinx.coroutines.launch
 
@@ -25,10 +26,12 @@ class DashboardFragment : Fragment() {
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: DashboardViewModel by viewModels()
+    private val viewModel: DashboardViewModel by viewModels {
+        DashboardViewModel.Factory(requireActivity().application)
+    }
 
-    /** MainActivity가 주입하는 활성 서비스 ("MAC" | "PLAN") */
-    var activeService: String = "MAC"
+    /** MainActivity가 주입하는 활성 서비스 */
+    var activeService: Service = Service.MAC
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -52,7 +55,7 @@ class DashboardFragment : Fragment() {
     }
 
     /** 탭 복귀·서비스 전환 시 카드 최신화 (활성 서비스 강조 포함) */
-    fun refreshData(active: String = activeService) {
+    fun refreshData(active: Service = activeService) {
         activeService = active
         applyActiveHighlight()
         if (isAdded) viewModel.refresh()
@@ -62,24 +65,24 @@ class DashboardFragment : Fragment() {
     private fun bindActions() {
         binding.dashboardMacBtnCrawl.setOnClickListener {
             if (_binding?.dashboardMacBtnToggle?.isEnabled != true) return@setOnClickListener
-            viewModel.triggerMacCrawl()
+            viewModel.triggerCrawl(Service.MAC)
         }
         binding.dashboardMacBtnToggle.setOnClickListener {
-            viewModel.toggleMacCrawl()
+            viewModel.toggleCrawl(Service.MAC)
         }
         binding.dashboardMacBtnServer.setOnClickListener {
-            viewModel.toggleMacServer()
+            viewModel.toggleServer(Service.MAC)
         }
 
         binding.dashboardPlanBtnCrawl.setOnClickListener {
             if (_binding?.dashboardPlanBtnToggle?.isEnabled != true) return@setOnClickListener
-            viewModel.triggerPlanCrawl()
+            viewModel.triggerCrawl(Service.PLAN)
         }
         binding.dashboardPlanBtnToggle.setOnClickListener {
-            viewModel.togglePlanCrawl()
+            viewModel.toggleCrawl(Service.PLAN)
         }
         binding.dashboardPlanBtnServer.setOnClickListener {
-            viewModel.togglePlanServer()
+            viewModel.toggleServer(Service.PLAN)
         }
     }
 
@@ -93,7 +96,7 @@ class DashboardFragment : Fragment() {
     private fun applyActiveHighlight() {
         val b = _binding ?: return
         if (!isAdded) return
-        val macActive = activeService == "MAC"
+        val macActive = activeService == Service.MAC
         val strokePx = (2 * resources.displayMetrics.density).toInt()
         val primary = com.google.android.material.color.MaterialColors.getColor(
             requireContext(),
