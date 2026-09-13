@@ -14,6 +14,7 @@
 - `InsightViewModel` 예외 처리: silent catch 제거 → 서비스별 `DebugLogger` + 에러코드 (`E-AND-CRAWL-0201/0211/0221`, `E-AND-DB-0402`) 매핑, 화면 진입 로그(`인사이트 화면 진입`) 추가
 - 오타 수정: `줄줍` → `줍줍` (README 제목 포함 5곳)
 - 검증: 실기(R5CT215F4QK) assembleDebug·단위 테스트·`:app:lintDebug` 통과 (경고 51건, 오류 0 — 인사이트 관련 6건은 기존 패턴과 동일한 경미 경고), 설치 후 크래시 없음
+- 검증(connected·E2E): `:app:connectedDebugAndroidTest` 2/2 + `:services:mac` 6/6 통과, 포털 3000·3001 `/api/health` 모두 HTTP 200, 크래시 0, 인사이트 진입 로그 확인
 
 ## [1.0.0] - 2026-09-13
 > 플랫폼: AND · 통합 (mac+plan)

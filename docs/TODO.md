@@ -64,4 +64,6 @@
 - [x] 예외 처리 (서비스별 DebugLogger + 에러코드) + 화면 진입 로그
 - [x] 오타 수정 (줄줍→줍줍)
 - [x] 단위 테스트 + lint 통과, 실기 설치·크래시 확인
+- [x] connected 테스트 8/8 통과 (app 인사이트 스모크 2 + mac Room 6), 포털 3000·3001 HTTP 200
+- [x] versionName 1.2.0 (versionCode 2)으로 bump
 - [x] 문서 갱신 (DESIGN·CHANGELOG·README 한/영·PLAN·세션 로그)
