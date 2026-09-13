@@ -180,6 +180,9 @@ class HttpServerService : Service() {
                 get("/app.js") {
                     serveAsset(call, "plan_web/app.js", ContentType.Text.JavaScript.withCharset(Charsets.UTF_8))
                 }
+                get("/favicon.svg") {
+                    serveAsset(call, "plan_web/favicon.svg", ContentType.Image.SVG)
+                }
                 get("/api/health") {
                     call.respondText(
                         """{"status":"ok","timestamp":${System.currentTimeMillis()}}""",
