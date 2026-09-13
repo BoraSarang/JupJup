@@ -13,11 +13,12 @@
 
         <!-- 맥줍줍 카드 -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/insight_mac_card"
+            android:id="@+id/dashboard_mac_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
@@ -25,7 +26,7 @@
                 android:padding="16dp">
 
                 <LinearLayout
-                    android:id="@+id/insight_mac_header"
+                    android:id="@+id/dashboard_mac_header"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
@@ -35,49 +36,63 @@
                     app:layout_constraintTop_toTopOf="parent">
 
                     <View
-                        android:id="@+id/insight_mac_dot"
+                        android:id="@+id/dashboard_mac_dot"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
-                        android:background="@drawable/ic_nav_series" />
+                        android:background="@drawable/dot_status" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="@string/insight_mac_title"
+                        android:text="@string/dashboard_mac_title"
                         android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                     <TextView
-                        android:id="@+id/insight_mac_status"
+                        android:id="@+id/dashboard_mac_active_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/badge_pill"
+                        android:backgroundTint="?attr/colorPrimaryContainer"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:text="@string/dashboard_active_badge"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:textColor="?attr/colorOnPrimaryContainer"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/dashboard_mac_status"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:gravity="end"
-                        android:text="@string/insight_status_checking"
+                        android:text="@string/dashboard_status_checking"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/insight_mac_address"
+                    android:id="@+id/dashboard_mac_address"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/insight_address_placeholder"
+                    android:text="@string/dashboard_address_placeholder"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_mac_header" />
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_mac_header" />
 
                 <LinearLayout
-                    android:id="@+id/insight_mac_stats"
+                    android:id="@+id/dashboard_mac_stats"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_mac_address">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_mac_address">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -87,17 +102,17 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/insight_mac_stat_value1"
+                            android:id="@+id/dashboard_mac_stat_value1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/insight_stat_zero"
+                            android:text="@string/dashboard_stat_zero"
                             android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/insight_stat_apps"
+                            android:text="@string/dashboard_stat_apps"
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -110,17 +125,17 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/insight_mac_stat_value2"
+                            android:id="@+id/dashboard_mac_stat_value2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/insight_stat_zero"
+                            android:text="@string/dashboard_stat_zero"
                             android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/insight_stat_sources"
+                            android:text="@string/dashboard_stat_sources"
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -133,71 +148,72 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/insight_mac_stat_value3"
+                            android:id="@+id/dashboard_mac_stat_value3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/insight_stat_zero"
+                            android:text="@string/dashboard_stat_zero"
                             android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/insight_stat_last"
+                            android:text="@string/dashboard_stat_last"
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/insight_mac_actions"
+                    android:id="@+id/dashboard_mac_actions"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_mac_stats">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_mac_stats">
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/insight_mac_btn_crawl"
+                        android:id="@+id/dashboard_mac_btn_crawl"
                         style="@style/Widget.Material3.Button"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/insight_btn_crawl_now" />
+                        android:text="@string/dashboard_btn_crawl_now" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/insight_mac_btn_toggle"
+                        android:id="@+id/dashboard_mac_btn_toggle"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
-                        android:text="@string/insight_btn_pause" />
+                        android:text="@string/dashboard_btn_pause" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/insight_mac_btn_server"
+                    android:id="@+id/dashboard_mac_btn_server"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="0dp"
-                    android:text="@string/insight_btn_start_server"
+                    android:text="@string/dashboard_btn_start_server"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_mac_actions" />
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_mac_actions" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- 요금줍줍 카드 -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/insight_plan_card"
+            android:id="@+id/dashboard_plan_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
@@ -205,7 +221,7 @@
                 android:padding="16dp">
 
                 <LinearLayout
-                    android:id="@+id/insight_plan_header"
+                    android:id="@+id/dashboard_plan_header"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -216,49 +232,63 @@
                     app:layout_constraintTop_toTopOf="parent">
 
                     <View
-                        android:id="@+id/insight_plan_dot"
+                        android:id="@+id/dashboard_plan_dot"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
-                        android:background="@drawable/ic_nav_series" />
+                        android:background="@drawable/dot_status" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="@string/insight_plan_title"
+                        android:text="@string/dashboard_plan_title"
                         android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                     <TextView
-                        android:id="@+id/insight_plan_status"
+                        android:id="@+id/dashboard_plan_active_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/badge_pill"
+                        android:backgroundTint="?attr/colorPrimaryContainer"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:text="@string/dashboard_active_badge"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:textColor="?attr/colorOnPrimaryContainer"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/dashboard_plan_status"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:gravity="end"
-                        android:text="@string/insight_status_checking"
+                        android:text="@string/dashboard_status_checking"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/insight_plan_address"
+                    android:id="@+id/dashboard_plan_address"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/insight_address_placeholder"
+                    android:text="@string/dashboard_address_placeholder"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_plan_header" />
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_plan_header" />
 
                 <LinearLayout
-                    android:id="@+id/insight_plan_stats"
+                    android:id="@+id/dashboard_plan_stats"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_plan_address">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_plan_address">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -268,17 +298,17 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/insight_plan_stat_value1"
+                            android:id="@+id/dashboard_plan_stat_value1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/insight_stat_zero"
+                            android:text="@string/dashboard_stat_zero"
                             android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/insight_stat_plans"
+                            android:text="@string/dashboard_stat_plans"
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -291,17 +321,17 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/insight_plan_stat_value2"
+                            android:id="@+id/dashboard_plan_stat_value2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/insight_stat_zero"
+                            android:text="@string/dashboard_stat_zero"
                             android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/insight_stat_sources"
+                            android:text="@string/dashboard_stat_sources"
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -314,59 +344,59 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/insight_plan_stat_value3"
+                            android:id="@+id/dashboard_plan_stat_value3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/insight_stat_zero"
+                            android:text="@string/dashboard_stat_zero"
                             android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/insight_stat_last"
+                            android:text="@string/dashboard_stat_last"
                             android:textAppearance="?attr/textAppearanceBodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/insight_plan_actions"
+                    android:id="@+id/dashboard_plan_actions"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_plan_stats">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_plan_stats">
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/insight_plan_btn_crawl"
+                        android:id="@+id/dashboard_plan_btn_crawl"
                         style="@style/Widget.Material3.Button"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/insight_btn_crawl_now" />
+                        android:text="@string/dashboard_btn_crawl_now" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/insight_plan_btn_toggle"
+                        android:id="@+id/dashboard_plan_btn_toggle"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
-                        android:text="@string/insight_btn_pause" />
+                        android:text="@string/dashboard_btn_pause" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/insight_plan_btn_server"
+                    android:id="@+id/dashboard_plan_btn_server"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/insight_btn_start_server"
+                    android:text="@string/dashboard_btn_start_server"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/insight_plan_actions" />
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_plan_actions" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 

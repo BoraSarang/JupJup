@@ -9,11 +9,12 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
+import org.hamcrest.Matchers.not
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** 스모크: 인사이트 시작 화면 + 하단 탭 전환 (S22 connected) */
+/** 스모크: 대시보드 + 세그먼트 서비스 전환 + 하단 5탭 (S22 connected) */
 @RunWith(AndroidJUnit4::class)
 class MainActivityTest {
 
@@ -24,21 +25,42 @@ class MainActivityTest {
     )
 
     @Test
-    fun insight_showsBothServiceCards() {
+    fun dashboard_showsBothServiceCards() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            onView(withId(R.id.insight_mac_card)).check(matches(isDisplayed()))
-            onView(withId(R.id.insight_plan_card)).check(matches(isDisplayed()))
-            onView(withId(R.id.insight_mac_btn_crawl)).check(matches(withText("지금 수집하기")))
+            onView(withId(R.id.dashboard_mac_card)).check(matches(isDisplayed()))
+            onView(withId(R.id.dashboard_plan_card)).check(matches(isDisplayed()))
+            onView(withId(R.id.dashboard_mac_btn_crawl)).check(matches(withText("지금 수집하기")))
         }
     }
 
     @Test
-    fun bottomNav_switchesToSourceAndBackToInsight() {
+    fun segment_switchesActiveService() {
+        ActivityScenario.launch(MainActivity::class.java).use {
+            // 기본 MAC 활성
+            onView(withId(R.id.dashboard_mac_active_badge)).check(matches(isDisplayed()))
+            // PLAN으로 전환 → 대시보드로 이동 + plan 카드 강조
+            onView(withId(R.id.seg_plan)).perform(click())
+            onView(withId(R.id.dashboard_plan_active_badge)).check(matches(isDisplayed()))
+            onView(withId(R.id.dashboard_mac_active_badge)).check(matches(not(isDisplayed())))
+            // 홈 탭 → plan 홈 노출
+            onView(withId(R.id.nav_tab_home)).perform(click())
+            onView(withId(com.borasarang.planjupjup.R.id.plan_server_status_text))
+                .check(matches(isDisplayed()))
+            // MAC으로 복귀 → mac 홈 노출
+            onView(withId(R.id.seg_mac)).perform(click())
+            onView(withId(R.id.nav_tab_home)).perform(click())
+            onView(withId(com.borasarang.macjupjup.R.id.mac_server_status_text))
+                .check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun bottomNav_switchesToSourceAndBackToDashboard() {
         ActivityScenario.launch(MainActivity::class.java).use {
             onView(withId(R.id.nav_tab_source)).perform(click())
             onView(withId(com.borasarang.macjupjup.R.id.mac_source_recycler)).check(matches(isDisplayed()))
-            onView(withId(R.id.nav_tab_insight)).perform(click())
-            onView(withId(R.id.insight_mac_card)).check(matches(isDisplayed()))
+            onView(withId(R.id.nav_tab_dashboard)).perform(click())
+            onView(withId(R.id.dashboard_mac_card)).check(matches(isDisplayed()))
         }
     }
 }

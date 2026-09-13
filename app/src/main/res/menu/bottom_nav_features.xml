@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/nav_tab_insight"
-        android:icon="@drawable/ic_tab_insight"
-        android:title="@string/tab_insight" />
+        android:id="@+id/nav_tab_dashboard"
+        android:icon="@drawable/ic_tab_dashboard"
+        android:title="@string/tab_dashboard" />
+    <item
+        android:id="@+id/nav_tab_home"
+        android:icon="@drawable/ic_tab_server"
+        android:title="@string/tab_home" />
     <item
         android:id="@+id/nav_tab_source"
         android:icon="@drawable/ic_drawer_source"

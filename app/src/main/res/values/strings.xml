@@ -2,33 +2,36 @@
 <resources>
     <string name="app_name">줍줍</string>
 
-    <string name="nav_series">줍줍 시리즈</string>
     <string name="nav_mac">맥줍줍</string>
     <string name="nav_plan">요금줍줍</string>
 
-    <string name="drawer_header_sub">줍줍 시리즈</string>
-
-    <string name="tab_insight">인사이트</string>
+    <string name="tab_dashboard">대시보드</string>
+    <string name="tab_home">홈</string>
     <string name="tab_source">수집 소스</string>
     <string name="tab_notif">알림</string>
     <string name="tab_settings">설정</string>
 
-    <string name="insight_status_checking">상태 확인 중…</string>
-    <string name="insight_status_running">실행 중</string>
-    <string name="insight_status_stopped">중지됨</string>
-    <string name="insight_address_placeholder">http://…</string>
-    <string name="insight_btn_start_server">서버 시작</string>
-    <string name="insight_btn_stop_server">서버 중지</string>
-    <string name="insight_btn_crawl_now">지금 수집하기</string>
-    <string name="insight_btn_crawling">수집 중…</string>
-    <string name="insight_btn_pause">수집 중지</string>
-    <string name="insight_btn_resume">수집 시작</string>
-    <string name="insight_mac_title">맥줍줍</string>
-    <string name="insight_plan_title">요금줍줍</string>
-    <string name="insight_stat_zero">0</string>
-    <string name="insight_stat_apps">수집 앱</string>
-    <string name="insight_stat_plans">요금제</string>
-    <string name="insight_stat_sources">활성 소스</string>
-    <string name="insight_stat_last">마지막 수집</string>
-    <string name="insight_stat_last_never">수집 이력 없음</string>
+    <string name="overflow_about">앱 정보</string>
+    <string name="about_title">줍줍 시리즈</string>
+    <string name="about_message">맥줍줍(포트 %1$d) · 요금줍줍(포트 %2$d)\n버전 %3$s</string>
+
+    <string name="dashboard_status_checking">상태 확인 중…</string>
+    <string name="dashboard_status_running">실행 중</string>
+    <string name="dashboard_status_stopped">중지됨</string>
+    <string name="dashboard_address_placeholder">http://…</string>
+    <string name="dashboard_btn_start_server">서버 시작</string>
+    <string name="dashboard_btn_stop_server">서버 중지</string>
+    <string name="dashboard_btn_crawl_now">지금 수집하기</string>
+    <string name="dashboard_btn_crawling">수집 중…</string>
+    <string name="dashboard_btn_pause">수집 중지</string>
+    <string name="dashboard_btn_resume">수집 시작</string>
+    <string name="dashboard_mac_title">맥줍줍</string>
+    <string name="dashboard_plan_title">요금줍줍</string>
+    <string name="dashboard_active_badge">현재</string>
+    <string name="dashboard_stat_zero">0</string>
+    <string name="dashboard_stat_apps">수집 앱</string>
+    <string name="dashboard_stat_plans">요금제</string>
+    <string name="dashboard_stat_sources">활성 소스</string>
+    <string name="dashboard_stat_last">마지막 수집</string>
+    <string name="dashboard_stat_last_never">수집 이력 없음</string>
 </resources>

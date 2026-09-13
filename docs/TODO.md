@@ -67,3 +67,9 @@
 - [x] connected 테스트 8/8 통과 (app 인사이트 스모크 2 + mac Room 6), 포털 3000·3001 HTTP 200
 - [x] versionName 1.2.0 (versionCode 2)으로 bump
 - [x] 문서 갱신 (DESIGN·CHANGELOG·README 한/영·PLAN·세션 로그)
+
+## R4 1.3.0 서비스-우선 내비게이션 개편
+- [x] N1 내비게이션 재구성 (세그먼트+5탭+드로어 제거+오버플로우)
+- [x] N2 대시보드/홈 정리 (insight→dashboard 리네임+활성 강조)
+- [x] N3 폴리시+테스트+실기 검증 (connected app 3/3 + mac 6/6, 포털 200/200, 크래시 0)
+- [x] N4 문서+DoD+커밋
