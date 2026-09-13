@@ -47,10 +47,28 @@ class CrawlWorker(
             return Result.retry()
         }
 
+        // R1: 동일 소스 중복 실행 방지 (주기+즉시 겹침 시 스킵)
+        if (!SourceLocks.tryAcquire(sourceId)) {
+            DebugLogger.w("수집", "워커 스킵(이미 실행 중) source=${source.name}")
+            return Result.success()
+        }
         DebugLogger.i("수집", "워커 시작 source=${source.name}")
+        val startedAt = System.currentTimeMillis()
+        try {
+            return runCrawl(app, sourceId, source, startedAt)
+        } finally {
+            SourceLocks.release(sourceId)
+        }
+    }
+
+    private suspend fun runCrawl(
+        app: PlanJupJupRuntime,
+        sourceId: String,
+        source: com.borasarang.planjupjup.data.db.entity.CrawlSource,
+        startedAt: Long,
+    ): Result {
         app.sourceRepository.markRunning(sourceId)
         setForeground(createForegroundInfo(source.name))
-        val startedAt = System.currentTimeMillis()
 
         return try {
             val crawler = CrawlerFactory(app.database).create(source)

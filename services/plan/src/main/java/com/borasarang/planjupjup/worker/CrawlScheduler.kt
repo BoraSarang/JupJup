@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
@@ -85,14 +86,16 @@ class CrawlScheduler(private val context: Context) {
         workManager.cancelUniqueWork(UNIQUE_PREFIX + Constants.SOURCE_BRAND_LIST)
     }
 
-    /** 수동 즉시 수집. sourceId=null이면 전체 활성 소스 */
+    /** 수동 즉시 수집. sourceId=null이면 전체 활성 소스.
+     *  R1: unique KEEP — 연타해도 소스당 1개만 적재 (무한 워커 폭증 방지).
+     *  중복 실행은 CrawlWorker의 SourceLocks가 스킵한다. */
     suspend fun triggerImmediate(sourceId: String?) {
         val targets = if (sourceId.isNullOrBlank()) {
             app().sourceRepository.getEnabled()
         } else {
             app().sourceRepository.getById(sourceId)?.let { listOf(it) } ?: emptyList()
         }
-        targets.filter { it.enabled }.forEach { source ->
+        targets.filter { it.enabled }.forEachIndexed { index, source ->
             val request = OneTimeWorkRequestBuilder<CrawlWorker>()
                 .setInputData(workDataOf(CrawlWorker.KEY_SOURCE_ID to source.id))
                 .setConstraints(
@@ -100,9 +103,14 @@ class CrawlScheduler(private val context: Context) {
                         .setRequiredNetworkType(NetworkType.CONNECTED)
                         .build(),
                 )
+                .setInitialDelay((index * 20).toLong(), TimeUnit.SECONDS)
                 .addTag(TAG_MANUAL)
                 .build()
-            workManager.enqueue(request)
+            workManager.enqueueUniqueWork(
+                "crawl_once_${source.id}",
+                ExistingWorkPolicy.KEEP,
+                request,
+            )
         }
         DebugLogger.i("수동수집", "즉시 수집 예약 count=${targets.size} sourceId=$sourceId")
     }

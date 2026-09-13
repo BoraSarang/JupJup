@@ -71,8 +71,10 @@ object PlanJupJupRuntime {
         database = try {
             PlanDatabase.getInstance(appContext)
         } catch (e: Exception) {
-            // 마이그레이션 실패 등 DB 열기 불가 → 재생성 폴백 (앱 벽돌 방지)
-            DebugLogger.e("앱", "E-AND-DB-0403", "DB 열기 실패, 재생성: ${e.message}", e)
+            // 마이그레이션 실패 등 DB 열기 불가 → 원본 백업 후 재생성 (P0-6: 무확인 삭제 방지)
+            DebugLogger.e("앱", "E-AND-DB-0403", "DB 열기 실패, 백업 후 재생성: ${e.message}", e)
+            backupDatabaseFile()
+            PlanDatabase.resetInstance()
             PlanDatabase.getInstanceFallback(appContext)
         }
         statsRepository = StatsRepository(database)
@@ -98,6 +100,22 @@ object PlanJupJupRuntime {
             } else {
                 DebugLogger.i("앱", "자동 시작 꺼짐 — 서버 미시작")
             }
+        }
+    }
+
+    /** 파괴 폴백 전 원본 DB 백업 (files/db-backup/). 실패해도 재생성은 진행 */
+    private fun backupDatabaseFile() {
+        try {
+            val src = appContext.getDatabasePath(PlanDatabase.DB_NAME)
+            if (!src.exists()) return
+            val dir = java.io.File(appContext.filesDir, "db-backup").apply { mkdirs() }
+            val dst = java.io.File(dir, "${PlanDatabase.DB_NAME}.${System.currentTimeMillis()}.bak")
+            src.inputStream().use { input ->
+                dst.outputStream().use { output -> input.copyTo(output) }
+            }
+            DebugLogger.i("앱", "DB 백업 완료 ${dst.absolutePath} (${dst.length()}B)")
+        } catch (e: Exception) {
+            DebugLogger.e("앱", "E-AND-DB-0403", "DB 백업 실패: ${e.message}", e)
         }
     }
 }

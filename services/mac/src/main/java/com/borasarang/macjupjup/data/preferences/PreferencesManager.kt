@@ -55,6 +55,7 @@ class PreferencesManager(private val context: Context) {
         context.settingsStore.edit { prefs ->
             prefs[Keys.PORT] = settings.port.coerceIn(Constants.MIN_PORT, Constants.MAX_PORT)
             prefs[Keys.RETENTION_DAYS] = settings.retentionDays
+                .coerceIn(Constants.MIN_RETENTION_DAYS, Constants.MAX_RETENTION_DAYS)
             prefs[Keys.AUTO_START] = settings.autoStart
             prefs[Keys.WATCHDOG_SEC] = settings.watchdogIntervalSec
                 .coerceIn(Constants.MIN_WATCHDOG_SEC, Constants.MAX_WATCHDOG_SEC)

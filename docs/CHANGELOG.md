@@ -1,5 +1,15 @@
 # CHANGELOG — JupJup
 
+## [1.3.2] - 2026-09-14
+> 플랫폼: AND · P0 안전 수정 (리팩토링 1단계)
+
+### 수정
+- plan DB 폴백 데드코드 수정 (`resetInstance` 후 재생성) + 재생성 전 원본 백업 (mac과 동일)
+- 설정 범위 검증: 보관기간 1~365일 상수 신설, 양 서비스 settings POST에서 포트·보관기간·watchdog 범위 벗어나면 400 (`E-AND-VALID-0501/0502`), `saveSettings`에도 coerce 이중 방어
+- plan 수동수집 워커 폭증 차단: unique KEEP + 20초 stagger + `SourceLocks` 상호배제 이식 (mac 패턴)
+- `build_and_run.sh`: `pipefail` 추가 + 빌드 전 기존 APK 제거 (stale 설치 방지) + 단위에 `:app` 포함
+- 검증: 실기(R5CT215F4QK) 단위·lint 통과, 설치 후 health 3000·3001 HTTP 200, 설정 오입력 400 4종 확인, `/api/sync` 3연타 중복 적재 없음, 크래시 0
+
 ## [1.3.1] - 2026-09-14
 > 플랫폼: AND · 대시보드 서버 상태 표시 레이스 수정
 

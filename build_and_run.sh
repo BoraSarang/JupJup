@@ -2,6 +2,7 @@
 # usage: ./build_and_run.sh build|test|lint|clean [unit|full|smoke]
 # AGENTS.md 6장 빌드 디스패처 — JupJup 통합 (맥줍줍 + 요금줍줍 멀티모듈)
 set -e
+set -o pipefail
 CMD="${1:-build}"
 SCOPE="${2:-unit}"
 
@@ -14,6 +15,8 @@ fi
 case "$CMD" in
   build)
     echo "🔨 assembleDebug (멀티모듈) 빌드 중…"
+    # R1: stale APK 오탐 방지 — 빌드 전 기존 산출물 제거
+    rm -f app/build/outputs/apk/debug/*.apk
     ./gradlew :app:assembleDebug 2>&1 | tail -5
     APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
     if [ -z "$APK" ]; then
@@ -34,8 +37,8 @@ case "$CMD" in
         echo "⚠️  connected 테스트는 기기 앱을 재설치해 DB가 초기화됩니다 (재수집으로 복구)"
         ./gradlew test connectedAndroidTest 2>&1 | tail -8
     else
-        echo "🧪 단위 테스트 (services:mac + services:plan)…"
-        ./gradlew :services:mac:testDebugUnitTest :services:plan:testDebugUnitTest 2>&1 | tail -8
+        echo "🧪 단위 테스트 (app + services:mac + services:plan)…"
+        ./gradlew :app:testDebugUnitTest :services:mac:testDebugUnitTest :services:plan:testDebugUnitTest 2>&1 | tail -8
     fi
     ;;
   lint)

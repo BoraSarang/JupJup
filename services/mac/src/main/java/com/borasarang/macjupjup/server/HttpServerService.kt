@@ -601,15 +601,23 @@ class HttpServerService : Service() {
                     if (port !in Constants.MIN_PORT..Constants.MAX_PORT) {
                         return@post call.respondError("E-AND-VALID-0502")
                     }
+                    val retentionDays = obj["retentionDays"]?.jsonPrimitive?.content?.toIntOrNull()
+                        ?: current.retentionDays
+                    if (retentionDays !in Constants.MIN_RETENTION_DAYS..Constants.MAX_RETENTION_DAYS) {
+                        return@post call.respondError("E-AND-VALID-0501")
+                    }
+                    val watchdogIntervalSec = obj["watchdogIntervalSec"]?.jsonPrimitive?.content?.toIntOrNull()
+                        ?: current.watchdogIntervalSec
+                    if (watchdogIntervalSec !in Constants.MIN_WATCHDOG_SEC..Constants.MAX_WATCHDOG_SEC) {
+                        return@post call.respondError("E-AND-VALID-0501")
+                    }
                     val tokenRaw = obj["githubToken"]?.jsonPrimitive?.content
                     val next = SettingsData(
                         port = port,
-                        retentionDays = obj["retentionDays"]?.jsonPrimitive?.content?.toIntOrNull()
-                            ?: current.retentionDays,
+                        retentionDays = retentionDays,
                         autoStart = obj["autoStart"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
                             ?: current.autoStart,
-                        watchdogIntervalSec = obj["watchdogIntervalSec"]?.jsonPrimitive?.content?.toIntOrNull()
-                            ?: current.watchdogIntervalSec,
+                        watchdogIntervalSec = watchdogIntervalSec,
                         // 토큰 키가 없으면 기존 유지, 빈 문자열이면 삭제
                         githubToken = if (obj.containsKey("githubToken")) (tokenRaw ?: "") else current.githubToken,
                         translateKo = obj["translateKo"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()

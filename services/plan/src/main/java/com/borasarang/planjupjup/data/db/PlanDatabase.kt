@@ -31,29 +31,43 @@ abstract class PlanDatabase : RoomDatabase() {
     abstract fun notificationLogDao(): NotificationLogDao
 
     companion object {
+        const val DB_NAME = "planjupjup.db"
+
         @Volatile
         private var instance: PlanDatabase? = null
 
-        fun getInstance(context: Context): PlanDatabase {
+        /** 단일 진입점 (R1: 이중 생성 레이스 제거 + 폴백 데드코드 수정) */
+        fun getInstance(context: Context, allowDestructive: Boolean = false): PlanDatabase {
             return instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    PlanDatabase::class.java,
-                    "planjupjup.db",
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
-                    .fallbackToDestructiveMigration(false).build().also { instance = it }
+                instance ?: buildDatabase(context, allowDestructive).also { instance = it }
             }
         }
 
-        /** 마이그레이션 실패 시 최후 수단 (데이터 손실 감수, 앱 벽돌 방지) */
+        private fun buildDatabase(context: Context, allowDestructive: Boolean): PlanDatabase {
+            val builder = Room.databaseBuilder(
+                context.applicationContext,
+                PlanDatabase::class.java,
+                DB_NAME,
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            if (allowDestructive) builder.fallbackToDestructiveMigration(true)
+            return builder.build()
+        }
+
+        /** 마이그레이션 실패 시 최후 수단 (데이터 손실 감수, 앱 벽돌 방지).
+         *  호출 전 원본 백업 권장. 하위 호환 유지용 별칭. */
         fun getInstanceFallback(context: Context): PlanDatabase {
-            return instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    PlanDatabase::class.java,
-                    "planjupjup.db",
-                ).fallbackToDestructiveMigration(true).build().also { instance = it }
+            resetInstance()
+            return getInstance(context, allowDestructive = true)
+        }
+
+        /** 테스트·복구용 인스턴스 초기화 */
+        @Synchronized
+        fun resetInstance() {
+            try {
+                instance?.close()
+            } catch (_: Exception) {
             }
+            instance = null
         }
     }
 }

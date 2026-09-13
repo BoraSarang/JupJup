@@ -11,6 +11,8 @@ object Constants {
     const val MAX_PORT = 65535
     const val MIN_WATCHDOG_SEC = 15
     const val MAX_WATCHDOG_SEC = 3600
+    const val MIN_RETENTION_DAYS = 1
+    const val MAX_RETENTION_DAYS = 365
 
     const val API_MAX_PAGE_SIZE = 1000
     const val API_DEFAULT_PAGE_SIZE = 50

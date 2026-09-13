@@ -412,24 +412,50 @@ class HttpServerService : Service() {
                     val current = application.preferences.getSettings()
                     try {
                         val obj = Json.parseToJsonElement(body) as? JsonObject
+                        if (obj == null) {
+                            return@post call.respondText(
+                                """{"error":"E-AND-VALID-0501"}""",
+                                ContentType.Application.Json,
+                                HttpStatusCode.BadRequest,
+                            )
+                        }
+                        val port = obj["port"]?.jsonPrimitive?.content?.toIntOrNull() ?: current.port
+                        if (port !in Constants.MIN_PORT..Constants.MAX_PORT) {
+                            return@post call.respondText(
+                                """{"error":"E-AND-VALID-0502"}""",
+                                ContentType.Application.Json,
+                                HttpStatusCode.BadRequest,
+                            )
+                        }
+                        val retentionDays = obj["retentionDays"]?.jsonPrimitive?.content
+                            ?.toIntOrNull() ?: current.retentionDays
+                        if (retentionDays !in Constants.MIN_RETENTION_DAYS..Constants.MAX_RETENTION_DAYS) {
+                            return@post call.respondText(
+                                """{"error":"E-AND-VALID-0501"}""",
+                                ContentType.Application.Json,
+                                HttpStatusCode.BadRequest,
+                            )
+                        }
+                        val watchdogIntervalSec = obj["watchdogIntervalSec"]?.jsonPrimitive?.content
+                            ?.toIntOrNull() ?: current.watchdogIntervalSec
+                        if (watchdogIntervalSec !in Constants.MIN_WATCHDOG_SEC..Constants.MAX_WATCHDOG_SEC) {
+                            return@post call.respondText(
+                                """{"error":"E-AND-VALID-0501"}""",
+                                ContentType.Application.Json,
+                                HttpStatusCode.BadRequest,
+                            )
+                        }
                         val next = SettingsData(
-                            port = obj?.get("port")?.jsonPrimitive?.content?.toIntOrNull()
-                                ?.coerceIn(Constants.MIN_PORT, Constants.MAX_PORT)
-                                ?: current.port,
-                            retentionDays = obj?.get("retentionDays")?.jsonPrimitive?.content
-                                ?.toIntOrNull()?.takeIf { it == 30 || it == 90 }
-                                ?: current.retentionDays,
-                            autoStart = obj?.get("autoStart")?.jsonPrimitive?.content
+                            port = port,
+                            retentionDays = retentionDays,
+                            autoStart = obj["autoStart"]?.jsonPrimitive?.content
                                 ?.toBooleanStrictOrNull() ?: current.autoStart,
-                            watchdogIntervalSec = obj?.get("watchdogIntervalSec")?.jsonPrimitive?.content
-                                ?.toIntOrNull()
-                                ?.coerceIn(Constants.MIN_WATCHDOG_SEC, Constants.MAX_WATCHDOG_SEC)
-                                ?: current.watchdogIntervalSec,
-                            notifCrawlComplete = obj?.get("notifCrawlComplete")?.jsonPrimitive?.content
+                            watchdogIntervalSec = watchdogIntervalSec,
+                            notifCrawlComplete = obj["notifCrawlComplete"]?.jsonPrimitive?.content
                                 ?.toBooleanStrictOrNull() ?: current.notifCrawlComplete,
-                            notifNewPlan = obj?.get("notifNewPlan")?.jsonPrimitive?.content
+                            notifNewPlan = obj["notifNewPlan"]?.jsonPrimitive?.content
                                 ?.toBooleanStrictOrNull() ?: current.notifNewPlan,
-                            notifFailure = obj?.get("notifFailure")?.jsonPrimitive?.content
+                            notifFailure = obj["notifFailure"]?.jsonPrimitive?.content
                                 ?.toBooleanStrictOrNull() ?: current.notifFailure,
                         )
                         application.preferences.saveSettings(next)

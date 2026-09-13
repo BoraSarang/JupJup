@@ -74,6 +74,16 @@
 - [x] N3 폴리시+테스트+실기 검증 (connected app 4/4 + mac 6/6, 포털 200/200, 크래시 0)
 - [x] N4 문서+DoD+커밋
 
+## R7 리팩토링 1단계 — P0 안전 수정
+- [x] PLAN_R1 초안
+- [x] plan DB 폴백 데드코드 + 백업
+- [x] 설정 범위 검증 (양 서비스 + saveSettings)
+- [x] plan 워커 폭증 차단 (unique KEEP + SourceLocks)
+- [x] build_and_run.sh pipefail + stale APK 가드
+- [x] 빌드 + 단위 + lint + 실기 검증 (health·400·연타·크래시 0)
+- [x] versionName 1.3.2 (versionCode 5)으로 bump
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## R6 1.3.1 대시보드 서버 상태 레이스 수정
 - [x] PLAN_v3 초안 (원인: refresh가 서버 바인드 전 소켓 체크)
 - [x] DashboardViewModel 추적 재조회 (2초 뒤 1회) + 재조회 로그
