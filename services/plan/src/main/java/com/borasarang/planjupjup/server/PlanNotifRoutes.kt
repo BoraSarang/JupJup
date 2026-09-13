@@ -64,7 +64,11 @@ internal fun HttpServerService.planNotifRoutes(route: Route) {
         call.respondText(
             buildJsonObject {
                 put("notification", Json.parseToJsonElement(log.toJson()))
-                put("detail", Json.parseToJsonElement(log.detailJson))
+                put("detail", try {
+                    Json.parseToJsonElement(log.detailJson)
+                } catch (_: Exception) {
+                    buildJsonObject { }
+                })
             }.toString(),
             ContentType.Application.Json,
         )

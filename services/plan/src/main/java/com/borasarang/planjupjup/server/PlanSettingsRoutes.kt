@@ -11,6 +11,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -60,7 +61,9 @@ internal fun HttpServerService.planSettingsRoutes(route: Route) {
             application.preferences.saveSettings(next)
             DebugLogger.i("설정", "설정 저장 port=${next.port} retention=${next.retentionDays}")
             if (next.port != currentPort) {
-                restartServer()
+                DebugLogger.i("설정", "포트 변경 감지 — 서버 재시작 예약")
+                // 라우트 스레드 블로킹(stop 최대 3s) 방지: 백그라운드 재시작 (mac 동일)
+                scope.launch { restartServer() }
             }
             call.respondText(settingsJson(next), ContentType.Application.Json)
         } catch (e: Exception) {

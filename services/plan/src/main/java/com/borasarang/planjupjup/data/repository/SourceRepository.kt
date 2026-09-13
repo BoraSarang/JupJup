@@ -32,7 +32,12 @@ class SourceRepository(private val db: PlanDatabase) {
     suspend fun getById(id: String): CrawlSource? = db.crawlSourceDao().getById(id)
 
     suspend fun toggleEnabled(id: String): Boolean {
-        val source = db.crawlSourceDao().getById(id) ?: return false
+        return toggle(id) ?: false
+    }
+
+    /** 해당 소스 enabled 반전. 성공 시 새 상태 반환, 없음 null (mac 패턴, D1) */
+    suspend fun toggle(id: String): Boolean? {
+        val source = db.crawlSourceDao().getById(id) ?: return null
         val next = !source.enabled
         db.crawlSourceDao().setEnabled(id, next)
         DebugLogger.i("소스관리", "소스 토글 id=$id enabled=$next")

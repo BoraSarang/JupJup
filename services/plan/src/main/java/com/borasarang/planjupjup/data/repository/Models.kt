@@ -199,3 +199,155 @@ data class FailedSource(
     val sourceName: String,
     val error: String,
 )
+
+// ---------- 통계 모델 (R4: StatsRepository에서 이동, 동작 무변경) ----------
+
+data class OverviewStats(
+    val totalPlans: Int,
+    val brandCount: Int,
+    val networkCount: Int,
+    val newThisWeek: Int,
+    val avgPrice: Int,
+    val minPrice: Int,
+    val maxPrice: Int,
+    val unlimitedRatio: Double,
+    val g5Ratio: Double,
+    val avgDataGb: Double,
+    val crawlCountToday: Int,
+    val crawlFail24h: Int,
+    val lastCollectedAt: Long?,
+)
+
+data class BrandStats(
+    val brand: String,
+    val mvnoNetwork: String,
+    val planCount: Int,
+    val newCount: Int,
+    val avgPrice: Int,
+    val minPrice: Int,
+    val maxPrice: Int,
+    val avgDataGb: Double,
+    val g5Count: Int,
+    val pricePerGb: Int?,
+)
+
+data class NetworkStats(
+    val network: String,
+    val planCount: Int,
+    val avgPrice: Int,
+    val minPrice: Int,
+    val maxPrice: Int,
+    val avgDataGb: Double,
+    val g5Ratio: Double,
+    val unlimitedRatio: Double,
+    val pricePerGb: Int?,
+)
+
+/** 가격대/데이터 용량 구간 분포. 버킷은 label + [min, max) */
+data class DistributionBucket(
+    val label: String,
+    val count: Int,
+    val min: Int?,
+    val max: Int?,
+)
+
+object PlanDistribution {
+    /** 가격대 버킷 경계 (원). 마지막은 개방 */
+    private val PRICE_BUCKETS = listOf(
+        0 to 10000, 10000 to 20000, 20000 to 30000,
+        30000 to 50000, 50000 to 100000, 100000 to null,
+    )
+
+    fun priceBuckets(prices: List<Int>): List<DistributionBucket> {
+        val counts = IntArray(PRICE_BUCKETS.size)
+        prices.forEach { p ->
+            if (p <= 0) return@forEach
+            val idx = PRICE_BUCKETS.indexOfFirst { (lo, hi) ->
+                p >= lo && (hi == null || p < hi)
+            }
+            if (idx >= 0) counts[idx]++
+        }
+        return PRICE_BUCKETS.mapIndexed { i, (lo, hi) ->
+            DistributionBucket(
+                label = when {
+                    lo == 0 && hi != null -> "1만원 미만"
+                    hi == null && lo == 100000 -> "10만원 이상"
+                    hi != null -> "${lo / 10000}~${hi / 10000}만원"
+                    else -> "10만원 이상"
+                },
+                count = counts[i],
+                min = lo,
+                max = hi,
+            )
+        }
+    }
+
+    /** 데이터 용량 구간 분포 (GB). 파싱 불가는 별도 버킷 */
+    fun dataBuckets(amounts: List<com.borasarang.planjupjup.util.PlanMetrics.DataAmount>): List<DistributionBucket> {
+        val buckets = listOf(
+            "1GB 이하" to 0..1, "2~5GB" to 2..5, "6~15GB" to 6..15,
+            "16~50GB" to 16..50, "51~100GB" to 51..100, "100GB 이상" to 101..Int.MAX_VALUE,
+        )
+        val counts = IntArray(buckets.size)
+        var unparsed = 0
+        amounts.forEach { a ->
+            if (!a.isParsed || a.dataGb <= 0) { unparsed++; return@forEach }
+            val idx = buckets.indexOfFirst { (_, r) -> a.dataGb in r }
+            if (idx >= 0) counts[idx]++ else unparsed++
+        }
+        return buckets.mapIndexed { i, (label, range) ->
+            DistributionBucket(label, counts[i], range.first, range.last)
+        } + DistributionBucket("파싱 불가", unparsed, null, null)
+    }
+}
+
+/** 시계열 점 (일별 수집/신규 추이) */
+data class TrendPoint(
+    val label: String,
+    val ts: Long,
+    val plansFound: Int,
+    val plansNew: Int,
+    val plansUpdated: Int,
+    val failCount: Int,
+)
+
+/** 가성비 랭킹 1행 */
+data class ValueRankItem(
+    val id: String,
+    val carrierName: String,
+    val planName: String,
+    val price: Int,
+    val dataAmount: String,
+    val voice: String,
+    val sms: String,
+    val networkType: String,
+    val dataGb: Int,
+    val score: Double,
+    val scoreLabel: String,
+)
+
+/** 수집 건강도 */
+data class CollectionHealth(
+    val success24h: Int,
+    val fail24h: Int,
+    val avgDurationSec: Double,
+    val sources: List<SourceHealth>,
+    val lastCollectedAt: Long?,
+)
+
+data class SourceHealth(
+    val sourceId: String,
+    val sourceName: String,
+    val lastStatus: String,
+    val lastRunAt: Long?,
+    val errorMessage: String?,
+    val successRate: Double,
+)
+
+enum class InsightType { POSITIVE, WARNING, INFO }
+
+data class Insight(
+    val type: InsightType,
+    val title: String,
+    val text: String,
+)

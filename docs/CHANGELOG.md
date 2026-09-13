@@ -1,5 +1,26 @@
 # CHANGELOG — JupJup
 
+## [1.6.0] - 2026-09-14
+> 플랫폼: AND · God object 분리 (리팩토링 4단계)
+
+### 구조
+- 양 `HttpServerService` (895·873줄) → 도메인별 Route 확장 분리 (에셋·아이템·수집·통계·알림·설정 + JSON 매퍼).
+  본체는 생명주기+배선만. `app()`·`restartServer()`·`scope`·`currentPort`만 internal 공개, 동작 동결
+- plan `StatsRepository` (546줄) → `StatsCache`(TTL 5분·시간주입 테스트 가능) + 집계 + `Models.kt`(모델 이동)
+
+### 수정
+- plan 토글 미존재 200+enabled:false → 404 (mac 동일). `toggle(id): Boolean?` 신규, 기존 `toggleEnabled` 유지
+- plan sync 미존재 sourceId 무조건 202 → 404 (`respondNotFound`, mac 동일). 포털은 `{}` 전송이라 영향 없음
+- plan 알림 상세 깨진 `detailJson` 500 승격 → `{}` 폴백 (mac 동일)
+- plan 설정 포트 변경 시 라우트 스레드 직접 `restartServer()` (최대 3s 블로킹) → `scope.launch` (mac 동일)
+- 미캐시 4종(`getCrawlTrend, getNewPlanTrend, getValueRanking, getCollectionHealth`) 캐시 적용 (파라미터 키)
+
+### 테스트
+- 신규: `StatsCacheTest` 6종 (TTL·히트·무효화 + ranking/health 리포지토리 히트) + `SourceToggleTest` 2종 +
+  4a `Mac/PlanServerJsonTest` 9종
+- 검증: 실기(R5CT215F4QK) 단위 129/129, lint 오류 0, 설치 후 health 200×2, 토글·sync 404 확인,
+  stats 9종 200, 수집 중 무효화 정상 동작 확인, 크래시 0
+
 ## [1.5.0] - 2026-09-14
 > 플랫폼: AND · app 추상화 + ViewModel 테스트 (리팩토링 3단계)
 

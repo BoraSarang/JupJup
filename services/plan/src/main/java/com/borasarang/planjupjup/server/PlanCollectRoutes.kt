@@ -3,6 +3,7 @@ package com.borasarang.planjupjup.server
 import com.borasarang.common.server.pathId
 import com.borasarang.common.server.receiveJsonObject
 import com.borasarang.common.server.respondError
+import com.borasarang.common.server.respondNotFound
 import com.borasarang.planjupjup.util.DebugLogger
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -23,14 +24,29 @@ internal fun HttpServerService.planCollectRoutes(route: Route) {
             call.respondError("id required")
             return@post
         }
-        val next = application.sourceRepository.toggleEnabled(id)
-        call.respondText("""{"id":"${escapeJson(id)}","enabled":$next}""",
-            ContentType.Application.Json)
+        val next = application.sourceRepository.toggle(id)
+        if (next == null) {
+            call.respondText(
+                """{"error":"Not found"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.NotFound,
+            )
+        } else {
+            call.respondText(
+                """{"id":"${escapeJson(id)}","enabled":$next}""",
+                ContentType.Application.Json,
+            )
+        }
     }
     route.post("/api/sync") {
         val sourceId = call.receiveJsonObject()
             ?.get("sourceId")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
         DebugLogger.i("수동수집", "즉시 수집 요청 sourceId=$sourceId")
+        if (!sourceId.isNullOrBlank() &&
+            application.sourceRepository.getById(sourceId) == null
+        ) {
+            return@post call.respondNotFound("unknown sourceId")
+        }
         application.crawlScheduler.triggerImmediate(sourceId)
         call.respondText(
             """{"accepted":true}""",

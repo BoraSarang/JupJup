@@ -14,30 +14,13 @@ import kotlin.math.roundToInt
  * - 집계 결과를 메모리 캐시(5분 TTL) — saveCrawlResults/cleanup 시 invalidate() 호출
  * - 브랜드/통신망/분포/추이/랭킹/건강도/인사이트를 Ktor 라우트에 공급
  */
-class StatsRepository(private val db: PlanDatabase) {
-
-    // ---------- 캐시 ----------
-
-    private data class CacheEntry(val createdAt: Long, val value: Any)
-
-    private val cache = java.util.concurrent.ConcurrentHashMap<String, CacheEntry>()
-
-    private suspend fun <T : Any> cached(key: String, load: suspend () -> T): T {
-        val now = System.currentTimeMillis()
-        cache[key]?.let { e ->
-            if (now - e.createdAt < CACHE_TTL_MS) {
-                @Suppress("UNCHECKED_CAST")
-                return e.value as T
-            }
-            cache.remove(key)
-        }
-        val value = load()
-        cache[key] = CacheEntry(now, value)
-        return value
-    }
+class StatsRepository(
+    private val db: PlanDatabase,
+    private val cache: StatsCache = StatsCache(),
+) {
 
     fun invalidate() {
-        cache.clear()
+        cache.invalidate()
     }
 
     // ---------- 전역 집계 ----------
@@ -46,7 +29,7 @@ class StatsRepository(private val db: PlanDatabase) {
     private suspend fun planRows(): List<PlanStatsRow> = db.planDao().getStatsProjection()
 
     /** 홈 KPI 오버뷰 */
-    suspend fun getOverview(): OverviewStats = cached("overview") {
+    suspend fun getOverview(): OverviewStats = cache.cached("overview") {
         val rows = planRows()
         val now = System.currentTimeMillis()
         val weekAgo = now - TimeUnit.DAYS.toMillis(7)
@@ -79,7 +62,7 @@ class StatsRepository(private val db: PlanDatabase) {
 
     // ---------- 브랜드별 ----------
 
-    suspend fun getBrands(): List<BrandStats> = cached("brands") {
+    suspend fun getBrands(): List<BrandStats> = cache.cached("brands") {
         val rows = planRows()
         val weekAgo = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7)
         rows.groupBy { it.carrierName }
@@ -111,7 +94,7 @@ class StatsRepository(private val db: PlanDatabase) {
 
     // ---------- 통신망별 ----------
 
-    suspend fun getNetworks(): List<NetworkStats> = cached("networks") {
+    suspend fun getNetworks(): List<NetworkStats> = cache.cached("networks") {
         val rows = planRows()
         rows.groupBy { it.mvnoNetwork }
             .filterKeys { it != "UNKNOWN" }
@@ -146,11 +129,11 @@ class StatsRepository(private val db: PlanDatabase) {
 
     // ---------- 분포 ----------
 
-    suspend fun getPriceDistribution(): List<DistributionBucket> = cached("price") {
+    suspend fun getPriceDistribution(): List<DistributionBucket> = cache.cached("price") {
         PlanDistribution.priceBuckets(planRows().map { it.price })
     }
 
-    suspend fun getDataDistribution(): List<DistributionBucket> = cached("data") {
+    suspend fun getDataDistribution(): List<DistributionBucket> = cache.cached("data") {
         PlanDistribution.dataBuckets(planRows().map { PlanMetrics.parseDataAmount(it.dataAmount) })
     }
 
@@ -160,9 +143,10 @@ class StatsRepository(private val db: PlanDatabase) {
     suspend fun getCrawlTrend(days: Int, gran: String = "daily"): List<TrendPoint> {
         val hourly = gran == "hourly"
         val windowDays = if (hourly) days.coerceIn(1, 2) else days.coerceIn(1, 90)
+        return cache.cached("crawl:$windowDays:$hourly") {
         val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(windowDays.toLong())
         val logs = db.crawlLogDao().getLogsSince(since)
-        return if (hourly) {
+        if (hourly) {
             val byBucket = logs.groupBy { startOfHour(it.startedAt) }
             val bucketMs = TimeUnit.HOURS.toMillis(1)
             (0 until windowDays * 24).map { offset ->
@@ -192,15 +176,17 @@ class StatsRepository(private val db: PlanDatabase) {
                 )
             }
         }
+        }
     }
 
     /** 신규 요금제 추이: 일별/시간별 신규 수 (firstCollectedAt 기준) */
     suspend fun getNewPlanTrend(days: Int, gran: String = "daily"): List<TrendPoint> {
         val hourly = gran == "hourly"
         val windowDays = if (hourly) days.coerceIn(1, 2) else days.coerceIn(1, 90)
+        return cache.cached("new:$windowDays:$hourly") {
         val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(windowDays.toLong())
         val rows = planRows().filter { it.firstCollectedAt >= since }
-        return if (hourly) {
+        if (hourly) {
             val byBucket = rows.groupBy { startOfHour(it.firstCollectedAt) }
             val bucketMs = TimeUnit.HOURS.toMillis(1)
             (0 until windowDays * 24).map { offset ->
@@ -216,13 +202,16 @@ class StatsRepository(private val db: PlanDatabase) {
                 TrendPoint(dayLabel(dayStart), dayStart, count, count, 0, 0)
             }
         }
+        }
     }
 
     // ---------- 가성비 랭킹 ----------
 
     /** 가성비 TOP. network(5G/LTE) 필터, limit 기본 10 */
     suspend fun getValueRanking(network: String?, limit: Int): List<ValueRankItem> {
-        return planRows().asSequence()
+        val capped = limit.coerceIn(1, 50)
+        return cache.cached("ranking:$network:$capped") {
+        planRows().asSequence()
             .filter { it.price > 0 }
             .filter { network == null || it.networkType == network }
             .mapNotNull { row ->
@@ -250,13 +239,14 @@ class StatsRepository(private val db: PlanDatabase) {
                 )
             }
             .sortedByDescending { it.score }
-            .take(limit.coerceIn(1, 50))
+            .take(capped)
             .toList()
+        }
     }
 
     // ---------- 수집 건강도 ----------
 
-    suspend fun getCollectionHealth(): CollectionHealth {
+    suspend fun getCollectionHealth(): CollectionHealth = cache.cached("health") {
         val since24h = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)
         val logs24h = db.crawlLogDao().getLogsSince(since24h)
         val durations = logs24h.mapNotNull { l ->
@@ -275,7 +265,7 @@ class StatsRepository(private val db: PlanDatabase) {
                 else round2(ok.toDouble() / recent.size),
             )
         }
-        return CollectionHealth(
+        CollectionHealth(
             success24h = logs24h.count { it.status == "SUCCESS" },
             fail24h = logs24h.count { it.status == "FAILED" },
             avgDurationSec = if (durations.isEmpty()) 0.0 else round1(durations.average()),
@@ -364,163 +354,7 @@ class StatsRepository(private val db: PlanDatabase) {
         val has = (last.code - 0xAC00) % 28 != 0
         return if (has && Character.isLetter(last)) "이" else "가"
     }
-
-    companion object {
-        const val CACHE_TTL_MS = 5 * 60 * 1000L
-    }
 }
-
-// ---------- 통계 모델 ----------
-
-data class OverviewStats(
-    val totalPlans: Int,
-    val brandCount: Int,
-    val networkCount: Int,
-    val newThisWeek: Int,
-    val avgPrice: Int,
-    val minPrice: Int,
-    val maxPrice: Int,
-    val unlimitedRatio: Double,
-    val g5Ratio: Double,
-    val avgDataGb: Double,
-    val crawlCountToday: Int,
-    val crawlFail24h: Int,
-    val lastCollectedAt: Long?,
-)
-
-data class BrandStats(
-    val brand: String,
-    val mvnoNetwork: String,
-    val planCount: Int,
-    val newCount: Int,
-    val avgPrice: Int,
-    val minPrice: Int,
-    val maxPrice: Int,
-    val avgDataGb: Double,
-    val g5Count: Int,
-    val pricePerGb: Int?,
-)
-
-data class NetworkStats(
-    val network: String,
-    val planCount: Int,
-    val avgPrice: Int,
-    val minPrice: Int,
-    val maxPrice: Int,
-    val avgDataGb: Double,
-    val g5Ratio: Double,
-    val unlimitedRatio: Double,
-    val pricePerGb: Int?,
-)
-
-/** 가격대/데이터 용량 구간 분포. 버킷은 label + [min, max) */
-data class DistributionBucket(
-    val label: String,
-    val count: Int,
-    val min: Int?,
-    val max: Int?,
-)
-
-object PlanDistribution {
-    /** 가격대 버킷 경계 (원). 마지막은 개방 */
-    private val PRICE_BUCKETS = listOf(
-        0 to 10000, 10000 to 20000, 20000 to 30000,
-        30000 to 50000, 50000 to 100000, 100000 to null,
-    )
-
-    fun priceBuckets(prices: List<Int>): List<DistributionBucket> {
-        val counts = IntArray(PRICE_BUCKETS.size)
-        prices.forEach { p ->
-            if (p <= 0) return@forEach
-            val idx = PRICE_BUCKETS.indexOfFirst { (lo, hi) ->
-                p >= lo && (hi == null || p < hi)
-            }
-            if (idx >= 0) counts[idx]++
-        }
-        return PRICE_BUCKETS.mapIndexed { i, (lo, hi) ->
-            DistributionBucket(
-                label = when {
-                    lo == 0 && hi != null -> "1만원 미만"
-                    hi == null && lo == 100000 -> "10만원 이상"
-                    hi != null -> "${lo / 10000}~${hi / 10000}만원"
-                    else -> "10만원 이상"
-                },
-                count = counts[i],
-                min = lo,
-                max = hi,
-            )
-        }
-    }
-
-    /** 데이터 용량 구간 분포 (GB). 파싱 불가는 별도 버킷 */
-    fun dataBuckets(amounts: List<PlanMetrics.DataAmount>): List<DistributionBucket> {
-        val buckets = listOf(
-            "1GB 이하" to 0..1, "2~5GB" to 2..5, "6~15GB" to 6..15,
-            "16~50GB" to 16..50, "51~100GB" to 51..100, "100GB 이상" to 101..Int.MAX_VALUE,
-        )
-        val counts = IntArray(buckets.size)
-        var unparsed = 0
-        amounts.forEach { a ->
-            if (!a.isParsed || a.dataGb <= 0) { unparsed++; return@forEach }
-            val idx = buckets.indexOfFirst { (_, r) -> a.dataGb in r }
-            if (idx >= 0) counts[idx]++ else unparsed++
-        }
-        return buckets.mapIndexed { i, (label, range) ->
-            DistributionBucket(label, counts[i], range.first, range.last)
-        } + DistributionBucket("파싱 불가", unparsed, null, null)
-    }
-}
-
-/** 시계열 점 (일별 수집/신규 추이) */
-data class TrendPoint(
-    val label: String,
-    val ts: Long,
-    val plansFound: Int,
-    val plansNew: Int,
-    val plansUpdated: Int,
-    val failCount: Int,
-)
-
-/** 가성비 랭킹 1행 */
-data class ValueRankItem(
-    val id: String,
-    val carrierName: String,
-    val planName: String,
-    val price: Int,
-    val dataAmount: String,
-    val voice: String,
-    val sms: String,
-    val networkType: String,
-    val dataGb: Int,
-    val score: Double,
-    val scoreLabel: String,
-)
-
-/** 수집 건강도 */
-data class CollectionHealth(
-    val success24h: Int,
-    val fail24h: Int,
-    val avgDurationSec: Double,
-    val sources: List<SourceHealth>,
-    val lastCollectedAt: Long?,
-)
-
-data class SourceHealth(
-    val sourceId: String,
-    val sourceName: String,
-    val lastStatus: String,
-    val lastRunAt: Long?,
-    val errorMessage: String?,
-    val successRate: Double,
-)
-
-enum class InsightType { POSITIVE, WARNING, INFO }
-
-data class Insight(
-    val type: InsightType,
-    val title: String,
-    val text: String,
-)
 
 private fun startOfDay(epochMillis: Long): Long {
     val cal = Calendar.getInstance().apply { timeInMillis = epochMillis }
