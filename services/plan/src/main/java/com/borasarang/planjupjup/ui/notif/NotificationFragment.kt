@@ -71,7 +71,7 @@ class NotificationFragment : Fragment() {
             binding.planNotifEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
             binding.planNotifCount.text = if (unread > 0) "안 읽음 $unread" else "모두 읽음"
         } catch (e: Exception) {
-            DebugLogger.e("알림화면", "E-AND-DB-0402", "알림 로드 실패: ${e.message}", e)
+            DebugLogger.e("알림화면", "E-AND-DB-0404", "알림 로드 실패: ${e.message}", e)
         }
     }
 

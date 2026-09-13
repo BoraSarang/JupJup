@@ -42,7 +42,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _settings.value = app.preferences.getSettings()
                 _logs.value = app.sourceRepository.recentLogs(50)
             } catch (e: Exception) {
-                DebugLogger.e("설정", "E-AND-DB-0402", "설정 조회 실패: ${e.message}", e)
+                DebugLogger.e("설정", "E-AND-DB-0404", "설정 조회 실패: ${e.message}", e)
             }
         }
     }

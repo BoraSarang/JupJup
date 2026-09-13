@@ -75,7 +75,7 @@ class DashboardViewModel(
                     refresh(retry = false)
                 }
             } catch (e: Exception) {
-                MacDebugLogger.e("대시보드", "E-AND-DB-0402", "시리즈 대시보드 조회 실패: ${e.message}", e)
+                MacDebugLogger.e("대시보드", "E-AND-DB-0404", "시리즈 대시보드 조회 실패: ${e.message}", e)
                 _uiState.value = _uiState.value.copy(isChecking = false)
             }
         }

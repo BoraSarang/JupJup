@@ -2,6 +2,16 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R13 잔여 정리 (R7)
+- [x] PLAN_R7 초안
+- [ ] 7a 에러코드 조회/저장 분리 (0404 신규 + 조회 9곳)
+- [ ] 7b escape/envelope 통일 (공용 승격 + 바이트 동등)
+- [ ] 7c mac stats 캐시 (StatsCache 공용 승격 + 무효화)
+- [ ] 7d-1 본문 리소스화 / 7d-2 시드 영속화 / 7d-3 build-logic
+- [ ] 빌드 + 단위 + lint + 실기 검증 (health·크래시 0)
+- [ ] versionName 1.9.0 (versionCode 11)으로 bump
+- [ ] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## R12 리팩토링 6단계 — 빌드·문자열·잔정리
 - [x] PLAN_R6 초안
 - [x] 6a 빌드·매니페스트 정리 (SDK 카탈로그 + 권한 app 일원화)

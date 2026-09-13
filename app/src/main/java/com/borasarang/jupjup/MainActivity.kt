@@ -157,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             } catch (e: Exception) {
-                MacDebugLogger.e("내비", "E-AND-DB-0402", "앱 정보 포트 조회 실패: ${e.message}", e)
+                MacDebugLogger.e("내비", "E-AND-DB-0404", "앱 정보 포트 조회 실패: ${e.message}", e)
                 Triple(MacConstants.DEFAULT_PORT, PlanConstants.DEFAULT_PORT, null)
             }
             val view = layoutInflater.inflate(R.layout.dialog_about, null)

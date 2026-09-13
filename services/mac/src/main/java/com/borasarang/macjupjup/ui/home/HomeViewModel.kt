@@ -67,7 +67,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     port = port,
                 )
             } catch (e: Exception) {
-                DebugLogger.e("홈", "E-AND-DB-0402", "홈 상태 조회 실패: ${e.message}", e)
+                DebugLogger.e("홈", "E-AND-DB-0404", "홈 상태 조회 실패: ${e.message}", e)
             }
         }
     }

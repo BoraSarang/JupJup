@@ -30,7 +30,7 @@ class SourceManageViewModel(application: Application) : AndroidViewModel(applica
             try {
                 _sources.value = app.sourceRepository.getListItems()
             } catch (e: Exception) {
-                DebugLogger.e("소스관리", "E-AND-DB-0402", "소스 목록 조회 실패: ${e.message}", e)
+                DebugLogger.e("소스관리", "E-AND-DB-0404", "소스 목록 조회 실패: ${e.message}", e)
             }
         }
     }
