@@ -73,3 +73,9 @@
 - [x] N2 대시보드/홈 정리 (insight→dashboard 리네임+활성 강조)
 - [x] N3 폴리시+테스트+실기 검증 (connected app 4/4 + mac 6/6, 포털 200/200, 크래시 0)
 - [x] N4 문서+DoD+커밋
+
+## R5 1.3.0 릴리스 (첫 푸시)
+- [ ] 사전 검증 (assemble 성공 + 단위 mac 57/plan 49 + lint 오류 0, 기기 설치 없이)
+- [ ] origin 첫 푸시 (main)
+- [ ] v1.3.0 태그 + GitHub Release (release.yml, CHANGELOG 1.3.0 섹션)
+- [ ] 세션 로그 갱신
