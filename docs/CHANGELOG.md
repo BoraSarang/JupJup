@@ -1,5 +1,26 @@
 # CHANGELOG — JupJup
 
+## [1.9.0] - 2026-09-14
+> 플랫폼: AND · 잔여 정리 (리팩토링 7단계)
+
+### 정리
+- 에러코드 조회/저장 분리: `E-AND-DB-0404` 신규 ("데이터를 불러오지 못했습니다").
+  조회 9곳(설정·홈·알림×2, 대시보드, 앱정보 포트, mac 소스 목록) 전환, 변경 16곳은 `0402` 유지
+- escape/envelope 통일: plan 로컬 절단 `escapeJson` 삭제 → 공용 무손실로,
+  plan `statsRoute` 에러를 `respondError`로 (바이트 동일 출력)
+- mac stats 캐시: `StatsCache`를 `:services:common`으로 승격 (`common.cache`),
+  mac `overview·trends·collect·insightsInput` 캐시 + `saveApps·purgeSource·cleanup` 무효화
+- 알림·요약 본문 리소스화: 양 `NotificationService`에 Context 주입 + `getString`/`plurals`,
+  `DailySummaryWorker` 2종, `describeStats` 2종(Context 인자). DB 저장 문구와 동일 출력
+- 시드 영속화: mac `lastSeedStatus/StartedAt`을 DataStore에 저장·복원.
+  재시작 시 `running` 유령 상태는 `idle`로 정정
+- build-logic: `jupjup.base` convention plugin (SDK·컴파일·패키징·단위테스트) + 4 모듈 적용.
+  AGP 9 `CommonExtension` 프로퍼티식, 버전은 카탈로그가 진실. `jupjup.room`은 분리 유지
+
+### 테스트
+- 검증: 실기(R5CT215F4QK) 단위 131/131, lint 오류 0,
+  설치 후 health 200×2·mac stats 4종 200·시드 상태 영속 확인·크래시 0
+
 ## [1.8.0] - 2026-09-14
 > 플랫폼: AND · 빌드·문자열·잔정리 (리팩토링 6단계)
 
