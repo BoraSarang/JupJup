@@ -2,6 +2,14 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R10 리팩토링 4단계 — God object 분리
+- [x] PLAN_R4 초안
+- [ ] 4a 서버 구조 분리 (Route 확장 절단 14파일, 동작 동결 + 매퍼 golden 테스트)
+- [ ] 4b plan 정렬(D1~D4) + 통계 미캐시 4종 캐시 + StatsCache 분리
+- [ ] 빌드 + 단위 + lint + 실기 검증 (health·포털 스팟체크·404·캐시히트·크래시 0)
+- [ ] versionName 1.6.0 (versionCode 8)으로 bump
+- [ ] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## R9 리팩토링 3단계 — app 추상화 + ViewModel 테스트
 - [x] PLAN_R3 초안
 - [x] 3a ServiceAdapter + ServiceRegistry + 내비 정리 (CrawlScheduler db 파라미터 제거 포함)
