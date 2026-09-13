@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.borasarang.common.prefs.SettingsStores
 import com.borasarang.macjupjup.data.repository.SettingsData
@@ -34,6 +35,8 @@ class PreferencesManager(private val context: Context) {
         val NOTIF_NEW_APP = booleanPreferencesKey("notif_new_app")
         val NOTIF_FAILURE = booleanPreferencesKey("notif_failure")
         val CRAWL_ENABLED = booleanPreferencesKey("crawl_enabled")
+        val SEED_STATUS = stringPreferencesKey("seed_status")
+        val SEED_STARTED_AT = longPreferencesKey("seed_started_at")
     }
 
     suspend fun getSettings(): SettingsData {
@@ -74,6 +77,21 @@ class PreferencesManager(private val context: Context) {
     suspend fun setCrawlEnabled(enabled: Boolean) {
         context.settingsStore.edit { prefs ->
             prefs[Keys.CRAWL_ENABLED] = enabled
+        }
+    }
+
+    /** R7: 수동 시드 상태 조회 (재시작 후 최종 결과 표시용) */
+    suspend fun getSeedState(): Pair<String, Long> {
+        return context.settingsStore.data.map { prefs ->
+            (prefs[Keys.SEED_STATUS] ?: "idle") to (prefs[Keys.SEED_STARTED_AT] ?: 0L)
+        }.first()
+    }
+
+    /** R7: 수동 시드 상태 저장 */
+    suspend fun saveSeedState(status: String, startedAt: Long) {
+        context.settingsStore.edit { prefs ->
+            prefs[Keys.SEED_STATUS] = status
+            prefs[Keys.SEED_STARTED_AT] = startedAt
         }
     }
 

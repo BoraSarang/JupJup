@@ -84,8 +84,7 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
         if (trackId == null && name == null) {
             return@post call.respondError("trackId or name required")
         }
-                    lastSeedStatus = "running"
-                    lastSeedStartedAt = System.currentTimeMillis()
+                    setSeedState("running", System.currentTimeMillis())
                     val appRef = application
                     scope.launch {
             try {
@@ -115,7 +114,7 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
                     }
                 }
                 if (drafts.isEmpty()) {
-                    lastSeedStatus = "not_found"
+                    setSeedState("not_found")
                     return@launch
                 }
                 val saved = appRef.appRepository.saveApps(
@@ -126,16 +125,16 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
                     "수동시드",
                     "[FEATURE] 수동 시드 저장 created=${saved.created} updated=${saved.updated}",
                 )
-                lastSeedStatus = "done seeded=${drafts.size} created=${saved.created}"
+                setSeedState("done seeded=${drafts.size} created=${saved.created}")
                         } catch (e: kotlinx.coroutines.CancellationException) {
                             // R6: scope 취소(onDestroy) 시 거짓 진행중 방지 + 취소 전파
-                            lastSeedStatus = "idle"
+                            setSeedState("idle")
                             throw e
                         } catch (e: Exception) {
                 com.borasarang.macjupjup.util.DebugLogger.e(
                     "수동시드", "E-AND-CRAWL-0201", "시드 실패: ${e.message}", e,
                 )
-                lastSeedStatus = "error ${e.message}"
+                setSeedState("error ${e.message}")
             }
         }
         call.respondText(

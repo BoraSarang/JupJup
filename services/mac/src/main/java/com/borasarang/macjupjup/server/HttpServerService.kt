@@ -68,6 +68,39 @@ class HttpServerService : Service() {
     @Volatile
     internal var lastSeedStartedAt: Long = 0L
 
+    /**
+     * R7: 시드 상태 갱신 — 메모리 변수는 읽기 캐시, DataStore가 진실.
+     * startedAt 미지정 시 기존값 유지 (running 진입 시만 호출자가 현재 시각 전달).
+     */
+    internal fun setSeedState(status: String, startedAt: Long = lastSeedStartedAt) {
+        lastSeedStatus = status
+        lastSeedStartedAt = startedAt
+        scope.launch {
+            try {
+                app().preferences.saveSeedState(status, startedAt)
+            } catch (e: Exception) {
+                DebugLogger.e("수동시드", "E-AND-DB-0402", "시드 상태 저장 실패: ${e.message}", e)
+            }
+        }
+    }
+
+    /** R7: 재시작 시 최종 시드 결과 복원. running 유령 상태는 idle로 정정 */
+    internal suspend fun restoreSeedState() {
+        try {
+            val (status, startedAt) = app().preferences.getSeedState()
+            if (status == "running") {
+                lastSeedStatus = "idle"
+                lastSeedStartedAt = 0L
+                app().preferences.saveSeedState("idle", 0L)
+            } else {
+                lastSeedStatus = status
+                lastSeedStartedAt = startedAt
+            }
+        } catch (e: Exception) {
+            DebugLogger.e("수동시드", "E-AND-DB-0404", "시드 상태 복원 실패: ${e.message}", e)
+        }
+    }
+
     internal fun app(): MacJupJupRuntime = MacJupJupRuntime
 
     override fun onCreate() {
@@ -78,6 +111,7 @@ class HttpServerService : Service() {
         startInForeground(getString(R.string.mac_notif_server_starting))
         scope.launch {
             try {
+                restoreSeedState()
                 val settings = app().preferences.getSettings()
                 currentPort = settings.port
                 startServer(settings.port)
