@@ -7,10 +7,7 @@
   </defs>
   <rect width="108" height="108" fill="url(#bg)"/>
   <g fill="none" stroke-linecap="round">
-    <path d="M33,80 L33,62" stroke="#FFFFFF" stroke-width="11"/>
-    <path d="M51,80 L51,50" stroke="#FFFFFF" stroke-width="11"/>
-    <path d="M66,80 L66,44" stroke="#FFFFFF" stroke-width="11"/>
-    <path d="M78,20 m-11,0 a11,11 0 1,0 22,0 a11,11 0 1,0 -22,0" stroke="#FFD54F" stroke-width="6"/>
-    <path d="M26,88 L82,88" stroke="#FFFFFF" stroke-width="6"/>
+    <path d="M54,50 m-21,0 a21,21 0 1,0 42,0 a21,21 0 1,0 -42,0" stroke="#FFD54F" stroke-width="6"/>
+    <path d="M28,80 L80,80" stroke="#FFFFFF" stroke-width="6"/>
   </g>
 </svg>
