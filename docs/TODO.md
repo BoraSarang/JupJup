@@ -2,6 +2,22 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R12 리팩토링 6단계 — 빌드·문자열·잔정리
+- [x] PLAN_R6 초안
+- [ ] 6a 빌드·매니페스트 정리 (SDK 카탈로그 + 권한 app 일원화)
+- [ ] 6b 코드 잔정리 (catch 로그·SourceLocks·lastSeedStatus·문자열 리소스화·문서유령)
+- [ ] 빌드 + 단위 + lint + 실기 검증 (health·머지드매니페스트·크래시 0)
+- [ ] versionName 1.8.0 (versionCode 10)으로 bump
+- [ ] 문서 갱신 (CHANGELOG·세션 로그)
+
+## R11 리팩토링 5단계 — 성능·DB
+- [x] PLAN_R5 초안
+- [x] 5a DB 쿼리 최적화 (배치 4종·트랜잭션·인덱스+마이그레이션 4→5)
+- [ ] 5b 블로킹 제거 (serveAsset·getLocalIp·Socket·FGS 기본인자)
+- [ ] 빌드 + 단위 + lint + 실기 검증 (DB승계·수집E2E·health·크래시 0)
+- [ ] versionName 1.7.0 (versionCode 9)으로 bump
+- [ ] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## R10 리팩토링 4단계 — God object 분리
 - [x] PLAN_R4 초안
 - [x] 4a 서버 구조 분리 (Route 확장 절단 14파일, 동작 동결 + 매퍼 golden 테스트)

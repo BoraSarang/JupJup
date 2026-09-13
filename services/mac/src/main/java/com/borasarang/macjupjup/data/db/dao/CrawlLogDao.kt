@@ -22,6 +22,10 @@ interface CrawlLogDao {
     @Query("SELECT * FROM crawl_logs WHERE sourceId = :sourceId ORDER BY startedAt DESC LIMIT :limit")
     suspend fun recentBySource(sourceId: String, limit: Int): List<CrawlLog>
 
+    /** 소스관리 N+1 제거용 배치 조회 (R5, 윈도우 상한) */
+    @Query("SELECT * FROM crawl_logs WHERE sourceId IN (:sourceIds) AND startedAt >= :since ORDER BY startedAt DESC")
+    suspend fun getRecentBySourceIds(sourceIds: List<String>, since: Long): List<CrawlLog>
+
     @Query("DELETE FROM crawl_logs WHERE startedAt < :before")
     suspend fun deleteOlderThan(before: Long): Int
 

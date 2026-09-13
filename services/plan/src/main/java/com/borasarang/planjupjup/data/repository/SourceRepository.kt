@@ -6,24 +6,36 @@ import com.borasarang.planjupjup.data.db.entity.CrawlLog
 import com.borasarang.planjupjup.data.db.entity.CrawlSource
 import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.concurrent.TimeUnit
 
 class SourceRepository(private val db: PlanDatabase) {
 
     fun observeAll(): Flow<List<SourceStatus>> =
         db.crawlSourceDao().observeAll().map { list -> list.map { it.toStatus() } }
 
-    /** 소스 목록 + 소스별 최근 로그 결합 */
+    /** 소스 목록 + 소스별 최근 로그 결합 (R5: 행마다 조회 → IN 배치 1회) */
     fun observeListItems(): Flow<List<SourceListItem>> =
         db.crawlSourceDao().observeAll().map { list ->
+            val latestBySource = latestLogsBySource(list.map { it.id })
             list.map { source ->
                 SourceListItem(
                     status = source.toStatus(),
-                    latestLog = db.crawlLogDao().getLatestBySource(source.id)?.toRecent(),
+                    latestLog = latestBySource[source.id]?.toRecent(),
                 )
             }
         }
+
+    /** 배치 최신 로그: 30d 윈도우 + id 최대 (기존 LIMIT 1 최신과 동등) */
+    suspend fun latestLogsBySource(sourceIds: List<String>): Map<String, CrawlLog> {
+        if (sourceIds.isEmpty()) return emptyMap()
+        val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30)
+        return db.crawlLogDao().getRecentBySourceIds(sourceIds, since)
+            .groupBy { it.sourceId }
+            .mapValues { (_, logs) -> logs.maxBy { it.id } }
+    }
 
     suspend fun getAll(): List<CrawlSource> = db.crawlSourceDao().getAll()
 
@@ -74,20 +86,23 @@ class SourceRepository(private val db: PlanDatabase) {
         updated: Int,
         error: String?,
     ) {
-        db.crawlLogDao().insert(
-            CrawlLog(
-                sourceId = sourceId,
-                sourceName = sourceName,
-                startedAt = startedAt,
-                finishedAt = System.currentTimeMillis(),
-                status = status,
-                plansFound = found,
-                plansNew = created,
-                plansUpdated = updated,
-                errorMessage = error,
-            ),
-        )
-        updateRunStatus(sourceId, status, error)
+        // R5: 로그 insert + 상태 갱신 원자화 (크래시 시 불일치 방지)
+        db.withTransaction {
+            db.crawlLogDao().insert(
+                CrawlLog(
+                    sourceId = sourceId,
+                    sourceName = sourceName,
+                    startedAt = startedAt,
+                    finishedAt = System.currentTimeMillis(),
+                    status = status,
+                    plansFound = found,
+                    plansNew = created,
+                    plansUpdated = updated,
+                    errorMessage = error,
+                ),
+            )
+            updateRunStatus(sourceId, status, error)
+        }
     }
 
     suspend fun getRecentLogs(limit: Int = 50): List<RecentLog> =

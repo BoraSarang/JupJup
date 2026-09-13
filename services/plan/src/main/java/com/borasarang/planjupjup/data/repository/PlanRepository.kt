@@ -39,16 +39,22 @@ class PlanRepository(
         val from = ((page - 1) * pageSize).coerceAtMost(sorted.size)
         val to = (from + pageSize).coerceAtMost(sorted.size)
         val pageItems = if (from >= to) emptyList() else sorted.subList(from, to)
+        // R5: 페이지 N회 조회 → IN 배치 1회 + 메모리 조인
         val mappingDao = db.planSourceMappingDao()
+        val byPlanId = if (pageItems.isEmpty()) {
+            emptyMap()
+        } else {
+            mappingDao.getByPlanIds(pageItems.map { it.id }).groupBy { it.planId }
+        }
         val items = pageItems.map { plan ->
-            PlanWithSources(plan, mappingDao.getByPlanId(plan.id))
+            PlanWithSources(plan, byPlanId[plan.id].orEmpty())
         }
         return PagedPlans(items, sorted.size, page, pageSize)
     }
 
     suspend fun getPlanWithSources(id: String): PlanWithSources? {
         val plan = db.planDao().getById(id) ?: return null
-        return PlanWithSources(plan, db.planSourceMappingDao().getByPlanId(id))
+        return PlanWithSources(plan, db.planSourceMappingDao().getByPlanIds(listOf(id)))
     }
 
     /** 크롤 결과 원자 저장 + 신규/업데이트 집계. 신규 id는 isNew=1 표시 */
@@ -57,8 +63,14 @@ class PlanRepository(
         var updated = 0
         db.withTransaction {
             val dao = db.planDao()
+            // R5: 행마다 getById N회 → IN 배치 1회
+            val existingById = if (plans.isEmpty()) {
+                emptyMap()
+            } else {
+                dao.getByIds(plans.map { it.id }).associateBy { it.id }
+            }
             val toSave = plans.map { plan ->
-                val existing = dao.getById(plan.id)
+                val existing = existingById[plan.id]
                 if (existing == null) {
                     createdIds += plan.id
                     plan.copy(firstCollectedAt = plan.collectedAt)

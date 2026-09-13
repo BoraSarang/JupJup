@@ -19,7 +19,7 @@ import com.borasarang.planjupjup.data.db.entity.PlanSourceMapping
 
 @Database(
     entities = [Plan::class, PlanSourceMapping::class, CrawlSource::class, CarrierBrand::class, CrawlLog::class, NotificationLog::class],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class PlanDatabase : RoomDatabase() {
@@ -48,7 +48,7 @@ abstract class PlanDatabase : RoomDatabase() {
                 context.applicationContext,
                 PlanDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             if (allowDestructive) builder.fallbackToDestructiveMigration(true)
             return builder.build()
         }

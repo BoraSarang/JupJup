@@ -15,6 +15,9 @@ import androidx.room.PrimaryKey
         Index("collectedAt"),
         Index("isNew"),
         Index("tags"),
+        // R5: 신규 조회(getNewSince) + 목록 필터(getFiltered) 커버
+        Index(value = ["isNew", "firstCollectedAt"]),
+        Index(value = ["networkType", "mvnoNetwork", "price"]),
     ],
 )
 data class Plan(

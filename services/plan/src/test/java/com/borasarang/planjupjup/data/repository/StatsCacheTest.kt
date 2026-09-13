@@ -80,6 +80,7 @@ class StatsCacheTest {
         coEvery { crawlLogDao.getLogsSince(any()) } returns emptyList()
         coEvery { sourceDao.getAll() } returns emptyList()
         coEvery { planDao.getStatsProjection() } returns emptyList()
+        coEvery { planDao.getLatestCollectedAt() } returns null
         val repo = StatsRepository(db)
         repeat(2) { repo.getCollectionHealth() }
         coVerify(exactly = 1) { crawlLogDao.getLogsSince(any()) }

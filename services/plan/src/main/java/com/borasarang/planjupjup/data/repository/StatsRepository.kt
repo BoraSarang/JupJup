@@ -252,8 +252,18 @@ class StatsRepository(
         val durations = logs24h.mapNotNull { l ->
             l.finishedAt?.takeIf { it >= l.startedAt }?.let { (it - l.startedAt) / 1000.0 }
         }
-        val sources = db.crawlSourceDao().getAll().map { s ->
-            val recent = db.crawlLogDao().getRecentBySource(s.id, 10)
+        // R5: 소스별 N회 조회 → IN 배치 1회 (30d 윈도우 + 소스별 take 10)
+        val allIds = db.crawlSourceDao().getAll()
+        val recentBySource = if (allIds.isEmpty()) {
+            emptyMap()
+        } else {
+            val since30d = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30)
+            db.crawlLogDao().getRecentBySourceIds(allIds.map { it.id }, since30d)
+                .groupBy { it.sourceId }
+                .mapValues { (_, logs) -> logs.sortedByDescending { it.id }.take(10) }
+        }
+        val sources = allIds.map { s ->
+            val recent = recentBySource[s.id].orEmpty()
             val ok = recent.count { it.status == "SUCCESS" }
             SourceHealth(
                 sourceId = s.id,
@@ -270,7 +280,7 @@ class StatsRepository(
             fail24h = logs24h.count { it.status == "FAILED" },
             avgDurationSec = if (durations.isEmpty()) 0.0 else round1(durations.average()),
             sources = sources,
-            lastCollectedAt = planRows().map { it.firstCollectedAt }.maxOrNull(),
+            lastCollectedAt = db.planDao().getLatestCollectedAt(),
         )
     }
 

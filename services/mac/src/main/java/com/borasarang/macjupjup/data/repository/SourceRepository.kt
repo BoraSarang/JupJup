@@ -1,5 +1,6 @@
 package com.borasarang.macjupjup.data.repository
 
+import androidx.room.withTransaction
 import com.borasarang.macjupjup.data.db.MacDatabase
 
 /** 소스 상태 조회·토글·수집 결과 기록 */
@@ -32,11 +33,16 @@ class SourceRepository(private val db: MacDatabase) {
         return true
     }
 
-    /** 소스 목록 + 최근 로그 묶음 (소스관리 화면용) */
+    /** 소스 목록 + 최근 로그 묶음 (소스관리 화면용, R5: 행마다 조회 → IN 배치 1회) */
     suspend fun getListItems(): List<SourceListItem> {
         val sources = db.crawlSourceDao().getAll()
+        if (sources.isEmpty()) return emptyList()
+        val since = System.currentTimeMillis() - java.util.concurrent.TimeUnit.DAYS.toMillis(30)
+        val latestBySource = db.crawlLogDao().getRecentBySourceIds(sources.map { it.id }, since)
+            .groupBy { it.sourceId }
+            .mapValues { (_, logs) -> logs.maxBy { it.startedAt } }
         return sources.map { s ->
-            val latest = db.crawlLogDao().latestBySource(s.id)?.toRecent()
+            val latest = latestBySource[s.id]?.toRecent()
             SourceListItem(status = s.toStatus(), latestLog = latest)
         }
     }
@@ -59,7 +65,7 @@ class SourceRepository(private val db: MacDatabase) {
         db.crawlSourceDao().updateRun(id, System.currentTimeMillis(), status, error)
     }
 
-    /** 수집 결과 기록: crawl_logs insert + 소스 상태 갱신 */
+    /** 수집 결과 기록: crawl_logs insert + 소스 상태 갱신 (R5: 원자화) */
     suspend fun logResult(
         sourceId: String,
         sourceName: String,
@@ -70,20 +76,22 @@ class SourceRepository(private val db: MacDatabase) {
         updated: Int,
         error: String?,
     ) {
-        db.crawlLogDao().insert(
-            com.borasarang.macjupjup.data.db.entity.CrawlLog(
-                sourceId = sourceId,
-                sourceName = sourceName,
-                startedAt = startedAt,
-                finishedAt = System.currentTimeMillis(),
-                status = status,
-                plansFound = found,
-                plansNew = created,
-                plansUpdated = updated,
-                errorMessage = error,
+        db.withTransaction {
+            db.crawlLogDao().insert(
+                com.borasarang.macjupjup.data.db.entity.CrawlLog(
+                    sourceId = sourceId,
+                    sourceName = sourceName,
+                    startedAt = startedAt,
+                    finishedAt = System.currentTimeMillis(),
+                    status = status,
+                    plansFound = found,
+                    plansNew = created,
+                    plansUpdated = updated,
+                    errorMessage = error,
+                )
             )
-        )
-        markRunEnd(sourceId, status == "SUCCESS", error)
+            markRunEnd(sourceId, status == "SUCCESS", error)
+        }
     }
 
     suspend fun recentLogs(limit: Int = 50) =
