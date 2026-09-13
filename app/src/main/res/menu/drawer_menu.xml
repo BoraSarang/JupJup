@@ -1,23 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group
-        android:id="@+id/group_features"
+        android:id="@+id/group_services"
         android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_drawer_home"
-            android:icon="@drawable/ic_drawer_home"
-            android:title="@string/tab_home" />
+            android:id="@+id/nav_mac"
+            android:icon="@drawable/ic_nav_mac"
+            android:title="@string/nav_mac" />
         <item
-            android:id="@+id/nav_drawer_source"
-            android:icon="@drawable/ic_drawer_source"
-            android:title="@string/tab_source" />
-        <item
-            android:id="@+id/nav_drawer_notif"
-            android:icon="@drawable/ic_drawer_notif"
-            android:title="@string/tab_notif" />
-        <item
-            android:id="@+id/nav_drawer_settings"
-            android:icon="@drawable/ic_drawer_settings"
-            android:title="@string/tab_settings" />
+            android:id="@+id/nav_plan"
+            android:icon="@drawable/ic_nav_plan"
+            android:title="@string/nav_plan" />
     </group>
 </menu>

@@ -7,7 +7,7 @@
 
     <string name="drawer_header_sub">줍줍 시리즈</string>
 
-    <string name="tab_home">홈</string>
+    <string name="tab_server">서버 상태</string>
     <string name="tab_source">수집 소스</string>
     <string name="tab_notif">알림</string>
     <string name="tab_settings">설정</string>

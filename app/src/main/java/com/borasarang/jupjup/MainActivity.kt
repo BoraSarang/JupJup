@@ -17,18 +17,18 @@ import com.borasarang.planjupjup.ui.source.SourceManageFragment as PlanSourceMan
 /**
  * 줍줍 시리즈 통합 홈.
  *
- * - 하단 BottomAppBar: 서비스 전환 (맥줍줍 / 요금줍줍) — 왼쪽 햄버거로 기능 드로어 열기
- * - 기능 드로어: 홈 / 수집 소스 / 알림 / 설정
+ * - 상단 앱바(햄버거): 서비스 전환 드로어 (맥줍줍 / 요금줍줍)
+ * - 하단 탭: 서버 상태 / 수집 소스 / 알림 / 설정
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
     private enum class Service { MAC, PLAN }
-    private enum class Tab { HOME, SOURCE, NOTIF, SETTINGS }
+    private enum class Tab { SERVER, SOURCE, NOTIF, SETTINGS }
 
     private var currentService = Service.MAC
-    private var currentTab = Tab.HOME
+    private var currentTab = Tab.SERVER
     private val fragCache = mutableMapOf<String, Fragment>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,26 +40,26 @@ class MainActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             currentService = it.getSerializable("service") as? Service ?: Service.MAC
             @Suppress("DEPRECATION")
-            currentTab = it.getSerializable("tab") as? Tab ?: Tab.HOME
+            currentTab = it.getSerializable("tab") as? Tab ?: Tab.SERVER
         }
 
-        binding.bottomBar.setNavigationOnClickListener {
+        binding.toolbar.setNavigationOnClickListener {
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        binding.bottomBar.setOnMenuItemClickListener { item ->
-            currentService = if (item.itemId == R.id.nav_plan) Service.PLAN else Service.MAC
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            currentTab = when (item.itemId) {
+                R.id.nav_tab_source -> Tab.SOURCE
+                R.id.nav_tab_notif -> Tab.NOTIF
+                R.id.nav_tab_settings -> Tab.SETTINGS
+                else -> Tab.SERVER
+            }
             refresh()
             true
         }
 
         binding.drawerNav.setNavigationItemSelectedListener { item ->
-            currentTab = when (item.itemId) {
-                R.id.nav_drawer_source -> Tab.SOURCE
-                R.id.nav_drawer_notif -> Tab.NOTIF
-                R.id.nav_drawer_settings -> Tab.SETTINGS
-                else -> Tab.HOME
-            }
+            currentService = if (item.itemId == R.id.nav_plan) Service.PLAN else Service.MAC
             binding.drawerLayout.closeDrawers()
             refresh()
             true
@@ -77,11 +77,25 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         showFragment()
         binding.toolbar.title = getString(serviceTitleRes())
+        binding.drawerNav.setCheckedItem(serviceItemId(currentService))
+        binding.bottomNav.selectedItemId = tabItemId(currentTab)
     }
 
     private fun serviceTitleRes(): Int = when (currentService) {
         Service.MAC -> R.string.nav_mac
         Service.PLAN -> R.string.nav_plan
+    }
+
+    private fun serviceItemId(service: Service): Int = when (service) {
+        Service.MAC -> R.id.nav_mac
+        Service.PLAN -> R.id.nav_plan
+    }
+
+    private fun tabItemId(tab: Tab): Int = when (tab) {
+        Tab.SERVER -> R.id.nav_tab_server
+        Tab.SOURCE -> R.id.nav_tab_source
+        Tab.NOTIF -> R.id.nav_tab_notif
+        Tab.SETTINGS -> R.id.nav_tab_settings
     }
 
     private fun showFragment() {
@@ -90,25 +104,17 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, frag, tag)
             .commit()
-        binding.drawerNav.setCheckedItem(drawerItemId(currentTab))
-    }
-
-    private fun drawerItemId(tab: Tab): Int = when (tab) {
-        Tab.HOME -> R.id.nav_drawer_home
-        Tab.SOURCE -> R.id.nav_drawer_source
-        Tab.NOTIF -> R.id.nav_drawer_notif
-        Tab.SETTINGS -> R.id.nav_drawer_settings
     }
 
     private fun createFragment(): Fragment = when (currentService) {
         Service.MAC -> when (currentTab) {
-            Tab.HOME -> MacHomeFragment()
+            Tab.SERVER -> MacHomeFragment()
             Tab.SOURCE -> MacSourceManageFragment()
             Tab.NOTIF -> MacNotificationFragment()
             Tab.SETTINGS -> MacSettingsFragment()
         }
         Service.PLAN -> when (currentTab) {
-            Tab.HOME -> PlanHomeFragment()
+            Tab.SERVER -> PlanHomeFragment()
             Tab.SOURCE -> PlanSourceManageFragment()
             Tab.NOTIF -> PlanNotificationFragment()
             Tab.SETTINGS -> PlanSettingsFragment()
