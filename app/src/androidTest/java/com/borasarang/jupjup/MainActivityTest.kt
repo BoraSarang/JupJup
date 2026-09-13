@@ -2,12 +2,14 @@ package com.borasarang.jupjup
 
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import org.hamcrest.Matchers.not
 import org.junit.Rule
@@ -61,6 +63,19 @@ class MainActivityTest {
             onView(withId(com.borasarang.macjupjup.R.id.mac_source_recycler)).check(matches(isDisplayed()))
             onView(withId(R.id.nav_tab_dashboard)).perform(click())
             onView(withId(R.id.dashboard_mac_card)).check(matches(isDisplayed()))
+        }
+    }
+
+    @Test
+    fun overflowMenu_opensAboutDialog() {
+        ActivityScenario.launch(MainActivity::class.java).use {
+            openActionBarOverflowOrOptionsMenu(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+            )
+            onView(withText(R.string.overflow_about)).perform(click())
+            onView(withId(R.id.about_icon)).check(matches(isDisplayed()))
+            onView(withId(R.id.about_version)).check(matches(isDisplayed()))
+            onView(withId(R.id.about_repo_link)).check(matches(isDisplayed()))
         }
     }
 }

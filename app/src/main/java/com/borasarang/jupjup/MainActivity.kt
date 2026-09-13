@@ -1,7 +1,11 @@
 package com.borasarang.jupjup
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.MenuItem
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +17,7 @@ import com.borasarang.macjupjup.ui.notif.NotificationFragment as MacNotification
 import com.borasarang.macjupjup.ui.settings.SettingsFragment as MacSettingsFragment
 import com.borasarang.macjupjup.ui.source.SourceManageFragment as MacSourceManageFragment
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
+import com.borasarang.macjupjup.util.NetUtils as MacNetUtils
 import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.ui.home.HomeFragment as PlanHomeFragment
 import com.borasarang.planjupjup.ui.notif.NotificationFragment as PlanNotificationFragment
@@ -156,8 +161,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 앱 정보: 서비스별 포트 + 앱 버전 */
+    /** 앱 정보: 아이콘·버전·서비스별 주소·Git 링크 */
     private fun showAbout() {
+        MacDebugLogger.i("내비", "앱 정보 열기")
         lifecycleScope.launch {
             val (macPort, planPort) = try {
                 withContext(Dispatchers.IO) {
@@ -168,11 +174,34 @@ class MainActivity : AppCompatActivity() {
                 MacDebugLogger.e("내비", "E-AND-DB-0402", "앱 정보 포트 조회 실패: ${e.message}", e)
                 3000 to 3001
             }
+            val ip = MacNetUtils.getLocalIp(this@MainActivity)
+            val view = layoutInflater.inflate(R.layout.dialog_about, null)
+            view.findViewById<TextView>(R.id.about_version).text =
+                getString(R.string.about_version, BuildConfig.VERSION_NAME)
+            view.findViewById<TextView>(R.id.about_mac_row).text =
+                getString(R.string.about_service_row, getString(R.string.nav_mac), macPort)
+            view.findViewById<TextView>(R.id.about_mac_address).text =
+                ip?.let { "http://$it:$macPort" } ?: getString(R.string.about_address_unknown)
+            view.findViewById<TextView>(R.id.about_plan_row).text =
+                getString(R.string.about_service_row, getString(R.string.nav_plan), planPort)
+            view.findViewById<TextView>(R.id.about_plan_address).text =
+                ip?.let { "http://$it:$planPort" } ?: getString(R.string.about_address_unknown)
+            view.findViewById<TextView>(R.id.about_repo_link).setOnClickListener {
+                openUrl(getString(R.string.about_repo_url))
+            }
             MaterialAlertDialogBuilder(this@MainActivity)
-                .setTitle(R.string.about_title)
-                .setMessage(getString(R.string.about_message, macPort, planPort, BuildConfig.VERSION_NAME))
-                .setPositiveButton(android.R.string.ok, null)
+                .setView(view)
+                .setPositiveButton(R.string.about_close, null)
                 .show()
+        }
+    }
+
+    private fun openUrl(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: Exception) {
+            MacDebugLogger.e("내비", "E-AND-UI-0701", "브라우저 열기 실패: ${e.message}", e)
+            Toast.makeText(this, R.string.about_browser_error, Toast.LENGTH_SHORT).show()
         }
     }
 }

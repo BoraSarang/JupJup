@@ -9,11 +9,12 @@
 - 드로어 제거 — 앱 정보(포트·버전)는 툴바 `⋮` 메뉴로 이동
 - **인사이트 → 대시보드** 명칭 변경 + 활성 서비스 카드 강조 (스트로크 + "현재" 배지)
 - 앱바 타이틀 = 항상 현재 서비스명
+- **앱 정보 다이얼로그 개편**: 앱 아이콘·버전 배지, 서비스별 포털 주소(IP:포트), 하단 GitHub 링크(`github.com/BoraSarang/JupJup`, 브라우저/에러 처리 포함)
 
 ### 수정
 - material 1.12.0에 SegmentedButton 미포함 확인 → `MaterialButtonToggleGroup` 세그먼트형으로 구현 (버전 고정 규칙 유지)
 - 깨진 connected 테스트 이관 시 잔재 정리 (드로어 메뉴·헤더·아이콘 5종 삭제)
-- 검증: 실기(R5CT215F4QK) assembleDebug·단위 테스트·lint 통과, `:app:connectedDebugAndroidTest` 3/3 + `:services:mac` 6/6 통과, 포털 3000·3001 `/api/health` 모두 HTTP 200, 크래시 0
+- 검증: 실기(R5CT215F4QK) assembleDebug·단위 테스트·lint 통과, `:app:connectedDebugAndroidTest` 4/4 + `:services:mac` 6/6 통과, 포털 3000·3001 `/api/health` 모두 HTTP 200, 크래시 0
 
 ## [1.2.0] - 2026-09-13
 > 플랫폼: AND · 시리즈 인사이트 시작 화면

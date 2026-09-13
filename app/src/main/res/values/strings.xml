@@ -13,7 +13,12 @@
 
     <string name="overflow_about">앱 정보</string>
     <string name="about_title">줍줍 시리즈</string>
-    <string name="about_message">맥줍줍(포트 %1$d) · 요금줍줍(포트 %2$d)\n버전 %3$s</string>
+    <string name="about_version">v%1$s</string>
+    <string name="about_service_row">%1$s · %2$d번 포트</string>
+    <string name="about_address_unknown">주소 확인 중…</string>
+    <string name="about_close">닫기</string>
+    <string name="about_repo_url">https://github.com/BoraSarang/JupJup</string>
+    <string name="about_browser_error">브라우저를 열 수 없습니다</string>
 
     <string name="dashboard_status_checking">상태 확인 중…</string>
     <string name="dashboard_status_running">실행 중</string>
