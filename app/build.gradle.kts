@@ -4,11 +4,11 @@ plugins {
 
 android {
     namespace = "com.borasarang.jupjup"
-    compileSdk = 36
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.borasarang.jupjup"
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = 36
         versionCode = 9
         versionName = "1.7.0"

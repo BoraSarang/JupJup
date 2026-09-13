@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace = "com.borasarang.common"
-    compileSdk = 36
+    compileSdk = libs.versions.compileSdk.get().toInt()
     // R2: 공통 모듈 리소스는 jup_ 접두사 강제 (mac_/plan_ 충돌 방지)
     resourcePrefix = "jup_"
 
     defaultConfig {
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

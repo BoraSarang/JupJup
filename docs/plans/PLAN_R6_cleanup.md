@@ -6,8 +6,8 @@
 
 - `libs.versions.toml` [versions]에 `android-compileSdk/ android-minSdk` 추가 → 4 모듈 하드코딩 교체
   (단일 진실 유지. compileOptions/testOptions/packaging 중복은 build-logic 후속으로 문서만)
-- 권한 일원화: 9종 + `SystemForegroundService(dataSync)`를 `:app` 단일 소유,
-  mac/plan 매니페스트에서 삭제 (service/receiver 선언만 남김, common 3종 유지)
+- 권한 일원화: 9종을 `:app` 단일 소유, mac/plan 매니페스트에서 삭제
+  (SystemForegroundService는 라이브러리 단독 lint(`SpecifyForegroundServiceType`) 때문에 유지 — 3중복 허용)
 - 검증: 빌드 + 머지드 매니페스트 확인 (`apk` 덤프 또는 설치 후 부팅리시버·FGS 동작) + 실기 health
 
 ## 6b: 코드 잔정리 (커밋 2)
