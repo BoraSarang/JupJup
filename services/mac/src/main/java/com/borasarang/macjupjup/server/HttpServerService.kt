@@ -56,6 +56,10 @@ class HttpServerService : Service() {
     @Volatile
     private var isForeground = false
 
+    /** R5: Main 스레드 getLocalIp 금지 → IO에서 갱신된 캐시만 runningText가 사용 */
+    @Volatile
+    private var cachedIp: String? = null
+
     /** 수동 시드 백그라운드 상태 (idle/running/done …/not_found/error …) */
     @Volatile
     internal var lastSeedStatus: String = "idle"
@@ -73,6 +77,7 @@ class HttpServerService : Service() {
                 val settings = app().preferences.getSettings()
                 currentPort = settings.port
                 startServer(settings.port)
+                cachedIp = NetUtils.getLocalIp(this@HttpServerService)
                 updateNotification(runningText(settings.port))
                 startWatchdog()
                 DebugLogger.i("서버", "서버 기동 완료 port=${settings.port}")
@@ -126,6 +131,7 @@ class HttpServerService : Service() {
         currentPort = settings.port
         try {
             startServer(settings.port)
+            cachedIp = NetUtils.getLocalIp(this@HttpServerService)
             updateNotification(runningText(settings.port))
         } catch (e: Exception) {
             DebugLogger.e("서버", "E-AND-SRV-0104", "서버 재시작 실패: ${e.message}", e)
@@ -222,7 +228,7 @@ class HttpServerService : Service() {
     }
 
     private fun runningText(port: Int): String {
-        val ip = NetUtils.getLocalIp(this) ?: "IP 확인 중"
+        val ip = cachedIp ?: "IP 확인 중"
         return getString(R.string.mac_notif_server_running) + " http://$ip:$port"
     }
 

@@ -147,16 +147,19 @@ class MainActivity : AppCompatActivity() {
     private fun showAbout() {
         MacDebugLogger.i("내비", "앱 정보 열기")
         lifecycleScope.launch {
-            val (macPort, planPort) = try {
+            val (macPort, planPort, ip) = try {
                 withContext(Dispatchers.IO) {
-                    MacJupJupRuntime.preferences.getSettings().port to
-                        PlanJupJupRuntime.preferences.getSettings().port
+                    // R5: getLocalIp(바인더+NIC 열거) Main 호출 금지 → IO 합류
+                    Triple(
+                        MacJupJupRuntime.preferences.getSettings().port,
+                        PlanJupJupRuntime.preferences.getSettings().port,
+                        NetUtils.getLocalIp(this@MainActivity),
+                    )
                 }
             } catch (e: Exception) {
                 MacDebugLogger.e("내비", "E-AND-DB-0402", "앱 정보 포트 조회 실패: ${e.message}", e)
-                MacConstants.DEFAULT_PORT to PlanConstants.DEFAULT_PORT
+                Triple(MacConstants.DEFAULT_PORT, PlanConstants.DEFAULT_PORT, null)
             }
-            val ip = NetUtils.getLocalIp(this@MainActivity)
             val view = layoutInflater.inflate(R.layout.dialog_about, null)
             view.findViewById<TextView>(R.id.about_version).text =
                 getString(R.string.about_version, BuildConfig.VERSION_NAME)

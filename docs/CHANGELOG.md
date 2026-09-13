@@ -1,5 +1,23 @@
 # CHANGELOG — JupJup
 
+## [1.7.0] - 2026-09-14
+> 플랫폼: AND · 성능·DB (리팩토링 5단계)
+
+### 성능
+- N+1 제거: plan `getPlans` 1+N → 2쿼리 (`getByPlanIds` 배치 + 메모리 조인),
+  `saveCrawlResults` 배치 (`getByIds`), 소스관리 양쪽 배치 (`getRecentBySourceIds`),
+  `getCollectionHealth` 배치 + `MAX(collectedAt)` 재사용
+- plan 인덱스 2종 (`isNew+firstCollectedAt`, `networkType+mvnoNetwork+price`) + 마이그레이션 4→5
+- `logResult` 원자화 (양쪽 insert+상태갱신 `withTransaction`)
+- plan `serveAsset` IO 격리 + 로그, `getLocalIp` Main 호출 제거 (About·홈·FGS 알림 캐시),
+  `isServiceRunning` 공용 타임아웃 헬퍼로 교체
+
+### 테스트
+- 신규: `PlanBatchTest` 2종 (배치 1회·빈페이지 미조회)
+- 검증: 실기(R5CT215F4QK) 단위 131/131, lint 오류 0, 마이그레이션 승계 확인 (381건 유지·인덱스 생성),
+  수집 E2E 1회, health 200×2, 크래시 0
+- 참고: 첫 마이그레이션 시도에서 Room 인덱스명 불일치 크래시 → `index_plans_*` 규칙명으로 수정 후 정상
+
 ## [1.6.0] - 2026-09-14
 > 플랫폼: AND · God object 분리 (리팩토링 4단계)
 

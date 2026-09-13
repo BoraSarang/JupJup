@@ -13,10 +13,10 @@
 ## R11 리팩토링 5단계 — 성능·DB
 - [x] PLAN_R5 초안
 - [x] 5a DB 쿼리 최적화 (배치 4종·트랜잭션·인덱스+마이그레이션 4→5)
-- [ ] 5b 블로킹 제거 (serveAsset·getLocalIp·Socket·FGS 기본인자)
-- [ ] 빌드 + 단위 + lint + 실기 검증 (DB승계·수집E2E·health·크래시 0)
-- [ ] versionName 1.7.0 (versionCode 9)으로 bump
-- [ ] 문서 갱신 (CHANGELOG·세션 로그)
+- [x] 5b 블로킹 제거 (serveAsset·getLocalIp·Socket·FGS 기본인자)
+- [x] 빌드 + 단위(131/131) + lint + 실기 검증 (DB승계·수집E2E·health·크래시 0)
+- [x] versionName 1.7.0 (versionCode 9)으로 bump
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
 
 ## R10 리팩토링 4단계 — God object 분리
 - [x] PLAN_R4 초안

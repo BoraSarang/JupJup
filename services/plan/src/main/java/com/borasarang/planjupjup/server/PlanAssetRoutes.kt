@@ -33,9 +33,13 @@ private suspend fun HttpServerService.serveAsset(
     contentType: ContentType,
 ) {
     try {
-        val bytes = applicationContext.assets.open(assetPath).use { it.readBytes() }
+        // R5: route 스레드 블로킹 방지 — IO 격리 (mac 패턴)
+        val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            applicationContext.assets.open(assetPath).use { it.readBytes() }
+        }
         call.respondBytes(bytes, contentType)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        com.borasarang.planjupjup.util.DebugLogger.w("서버", "에셋 서빙 실패 $assetPath: ${e.message}")
         call.respondText("Not found", ContentType.Text.Plain, HttpStatusCode.NotFound)
     }
 }

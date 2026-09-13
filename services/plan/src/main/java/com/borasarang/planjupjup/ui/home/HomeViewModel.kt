@@ -35,12 +35,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             DebugLogger.i("홈", "홈 상태 새로고침")
             try {
                 // 소켓 접속은 메인 스레드 금지 → IO에서 조회
+                // R5: getLocalIp도 블로킹(바인더+NIC)이라 IO 합류
                 val fresh = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     val settings = app.preferences.getSettings()
                     val stats = app.planRepository.getStats()
-                    Triple(settings, stats, settings.port)
+                    Triple(settings, stats, NetUtils.getLocalIp(getApplication()))
                 }
-                val (settings, stats, port) = fresh
+                val (settings, stats, ip) = fresh
+                val port = settings.port
                 // 서버 기동 지연 대비 최대 5회·1초 간격으로 기동 완료를 폴링
                 val running = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     var up = false
@@ -61,7 +63,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     lastCollectedAt = stats.lastCollectedAt,
                     isCrawling = false,
                     crawlEnabled = settings.crawlEnabled,
-                    localIp = NetUtils.getLocalIp(getApplication()),
+                    localIp = ip,
                     port = port,
                 )
             } catch (e: Exception) {
@@ -121,12 +123,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** 로컬 포트 개방 여부. 반드시 백그라운드 스레드에서 호출 */
-    private fun isServiceRunning(port: Int): Boolean {
-        return try {
-            java.net.Socket("127.0.0.1", port).use { true }
-        } catch (_: Exception) {
-            false
-        }
-    }
+    /** 로컬 포트 개방 여부. 반드시 백그라운드 스레드에서 호출 (R5: 타임아웃 내장 공용 헬퍼) */
+    private fun isServiceRunning(port: Int): Boolean =
+        com.borasarang.common.util.NetUtils.isPortOpen(port)
 }
