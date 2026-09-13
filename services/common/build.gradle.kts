@@ -1,25 +1,12 @@
 plugins {
     alias(libs.plugins.android.library)
+    id("jupjup.base")
 }
 
 android {
     namespace = "com.borasarang.common"
-    compileSdk = libs.versions.compileSdk.get().toInt()
     // R2: 공통 모듈 리소스는 jup_ 접두사 강제 (mac_/plan_ 충돌 방지)
     resourcePrefix = "jup_"
-
-    defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    testOptions {
-        unitTests.isReturnDefaultValues = true
-    }
 }
 
 dependencies {

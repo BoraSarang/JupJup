@@ -1,18 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("jupjup.base")
 }
 
 android {
     namespace = "com.borasarang.jupjup"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.borasarang.jupjup"
-        minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = 36
         versionCode = 10
         versionName = "1.8.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -35,26 +33,9 @@ android {
             }
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-        isCoreLibraryDesugaringEnabled = true
-    }
     buildFeatures {
         viewBinding = true
         buildConfig = true
-    }
-    packaging {
-        resources {
-            excludes += setOf(
-                "META-INF/INDEX.LIST",
-                "META-INF/native-image/**",
-                "META-INF/versions/9/**",
-            )
-        }
-    }
-    testOptions {
-        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -73,7 +54,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

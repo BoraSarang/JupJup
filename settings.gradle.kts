@@ -1,4 +1,6 @@
 pluginManagement {
+    // R7: convention plugin (build-logic) 단일 진실
+    includeBuild("build-logic")
     repositories {
         google {
             content {
