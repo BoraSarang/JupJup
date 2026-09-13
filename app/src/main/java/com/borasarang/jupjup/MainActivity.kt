@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_tab_settings -> Tab.SETTINGS
                 else -> Tab.SERVER
             }
-            refresh()
+            applyTab()
             true
         }
 
@@ -74,11 +74,18 @@ class MainActivity : AppCompatActivity() {
         outState.putSerializable("tab", currentTab)
     }
 
-    private fun refresh() {
+    private fun applyTab() {
         showFragment()
         binding.toolbar.title = getString(serviceTitleRes())
         binding.drawerNav.setCheckedItem(serviceItemId(currentService))
-        binding.bottomNav.selectedItemId = tabItemId(currentTab)
+    }
+
+    private fun refresh() {
+        applyTab()
+        val tabId = tabItemId(currentTab)
+        if (binding.bottomNav.selectedItemId != tabId) {
+            binding.bottomNav.selectedItemId = tabId
+        }
     }
 
     private fun serviceTitleRes(): Int = when (currentService) {
