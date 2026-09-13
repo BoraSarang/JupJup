@@ -25,7 +25,7 @@ import com.borasarang.planjupjup.data.repository.TrendPoint
 import com.borasarang.planjupjup.data.repository.ValueRankItem
 import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
-import com.borasarang.planjupjup.util.NetUtils
+import com.borasarang.common.util.NetUtils
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.withCharset

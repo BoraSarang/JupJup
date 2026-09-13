@@ -62,7 +62,7 @@ object MacJupJupRuntime {
             if (initialized) return
             initialized = true
         }
-        DebugLogger.init()
+        DebugLogger.init(appContext)
         DebugLogger.i("앱", "맥줍줍 시작")
 
         database = try {

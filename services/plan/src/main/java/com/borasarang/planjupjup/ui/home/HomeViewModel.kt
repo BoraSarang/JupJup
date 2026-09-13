@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.server.HttpServerService
 import com.borasarang.planjupjup.util.DebugLogger
-import com.borasarang.planjupjup.util.NetUtils
+import com.borasarang.common.util.NetUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

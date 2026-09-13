@@ -17,7 +17,7 @@ import com.borasarang.macjupjup.data.repository.SettingsView
 import com.borasarang.macjupjup.data.repository.toView
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.macjupjup.util.NetUtils
+import com.borasarang.common.util.NetUtils
 import com.borasarang.macjupjup.util.maskToken
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode

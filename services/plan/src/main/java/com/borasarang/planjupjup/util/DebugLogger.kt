@@ -1,7 +1,10 @@
 package com.borasarang.planjupjup.util
 
+import android.content.Context
 import android.util.Log
+import com.borasarang.common.log.JupLog
 import com.borasarang.planjupjup.BuildConfig
+import java.io.File
 import timber.log.Timber
 
 /**
@@ -11,10 +14,9 @@ import timber.log.Timber
  * - [PERF]/[CACHE] 레벨 포함
  */
 object DebugLogger {
-    fun init() {
-        if (BuildConfig.DEBUG && Timber.forest().isEmpty()) {
-            Timber.plant(Timber.DebugTree())
-        }
+    /** R2: JupLog 코어로 위임. 파일 로그는 files/logs/PlanJupJup.log에 항상 기록 */
+    fun init(context: Context) {
+        JupLog.init(TAG, BuildConfig.DEBUG, File(context.applicationContext.filesDir, "logs"))
     }
 
     fun i(feature: String, message: String) {

@@ -17,7 +17,7 @@ import com.borasarang.macjupjup.ui.notif.NotificationFragment as MacNotification
 import com.borasarang.macjupjup.ui.settings.SettingsFragment as MacSettingsFragment
 import com.borasarang.macjupjup.ui.source.SourceManageFragment as MacSourceManageFragment
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
-import com.borasarang.macjupjup.util.NetUtils as MacNetUtils
+import com.borasarang.common.util.NetUtils as MacNetUtils
 import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.ui.home.HomeFragment as PlanHomeFragment
 import com.borasarang.planjupjup.ui.notif.NotificationFragment as PlanNotificationFragment

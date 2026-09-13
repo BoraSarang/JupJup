@@ -59,6 +59,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":services:common"))
     implementation(project(":services:mac"))
     implementation(project(":services:plan"))
 

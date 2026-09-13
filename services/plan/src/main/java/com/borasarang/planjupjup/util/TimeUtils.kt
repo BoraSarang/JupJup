@@ -1,67 +1,12 @@
 package com.borasarang.planjupjup.util
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.net.wifi.WifiManager
-import android.text.format.Formatter
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-/** 네트워크/시간 포맷 유틸 */
-object NetUtils {
-    /**
-     * 로컬 IP. 1) Wi-Fi 연결 정보 2) 네트워크 인터페이스 열거 순으로 탐색.
-     * 모바일 데이터·핫스팟(AP) 상태에서도 사설 IP를 찾는다.
-     */
-    @Suppress("DEPRECATION")
-    fun getLocalIp(context: Context): String? {
-        wifiIp(context)?.let { return it }
-        return interfaceIp()
-    }
-
-    private fun wifiIp(context: Context): String? {
-        return try {
-            val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-                ?: return null
-            val ip = wm.connectionInfo?.ipAddress ?: return null
-            if (ip == 0) return null
-            Formatter.formatIpAddress(ip).takeIf { it != "0.0.0.0" }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun interfaceIp(): String? {
-        return try {
-            val candidates = mutableListOf<String>()
-            java.net.NetworkInterface.getNetworkInterfaces()?.asSequence()?.forEach { nic ->
-                if (!nic.isUp || nic.isLoopback) return@forEach
-                nic.inetAddresses.asSequence()
-                    .filterIsInstance<java.net.Inet4Address>()
-                    .filter { !it.isLoopbackAddress && it.isSiteLocalAddress }
-                    .forEach { candidates += it.hostAddress ?: "" }
-            }
-            // 192.168.x (핫스팟/Wi-Fi) 우선
-            candidates.firstOrNull { it.startsWith("192.168.") }
-                ?: candidates.firstOrNull { it.isNotBlank() }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    fun isConnected(context: Context): Boolean {
-        return try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-                ?: return false
-            val net = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(net) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-        } catch (_: Exception) {
-            false
-        }
-    }
-}
+/**
+ * 시간 포맷 유틸 (요금줍줍 전용: 가격 포맷·30분 주기 옵션 포함).
+ * 네트워크 부분(NetUtils)은 R2부터 `com.borasarang.common.util.NetUtils`로 이관됨.
+ */
 
 object TimeUtils {
     const val MILLIS_PER_DAY = 24L * 60 * 60 * 1000

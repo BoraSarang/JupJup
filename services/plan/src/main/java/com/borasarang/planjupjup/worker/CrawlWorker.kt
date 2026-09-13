@@ -17,7 +17,8 @@ import com.borasarang.planjupjup.data.repository.NotificationService
 import com.borasarang.planjupjup.data.repository.NotificationType
 import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
-import com.borasarang.planjupjup.util.NetUtils
+import com.borasarang.common.util.NetUtils
+import com.borasarang.common.worker.SourceLocks
 
 /**
  * 소스 1건 수집 워커. 장시간 실행 대비 setForegroundAsync 사용.

@@ -7,13 +7,15 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import com.borasarang.common.prefs.SettingsStores
 import com.borasarang.macjupjup.data.repository.SettingsData
 import com.borasarang.macjupjup.util.Constants
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore("mac_settings")
+/** R2: 파일명은 기존과 동일 — SettingsStores 팩토리로 일원화 (데이터 승계) */
+private val Context.settingsStore: DataStore<Preferences>
+    get() = SettingsStores.get(this, "mac_settings")
 
 /**
  * DataStore 설정 저장소. 포트·보관기간·자동시작·Watchdog 주기·GitHub 토큰.

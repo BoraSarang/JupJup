@@ -13,7 +13,8 @@ import com.borasarang.macjupjup.R
 import com.borasarang.macjupjup.crawler.CrawlerFactory
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.macjupjup.util.NetUtils
+import com.borasarang.common.util.NetUtils
+import com.borasarang.common.worker.SourceLocks
 
 /**
  * 소스 1건 수집 워커. 장시간 실행 대비 setForeground 사용.

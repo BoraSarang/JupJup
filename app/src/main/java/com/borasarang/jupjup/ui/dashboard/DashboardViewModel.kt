@@ -6,12 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.macjupjup.server.HttpServerService as MacHttpServerService
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
-import com.borasarang.macjupjup.util.NetUtils as MacNetUtils
+import com.borasarang.common.util.NetUtils as MacNetUtils
 import com.borasarang.macjupjup.util.TimeUtils as MacTimeUtils
 import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.server.HttpServerService as PlanHttpServerService
 import com.borasarang.planjupjup.util.DebugLogger as PlanDebugLogger
-import com.borasarang.planjupjup.util.NetUtils as PlanNetUtils
+import com.borasarang.common.util.NetUtils as PlanNetUtils
 import com.borasarang.planjupjup.util.TimeUtils as PlanTimeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

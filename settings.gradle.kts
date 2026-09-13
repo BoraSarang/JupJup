@@ -21,5 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "JupJup"
 include(":app")
+include(":services:common")
 include(":services:mac")
 include(":services:plan")
