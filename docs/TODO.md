@@ -78,5 +78,5 @@
 - [x] 사전 검증 (assemble 성공 + 단위 mac 57/plan 49 + lint 오류 0, 기기 설치 없이)
 - [x] origin 첫 푸시 (main)
 - [x] CI lint 실패 수정 (SpecifyForegroundServiceType, 라이브러리 매니페스트에 dataSync 선언)
-- [ ] v1.3.0 태그 + GitHub Release (release.yml, CHANGELOG 1.3.0 섹션)
-- [ ] 세션 로그 갱신
+- [x] v1.3.0 태그 + GitHub Release (release.yml, CHANGELOG 1.3.0 섹션)
+- [x] 세션 로그 갱신
