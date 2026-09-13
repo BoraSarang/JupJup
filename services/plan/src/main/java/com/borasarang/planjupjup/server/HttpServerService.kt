@@ -12,6 +12,7 @@ import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.R
 import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
+import com.borasarang.common.server.escapeJson
 import com.borasarang.common.util.NetUtils
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -245,15 +246,6 @@ class HttpServerService : Service() {
             )
         } catch (_: Exception) {
         }
-    }
-
-    /**
-     * plan 전용 escape (절단 정책). 공용 무손실 교체는 envelope 통일 단계에서 (R4 동결).
-     * StatusPages·토글·설정 catch에서 사용.
-     */
-    internal fun escapeJson(text: String): String {
-        return text.replace("\\", "\\\\").replace("\"", "\\\"")
-            .replace("\n", " ").take(300)
     }
 
     companion object {

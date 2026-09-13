@@ -1,6 +1,7 @@
 package com.borasarang.planjupjup.server
 
 import com.borasarang.common.server.putIfNotNull
+import com.borasarang.common.server.respondError
 import com.borasarang.planjupjup.util.DebugLogger
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -144,10 +145,7 @@ private suspend fun HttpServerService.statsRoute(
         call.respondText(block(), ContentType.Application.Json)
     } catch (e: Exception) {
         DebugLogger.e("통계", code, "통계 API 오류 ${call.request.local.uri}: ${e.message}", e)
-        call.respondText(
-            """{"error":"$code"}""",
-            ContentType.Application.Json,
-            HttpStatusCode.InternalServerError,
-        )
+        // R7: 공용 envelope (출력 바이트 동일)
+        call.respondError(code, HttpStatusCode.InternalServerError)
     }
 }
