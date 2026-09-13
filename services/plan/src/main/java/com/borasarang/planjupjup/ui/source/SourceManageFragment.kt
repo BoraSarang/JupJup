@@ -86,7 +86,8 @@ class SourceManageFragment : Fragment() {
                 boundId = status.id
                 binding.planSourceName.text = status.name
                 binding.planSourceMeta.text = status.describe()
-                binding.planSourceStats.text = item.latestLog?.describeStats() ?: "아직 수집 기록 없음"
+                binding.planSourceStats.text = item.latestLog?.describeStats(binding.root.context)
+                    ?: binding.root.context.getString(com.borasarang.planjupjup.R.string.plan_source_no_history)
                 binding.planSourceStatus.text = status.lastStatus
                 binding.planSourceStatus.setTextColor(statusColor(status.lastStatus))
                 binding.planSourceToggle.setOnCheckedChangeListener(null)

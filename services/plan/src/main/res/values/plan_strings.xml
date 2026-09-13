@@ -25,4 +25,17 @@
 
     <string name="plan_maker">BoRaSaRang</string>
     <string name="plan_contact">leeborasarang@gmail.com</string>
+
+    <!-- R7: 알림·요약 본문 (DB 저장 문구와 동일 출력) -->
+    <string name="plan_notif_crawl_complete">수집 완료: 전체 %1$d건, 신규 %2$d건, 갱신 %3$d건%4$s</string>
+    <string name="plan_notif_crawl_complete_fail">, 실패 %d건</string>
+    <plurals name="plan_notif_new_plans">
+        <item quantity="other">오늘 %d개의 새로운 요금제가 발견되었습니다</item>
+    </plurals>
+    <string name="plan_notif_failure">%1$s 수집이 %2$d회 연속 실패했습니다: %3$s</string>
+    <string name="plan_summary_daily">일일 요약: 수집 %1$d건 · 신규 %2$d건%3$s</string>
+    <string name="plan_summary_daily_updated"> · 갱신 %d건</string>
+    <string name="plan_source_stats_ok">마지막 수집: %1$s · 발견 %2$d · 신규 %3$d · 갱신 %4$d</string>
+    <string name="plan_source_stats_fail">마지막 수집: %1$s · 실패: %2$s</string>
+    <string name="plan_source_no_history">아직 수집 기록 없음</string>
 </resources>

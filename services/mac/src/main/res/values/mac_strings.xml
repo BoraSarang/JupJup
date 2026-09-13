@@ -28,4 +28,18 @@
 
     <string name="mac_maker">BoRaSaRang</string>
     <string name="mac_contact">leeborasarang@gmail.com</string>
+
+    <!-- R7: 알림·요약 본문 (DB 저장 문구와 동일 출력) -->
+    <string name="mac_notif_crawl_complete">수집 완료(%1$s): 발견 %2$d건 · 신규 %3$d건 · 갱신 %4$d건</string>
+    <plurals name="mac_notif_new_apps">
+        <item quantity="other">새로운 맥 앱 %d건이 발견되었습니다</item>
+    </plurals>
+    <plurals name="mac_notif_version_bump">
+        <item quantity="other">버전 업데이트 %d건이 감지되었습니다</item>
+    </plurals>
+    <string name="mac_notif_failure">%1$s 수집이 %2$d회 연속 실패했습니다: %3$s</string>
+    <string name="mac_summary_daily">일일 요약: 신규 %1$d건 · 버전업 %2$d건</string>
+    <string name="mac_source_stats_ok">마지막 수집: %1$s · 발견 %2$d · 신규 %3$d · 갱신 %4$d</string>
+    <string name="mac_source_stats_fail">마지막 수집: %1$s · 실패: %2$s</string>
+    <string name="mac_source_no_history">아직 수집 기록 없음</string>
 </resources>

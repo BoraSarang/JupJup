@@ -77,7 +77,7 @@ object MacJupJupRuntime {
         appRepository = AppRepository(database)
         sourceRepository = SourceRepository(database)
         preferences = PreferencesManager.getInstance(appContext)
-        notificationService = NotificationService(database, preferences)
+        notificationService = NotificationService(appContext, database, preferences)
         notificationRepository = NotificationRepository(database)
         crawlScheduler = CrawlScheduler(appContext)
 

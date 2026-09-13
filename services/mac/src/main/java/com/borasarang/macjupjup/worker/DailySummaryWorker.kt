@@ -30,7 +30,10 @@ class DailySummaryWorker(
             val newCount = dao.countNewSince(startOfToday)
             val bumps = dao.countVersionBumpsSince(startOfToday)
 
-            val summary = "일일 요약: 신규 ${newCount}건 · 버전업 ${bumps}건"
+            // R7: 본문 리소스화 (DB 저장 문구와 동일 출력)
+            val summary = applicationContext.getString(
+                com.borasarang.macjupjup.R.string.mac_summary_daily, newCount, bumps,
+            )
             val detail = NotificationDetail(
                 type = NotificationType.CRAWL_SUMMARY,
                 summary = summary,

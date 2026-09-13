@@ -91,7 +91,8 @@ class SourceManageFragment : Fragment() {
                 boundId = status.id
                 binding.macSourceName.text = status.name
                 binding.macSourceMeta.text = status.describe()
-                binding.macSourceStats.text = item.latestLog?.describeStats() ?: "아직 수집 기록 없음"
+                binding.macSourceStats.text = item.latestLog?.describeStats(binding.root.context)
+                    ?: binding.root.context.getString(com.borasarang.macjupjup.R.string.mac_source_no_history)
                 binding.macSourceStatus.text = status.lastStatus
                 binding.macSourceStatus.setTextColor(statusColor(status.lastStatus))
                 binding.macSourceToggle.setOnCheckedChangeListener(null)

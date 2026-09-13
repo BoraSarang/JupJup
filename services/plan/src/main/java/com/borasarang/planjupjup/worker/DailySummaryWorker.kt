@@ -30,8 +30,18 @@ class DailySummaryWorker(
             val newToday = summaryData.newPlans
             val updatedToday = (summaryData.collectedToday - newToday.size).coerceAtLeast(0)
 
-            val summary = "일일 요약: 수집 ${summaryData.collectedToday}건 · 신규 ${newToday.size}건" +
-                "${if (updatedToday > 0) " · 갱신 ${updatedToday}건" else ""}"
+            // R7: 본문 리소스화 (DB 저장 문구와 동일 출력)
+            val updatedSuffix = if (updatedToday > 0) {
+                applicationContext.getString(
+                    com.borasarang.planjupjup.R.string.plan_summary_daily_updated, updatedToday,
+                )
+            } else {
+                ""
+            }
+            val summary = applicationContext.getString(
+                com.borasarang.planjupjup.R.string.plan_summary_daily,
+                summaryData.collectedToday, newToday.size, updatedSuffix,
+            )
             val detail = NotificationDetail(
                 type = NotificationType.CRAWL_SUMMARY,
                 summary = summary,

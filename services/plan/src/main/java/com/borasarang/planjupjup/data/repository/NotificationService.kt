@@ -1,5 +1,7 @@
 package com.borasarang.planjupjup.data.repository
 
+import android.content.Context
+import com.borasarang.planjupjup.R
 import com.borasarang.planjupjup.data.db.PlanDatabase
 import com.borasarang.planjupjup.data.db.entity.NotificationLog
 import com.borasarang.planjupjup.data.db.entity.Plan
@@ -52,6 +54,7 @@ class NotificationRepository(private val db: PlanDatabase) {
 }
 
 class NotificationService(
+    private val appContext: Context,
     private val db: PlanDatabase,
     private val planRepository: PlanRepository,
     private val sourceRepository: SourceRepository,
@@ -162,7 +165,10 @@ class NotificationService(
         if (newPlans.isEmpty()) return
         if (!settings().notifNewPlan) return
 
-        val summary = "오늘 ${newPlans.size}개의 새로운 요금제가 발견되었습니다"
+        // R7: 본문 리소스화 (DB 저장 문구와 동일 출력)
+        val summary = appContext.resources.getQuantityString(
+            R.plurals.plan_notif_new_plans, newPlans.size, newPlans.size,
+        )
         val detail = buildNewPlansDetail(newPlans)
 
         val log = NotificationLog(
@@ -177,7 +183,9 @@ class NotificationService(
     /** 수집 실패 알림 (5회 연속 실패 등) */
     suspend fun createFailureNotification(sourceName: String, error: String, streak: Int) {
         if (!settings().notifFailure) return
-        val summary = "$sourceName 수집이 ${streak}회 연속 실패했습니다: $error"
+        val summary = appContext.getString(
+            R.string.plan_notif_failure, sourceName, streak, error,
+        )
         val detail = buildFailureDetail(sourceName, error, streak)
 
         val log = NotificationLog(
@@ -208,7 +216,15 @@ class NotificationService(
         val totalNew = sourceResults.values.sumOf { it.created }
         val totalUpdated = sourceResults.values.sumOf { it.updated }
         val failedCount = failedSources.size
-        return "수집 완료: 전체 ${totalFound}건, 신규 ${totalNew}건, 갱신 ${totalUpdated}건${if (failedCount > 0) ", 실패 ${failedCount}건" else ""}"
+        // R7: 본문 리소스화 (DB 저장 문구와 동일 출력)
+        val failSuffix = if (failedCount > 0) {
+            appContext.getString(R.string.plan_notif_crawl_complete_fail, failedCount)
+        } else {
+            ""
+        }
+        return appContext.getString(
+            R.string.plan_notif_crawl_complete, totalFound, totalNew, totalUpdated, failSuffix,
+        )
     }
 
     private fun buildDetailJson(
@@ -246,7 +262,9 @@ class NotificationService(
 
         return NotificationDetail(
             type = NotificationType.NEW_PLANS_FOUND,
-            summary = "오늘 ${newPlans.size}개의 새로운 요금제가 발견되었습니다",
+            summary = appContext.resources.getQuantityString(
+                R.plurals.plan_notif_new_plans, newPlans.size, newPlans.size,
+            ),
             totalFound = newPlans.size,
             newPlans = newPlans.size,
             updatedPlans = 0,
@@ -264,7 +282,9 @@ class NotificationService(
     private fun buildFailureDetail(sourceName: String, error: String, streak: Int): NotificationDetail {
         return NotificationDetail(
             type = NotificationType.CRAWL_FAILED_STREAK,
-            summary = "$sourceName 수집이 ${streak}회 연속 실패했습니다: $error",
+            summary = appContext.getString(
+                R.string.plan_notif_failure, sourceName, streak, error,
+            ),
             totalFound = 0,
             newPlans = 0,
             updatedPlans = 0,

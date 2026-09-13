@@ -82,7 +82,7 @@ object PlanJupJupRuntime {
         sourceRepository = SourceRepository(database)
         notificationRepository = NotificationRepository(database)
         preferences = PreferencesManager.getInstance(appContext)
-        notificationService = NotificationService(database, planRepository, sourceRepository, preferences)
+        notificationService = NotificationService(appContext, database, planRepository, sourceRepository, preferences)
         crawlScheduler = CrawlScheduler(appContext)
 
         appScope.launch(Dispatchers.IO) {

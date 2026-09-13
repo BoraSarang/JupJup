@@ -1,5 +1,7 @@
 package com.borasarang.macjupjup.data.repository
 
+import android.content.Context
+import com.borasarang.macjupjup.R
 import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.NotificationLog
 import com.borasarang.macjupjup.data.db.entity.NotificationType
@@ -49,6 +51,7 @@ class NotificationRepository(private val db: MacDatabase) {
 }
 
 class NotificationService(
+    private val appContext: Context,
     private val db: MacDatabase,
     private val preferences: PreferencesManager,
 ) {
@@ -150,8 +153,11 @@ class NotificationService(
         newApps: List<App>,
     ) {
         if (!settings().notifCrawlComplete) return
-        val summary = "수집 완료(${result.sourceName}): 발견 ${result.found}건" +
-            " · 신규 ${result.created}건 · 갱신 ${result.updated}건"
+        // R7: 본문 리소스화 (DB 저장 문구와 동일 출력)
+        val summary = appContext.getString(
+            R.string.mac_notif_crawl_complete,
+            result.sourceName, result.found, result.created, result.updated,
+        )
         val detail = baseDetail(
             type = NotificationType.CRAWL_COMPLETE,
             summary = summary,
@@ -180,7 +186,9 @@ class NotificationService(
     suspend fun createNewAppsNotification(newApps: List<App>) {
         if (newApps.isEmpty()) return
         if (!settings().notifNewApp) return
-        val summary = "새로운 맥 앱 ${newApps.size}건이 발견되었습니다"
+        val summary = appContext.resources.getQuantityString(
+            R.plurals.mac_notif_new_apps, newApps.size, newApps.size,
+        )
         db.notificationLogDao().insert(
             NotificationLog(
                 type = NotificationType.NEW_APPS_FOUND,
@@ -198,7 +206,9 @@ class NotificationService(
     suspend fun createVersionBumpNotification(updated: List<App>) {
         if (updated.isEmpty()) return
         if (!settings().notifNewApp) return
-        val summary = "버전 업데이트 ${updated.size}건이 감지되었습니다"
+        val summary = appContext.resources.getQuantityString(
+            R.plurals.mac_notif_version_bump, updated.size, updated.size,
+        )
         db.notificationLogDao().insert(
             NotificationLog(
                 type = NotificationType.VERSION_BUMPED,
@@ -215,7 +225,9 @@ class NotificationService(
     /** 수집 실패 알림 (연속 실패 등) */
     suspend fun createFailureNotification(sourceName: String, error: String, streak: Int) {
         if (!settings().notifFailure) return
-        val summary = "$sourceName 수집이 ${streak}회 연속 실패했습니다: $error"
+        val summary = appContext.getString(
+            R.string.mac_notif_failure, sourceName, streak, error,
+        )
         val detail = baseDetail(
             type = NotificationType.CRAWL_FAILED_STREAK,
             summary = summary,

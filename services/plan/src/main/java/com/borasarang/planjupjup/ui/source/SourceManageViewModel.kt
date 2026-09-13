@@ -74,11 +74,18 @@ fun SourceStatus.describe(): String {
 }
 
 /** 최근 로그 한 줄: 마지막 수집일 + 발견/신규/갱신 통계 */
-fun com.borasarang.planjupjup.data.repository.RecentLog.describeStats(): String {
+fun com.borasarang.planjupjup.data.repository.RecentLog.describeStats(context: android.content.Context): String {
     val at = com.borasarang.planjupjup.util.TimeUtils.formatRelative(finishedAt ?: startedAt)
     return if (status == Constants.STATUS_SUCCESS) {
-        "마지막 수집: $at · 발견 ${plansFound} · 신규 ${plansNew} · 갱신 ${plansUpdated}"
+        // R7: 본문 리소스화 (화면 표시 문구와 동일 출력)
+        context.getString(
+            com.borasarang.planjupjup.R.string.plan_source_stats_ok,
+            at, plansFound, plansNew, plansUpdated,
+        )
     } else {
-        "마지막 수집: $at · 실패: ${errorMessage?.take(60) ?: "?"}"
+        context.getString(
+            com.borasarang.planjupjup.R.string.plan_source_stats_fail,
+            at, errorMessage?.take(60) ?: "?",
+        )
     }
 }
