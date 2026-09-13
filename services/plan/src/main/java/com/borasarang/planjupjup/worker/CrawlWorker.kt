@@ -162,7 +162,9 @@ class CrawlWorker(
             DebugLogger.e("수집", "E-AND-CRAWL-0204", "연속 5회 수집 실패 source=$sourceName")
             app.notificationService.createFailureNotification(sourceName, error, 5)
             notifyFailure(sourceName)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // R6: 실패 기록 자체가 삼켜지면 원인 추적 불가
+            DebugLogger.e("수집", "E-AND-CRAWL-0204", "연속실패 기록 실패 source=$sourceName: ${e.message}", e)
         }
     }
 
@@ -170,10 +172,16 @@ class CrawlWorker(
         try {
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL_FAIL_ID, CHANNEL_FAIL_NAME, NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(
+                    CHANNEL_FAIL_ID,
+                    // R6: 채널명 리소스화
+                    applicationContext.getString(R.string.plan_notif_channel_crawl_fail),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ),
             )
             val notification = NotificationCompat.Builder(applicationContext, CHANNEL_FAIL_ID)
-                .setContentTitle("수집 실패 알림")
+                // R6: 푸시 제목 리소스화 (본문은 변수 포함이라 유지)
+                .setContentTitle(applicationContext.getString(R.string.plan_notif_crawl_fail_title))
                 .setContentText("$sourceName 수집이 5회 연속 실패했습니다")
                 .setSmallIcon(android.R.drawable.stat_notify_error)
                 .setAutoCancel(true)
@@ -182,7 +190,9 @@ class CrawlWorker(
                 Constants.NOTIFICATION_ID_CRAWL_BASE + 900 + sourceName.hashCode() % 100,
                 notification,
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // R6: 푸시 표시 실패 기록 (DB 알림은 위에서 저장됨)
+            DebugLogger.w("수집", "실패 푸시 표시 실패 source=$sourceName: ${e.message}")
         }
     }
 
@@ -212,7 +222,12 @@ class CrawlWorker(
         try {
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(
+                    CHANNEL_ID,
+                    // R6: 채널명 리소스화
+                    applicationContext.getString(R.string.plan_notif_channel_crawl),
+                    NotificationManager.IMPORTANCE_LOW,
+                ),
             )
         } catch (_: Exception) {
         }
@@ -221,8 +236,6 @@ class CrawlWorker(
     companion object {
         const val KEY_SOURCE_ID = "sourceId"
         private const val CHANNEL_ID = "planjupjup_crawl"
-        private const val CHANNEL_NAME = "요금제 수집 상태"
         private const val CHANNEL_FAIL_ID = "planjupjup_crawl_fail"
-        private const val CHANNEL_FAIL_NAME = "수집 실패 알림"
     }
 }

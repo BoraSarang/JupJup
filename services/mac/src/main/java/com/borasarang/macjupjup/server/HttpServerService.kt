@@ -64,6 +64,10 @@ class HttpServerService : Service() {
     @Volatile
     internal var lastSeedStatus: String = "idle"
 
+    /** R6: 시드 시작 시각 — 상태 running의 신선도 판단용 */
+    @Volatile
+    internal var lastSeedStartedAt: Long = 0L
+
     internal fun app(): MacJupJupRuntime = MacJupJupRuntime
 
     override fun onCreate() {

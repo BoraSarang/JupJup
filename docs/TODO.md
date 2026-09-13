@@ -5,10 +5,10 @@
 ## R12 리팩토링 6단계 — 빌드·문자열·잔정리
 - [x] PLAN_R6 초안
 - [x] 6a 빌드·매니페스트 정리 (SDK 카탈로그 + 권한 app 일원화)
-- [ ] 6b 코드 잔정리 (catch 로그·SourceLocks·lastSeedStatus·문자열 리소스화·문서유령)
-- [ ] 빌드 + 단위 + lint + 실기 검증 (health·머지드매니페스트·크래시 0)
-- [ ] versionName 1.8.0 (versionCode 10)으로 bump
-- [ ] 문서 갱신 (CHANGELOG·세션 로그)
+- [x] 6b 코드 잔정리 (catch 로그·SourceLocks·lastSeedStatus·문자열 리소스화·문서유령)
+- [x] 빌드 + 단위(131/131) + lint + 실기 검증 (health·머지드매니페스트·크래시 0)
+- [x] versionName 1.8.0 (versionCode 10)으로 bump
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
 
 ## R11 리팩토링 5단계 — 성능·DB
 - [x] PLAN_R5 초안

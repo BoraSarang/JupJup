@@ -91,7 +91,9 @@ class NotificationFragment : Fragment() {
             try {
                 repo.markAsRead(id)
                 load()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                // R6: 사용자 액션 silent 금지
+                DebugLogger.e("알림", "E-AND-DB-0402", "읽음 처리 실패 id=$id: ${e.message}", e)
             }
         }
     }
@@ -101,7 +103,9 @@ class NotificationFragment : Fragment() {
             try {
                 repo.delete(item.id)
                 load()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                // R6: 사용자 액션 silent 금지
+                DebugLogger.e("알림", "E-AND-DB-0402", "알림 삭제 실패 id=${item.id}: ${e.message}", e)
             }
         }
     }
@@ -111,7 +115,9 @@ class NotificationFragment : Fragment() {
             try {
                 repo.markAllAsRead()
                 load()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                // R6: 사용자 액션 silent 금지
+                DebugLogger.e("알림", "E-AND-DB-0402", "전체 읽음 처리 실패: ${e.message}", e)
             }
         }
     }

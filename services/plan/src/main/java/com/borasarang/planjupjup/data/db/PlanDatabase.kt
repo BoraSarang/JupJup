@@ -65,7 +65,9 @@ abstract class PlanDatabase : RoomDatabase() {
         fun resetInstance() {
             try {
                 instance?.close()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                // R6: 복구 경로 close 실패 기록 (무시하고 초기화 계속)
+                com.borasarang.planjupjup.util.DebugLogger.w("복구", "DB close 실패: ${e.message}")
             }
             instance = null
         }

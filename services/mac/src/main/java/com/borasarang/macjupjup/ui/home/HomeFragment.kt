@@ -103,14 +103,14 @@ class HomeFragment : Fragment() {
         val address = if (state.localIp != null) "http://${state.localIp}:${state.port}" else return
         val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("서버 주소", address))
-        Toast.makeText(requireContext(), "주소가 복사되었습니다", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), getString(R.string.mac_toast_address_copied), Toast.LENGTH_SHORT).show()
         DebugLogger.i("홈", "서버 주소 복사")
     }
 
     private fun openInBrowser() {
         val state = viewModel.uiState.value
         val address = if (state.localIp != null) "http://${state.localIp}:${state.port}" else {
-            Toast.makeText(requireContext(), "서버 주소를 확인할 수 없습니다", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.mac_toast_address_unknown), Toast.LENGTH_SHORT).show()
             return
         }
         DebugLogger.i("홈", "포털 브라우저 열기 $address")
@@ -118,7 +118,7 @@ class HomeFragment : Fragment() {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(address)))
         } catch (e: Exception) {
             DebugLogger.e("홈", "E-AND-UI-0701", "브라우저 열기 실패: ${e.message}", e)
-            Toast.makeText(requireContext(), "브라우저를 열 수 없습니다", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.mac_toast_browser_failed), Toast.LENGTH_SHORT).show()
         }
     }
 

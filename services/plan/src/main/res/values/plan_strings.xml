@@ -7,6 +7,16 @@
     <string name="plan_notif_server_running">요금줍줍 서버 실행 중</string>
     <string name="plan_notif_server_starting">요금줍줍 서버 시작 중…</string>
     <string name="plan_notif_crawl_running">요금제 수집 중</string>
+    <string name="plan_notif_channel_crawl">요금제 수집 상태</string>
+    <string name="plan_notif_channel_crawl_fail">수집 실패 알림</string>
+    <string name="plan_notif_crawl_fail_title">수집 실패 알림</string>
+
+    <string name="plan_toast_port_required">포트 번호를 입력하세요</string>
+    <string name="plan_toast_seconds_required">초 단위로 입력하세요</string>
+    <string name="plan_toast_settings_unavailable">설정 화면을 열 수 없습니다</string>
+    <string name="plan_toast_address_copied">주소가 복사되었습니다</string>
+    <string name="plan_toast_address_unknown">서버 주소를 확인할 수 없습니다</string>
+    <string name="plan_toast_browser_failed">브라우저를 열 수 없습니다</string>
 
     <string name="plan_nav_home">홈</string>
     <string name="plan_nav_source">수집 소스</string>

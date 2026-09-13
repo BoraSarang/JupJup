@@ -18,7 +18,9 @@ object CrawlHttp {
                     java.net.CookieManager(null, java.net.CookiePolicy.ACCEPT_ALL),
                 )
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // R6: 세션 미유지 원인 추적용 (수집은 계속)
+            com.borasarang.planjupjup.util.DebugLogger.w("수집", "CookieManager 설정 실패: ${e.message}")
         }
     }
 

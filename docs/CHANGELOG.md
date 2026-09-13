@@ -1,5 +1,23 @@
 # CHANGELOG — JupJup
 
+## [1.8.0] - 2026-09-14
+> 플랫폼: AND · 빌드·문자열·잔정리 (리팩토링 6단계)
+
+### 정리
+- SDK 단일 진실: `compileSdk/minSdk`를 카탈로그로 (`libs.versions.toml`, 4 모듈)
+- 권한 일원화: 9종을 `:app` 소유로 (mac/plan 삭제, 머지 확인).
+  `SystemForegroundService`는 라이브러리 단독 lint 때문에 3곳 유지
+- 빈 catch 12곳 로그화 (연속실패 기록·실패푸시·DB close·CookieManager·알림 액션 6종).
+  의도적 무시(종료·채널·폴백·재귀방지)는 제외
+- `SourceLocks.release` 유휴 락 제거, 시드 취소 시 `idle` 복구 + 시작시각 기록
+- Toast·채널·푸시제목 17종 리소스화 (`mac_/plan_` 체계. 포맷·DB값·파서용 제외)
+- 문서 유령 코드 2종 정리 (v1.0.0 항목의 미등록 코드 표기 제거)
+
+### 테스트
+- 검증: 실기(R5CT215F4QK) 단위 131/131, lint 오류 0, 설치 후 health 200×2, 크래시 0
+- 후속 (범위 밖): build-logic convention plugin, `E-AND-DB-0402` 조회/저장 분리,
+  요약·알림 본문 리소스화, 시드 상태 영속화, escape/envelope 통일
+
 ## [1.7.0] - 2026-09-14
 > 플랫폼: AND · 성능·DB (리팩토링 5단계)
 
@@ -133,8 +151,8 @@
 - 메모리/성능 영향: 두 서버 동시 기동으로 약 2배 서버 프로세스(각자 CIO 엔진), DB 2개
 
 ### 수정 (1.0.1)
-- **크래시 #1**: 두 서비스의 DataStore 파일명이 동일(`settings`) → `mac_settings`/`plan_settings`로 격리 (E-AND-STORE-0511)
-- **크래시 #2**: WorkManager `SystemForegroundService`에 `foregroundServiceType="dataSync"` 누락 → app manifest에서 `tools:node="merge"`로 주입 (E-AND-SYNC-0521)
+- **크래시 #1**: 두 서비스의 DataStore 파일명이 동일(`settings`) → `mac_settings`/`plan_settings`로 격리
+- **크래시 #2**: WorkManager `SystemForegroundService`에 `foregroundServiceType="dataSync"` 누락 → app manifest에서 `tools:node="merge"`로 주입
 - 검증: 실기(LB-R5CT215F4QK) 포털 3000·3001 모두 HTTP 200, 크래시 없음
 
 ## [1.1.0] - 2026-09-13

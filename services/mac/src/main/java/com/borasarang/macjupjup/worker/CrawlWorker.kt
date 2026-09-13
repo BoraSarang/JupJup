@@ -198,7 +198,9 @@ class CrawlWorker(
             if (!com.borasarang.macjupjup.util.CrawlStats.isFailureStreak(statuses)) return
             DebugLogger.e("수집", "E-AND-CRAWL-0204", "연속 5회 수집 실패 source=$sourceName")
             app.notificationService.createFailureNotification(sourceName, error, 5)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // R6: 실패 기록 자체가 삼켜지면 원인 추적 불가
+            DebugLogger.e("수집", "E-AND-CRAWL-0204", "연속실패 기록 실패 source=$sourceName: ${e.message}", e)
         }
     }
 
@@ -228,7 +230,12 @@ class CrawlWorker(
         try {
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(
+                    CHANNEL_ID,
+                    // R6: 채널명 리소스화
+                    applicationContext.getString(R.string.mac_notif_channel_crawl),
+                    NotificationManager.IMPORTANCE_LOW,
+                ),
             )
         } catch (_: Exception) {
         }
@@ -238,6 +245,5 @@ class CrawlWorker(
         const val KEY_SOURCE_ID = "sourceId"
         private const val MAX_TRANSLATE_PER_RUN = 15
         private const val CHANNEL_ID = "macjupjup_crawl"
-        private const val CHANNEL_NAME = "맥 앱 수집 상태"
     }
 }

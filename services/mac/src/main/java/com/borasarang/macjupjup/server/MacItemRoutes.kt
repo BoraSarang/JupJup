@@ -84,9 +84,10 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
         if (trackId == null && name == null) {
             return@post call.respondError("trackId or name required")
         }
-        lastSeedStatus = "running"
-        val appRef = application
-        scope.launch {
+                    lastSeedStatus = "running"
+                    lastSeedStartedAt = System.currentTimeMillis()
+                    val appRef = application
+                    scope.launch {
             try {
                 val query = if (trackId != null) {
                     com.borasarang.macjupjup.crawler.itunes.itunesLookupUrl("$trackId")
@@ -126,7 +127,11 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
                     "[FEATURE] 수동 시드 저장 created=${saved.created} updated=${saved.updated}",
                 )
                 lastSeedStatus = "done seeded=${drafts.size} created=${saved.created}"
-            } catch (e: Exception) {
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            // R6: scope 취소(onDestroy) 시 거짓 진행중 방지 + 취소 전파
+                            lastSeedStatus = "idle"
+                            throw e
+                        } catch (e: Exception) {
                 com.borasarang.macjupjup.util.DebugLogger.e(
                     "수동시드", "E-AND-CRAWL-0201", "시드 실패: ${e.message}", e,
                 )

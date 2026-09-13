@@ -55,7 +55,7 @@ class SettingsFragment : Fragment() {
         binding.macBtnSaveToken.setOnClickListener {
             viewModel.saveToken(binding.macEtToken.text.toString())
             binding.macEtToken.text?.clear()
-            Toast.makeText(requireContext(), "토큰을 저장했습니다", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.mac_toast_token_saved), Toast.LENGTH_SHORT).show()
         }
         binding.macSwitchTranslateKo.setOnCheckedChangeListener { _, checked ->
             viewModel.saveTranslateKo(checked)
@@ -63,7 +63,7 @@ class SettingsFragment : Fragment() {
         binding.macBtnApplyPort.setOnClickListener {
             val port = binding.macEtPort.text.toString().toIntOrNull()
             if (port == null) {
-                Toast.makeText(requireContext(), "포트 번호를 입력하세요", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.mac_toast_port_required), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             viewModel.savePort(port)
@@ -78,7 +78,7 @@ class SettingsFragment : Fragment() {
         binding.macBtnApplyWatchdog.setOnClickListener {
             val sec = binding.macEtWatchdog.text.toString().toIntOrNull()
             if (sec == null) {
-                Toast.makeText(requireContext(), "초 단위로 입력하세요", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.mac_toast_seconds_required), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             viewModel.saveWatchdog(sec)
@@ -190,7 +190,7 @@ class SettingsFragment : Fragment() {
             )
         } catch (e: Exception) {
             DebugLogger.e("설정", "E-AND-PERM-0602", "배터리 예외 요청 실패: ${e.message}", e)
-            Toast.makeText(requireContext(), "설정 화면을 열 수 없습니다", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.mac_toast_settings_unavailable), Toast.LENGTH_SHORT).show()
         }
     }
 
