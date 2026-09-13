@@ -14,6 +14,7 @@ import com.borasarang.planjupjup.util.DebugLogger as PlanDebugLogger
 import com.borasarang.planjupjup.util.NetUtils as PlanNetUtils
 import com.borasarang.planjupjup.util.TimeUtils as PlanTimeUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,7 +44,12 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    fun refresh() {
+    /**
+     * 시리즈 상태 새로고침.
+     * 서버 기동은 비동기(포트 바인드까지 수백 ms)라 첫 조회가 "중지됨"으로 잡힐 수 있다.
+     * 중지 표시가 하나라도 있으면 [SERVER_SETTLE_MS] 뒤 1회만 재조회한다 (재귀 없음).
+     */
+    fun refresh(retry: Boolean = true) {
         viewModelScope.launch {
             MacDebugLogger.i("대시보드", "시리즈 대시보드 새로고침")
             _uiState.value = _uiState.value.copy(isChecking = true)
@@ -54,6 +60,11 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                     mac to plan
                 }
                 _uiState.value = DashboardUiState(isChecking = false, mac = fresh.first, plan = fresh.second)
+                if (retry && (!fresh.first.isServerRunning || !fresh.second.isServerRunning)) {
+                    MacDebugLogger.i("대시보드", "서버 미기동 감지 — ${SERVER_SETTLE_MS}ms 뒤 재조회")
+                    delay(SERVER_SETTLE_MS)
+                    refresh(retry = false)
+                }
             } catch (e: Exception) {
                 MacDebugLogger.e("대시보드", "E-AND-DB-0402", "시리즈 대시보드 조회 실패: ${e.message}", e)
                 PlanDebugLogger.e("대시보드", "E-AND-DB-0402", "시리즈 대시보드 조회 실패: ${e.message}", e)
@@ -210,5 +221,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         } catch (_: Exception) {
             false
         }
+    }
+
+    companion object {
+        /** 서버 비동기 기동 정착 대기 (실측 기동 ~0.4s + 여유) */
+        private const val SERVER_SETTLE_MS = 2000L
     }
 }

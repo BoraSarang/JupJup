@@ -74,6 +74,13 @@
 - [x] N3 폴리시+테스트+실기 검증 (connected app 4/4 + mac 6/6, 포털 200/200, 크래시 0)
 - [x] N4 문서+DoD+커밋
 
+## R6 1.3.1 대시보드 서버 상태 레이스 수정
+- [x] PLAN_v3 초안 (원인: refresh가 서버 바인드 전 소켓 체크)
+- [x] DashboardViewModel 추적 재조회 (2초 뒤 1회) + 재조회 로그
+- [x] 빌드 + 실기 설치·크래시 확인 (포털 3000·3001 HTTP 200)
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+- [x] versionName 1.3.1 (versionCode 4)으로 bump
+
 ## R5 1.3.0 릴리스 (첫 푸시)
 - [x] 사전 검증 (assemble 성공 + 단위 mac 57/plan 49 + lint 오류 0, 기기 설치 없이)
 - [x] origin 첫 푸시 (main)
