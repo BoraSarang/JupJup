@@ -2,6 +2,14 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R9 리팩토링 3단계 — app 추상화 + ViewModel 테스트
+- [x] PLAN_R3 초안
+- [x] 3a ServiceAdapter + ServiceRegistry + 내비 정리 (CrawlScheduler db 파라미터 제거 포함)
+- [x] 3b 소켓 타임아웃(500ms) + DashboardViewModelTest 6종 (ioDispatcher 주입으로 결정적 테스트)
+- [x] 빌드 + 단위(app 6/6·mac+plan 106/106) + lint + 실기 검증 (health·크래시 0)
+- [x] versionName 1.5.0 (versionCode 7)으로 bump
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## D1 문서·스캐폴드
 - [x] AGENTS.local.md
 - [x] docs/plans/PLAN_v1_jupjup.md

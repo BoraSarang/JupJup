@@ -9,6 +9,7 @@ import com.borasarang.common.util.NetUtils
 import com.borasarang.jupjup.ui.nav.Service
 import com.borasarang.jupjup.ui.nav.ServiceRegistry
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +45,7 @@ data class DashboardUiState(
 class DashboardViewModel(
     app: Application,
     private val adapters: Map<Service, ServiceAdapter> = ServiceRegistry.adapters,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AndroidViewModel(app) {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -59,10 +61,10 @@ class DashboardViewModel(
             MacDebugLogger.i("대시보드", "시리즈 대시보드 새로고침")
             _uiState.value = _uiState.value.copy(isChecking = true)
             try {
-                val ip = withContext(Dispatchers.IO) {
+                val ip = withContext(ioDispatcher) {
                     NetUtils.getLocalIp(getApplication()) ?: ""
                 }
-                val fresh = withContext(Dispatchers.IO) {
+                val fresh = withContext(ioDispatcher) {
                     adapters.getValue(Service.MAC).loadState(ip) to
                         adapters.getValue(Service.PLAN).loadState(ip)
                 }
@@ -98,7 +100,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             val adapter = adapters[service] ?: return@launch
             val enabled = !_uiState.value.forService(service).crawlEnabled
-            withContext(Dispatchers.IO) { adapter.setCrawlEnabled(enabled) }
+            withContext(ioDispatcher) { adapter.setCrawlEnabled(enabled) }
             refresh()
         }
     }

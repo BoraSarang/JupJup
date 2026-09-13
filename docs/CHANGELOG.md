@@ -1,5 +1,18 @@
 # CHANGELOG — JupJup
 
+## [1.5.0] - 2026-09-14
+> 플랫폼: AND · app 추상화 + ViewModel 테스트 (리팩토링 3단계)
+
+### 구조
+- `ServiceAdapter` 신규 (Mac/Plan 구현체): 대시보드 상태 조회·수집 트리거·중지/재개·서버 토글의 서비스 분기 흡수
+- `ServiceRegistry` 신규 (`Services.kt`): 어댑터 맵 + fragment 팩토리 — MainActivity 이중 when 제거
+- `DashboardViewModel`: 어댑터 맵 주입(기본값=Registry) + `ioDispatcher` 주입(기본값=IO) — 8개 복사 메서드 → svc 키 4종으로 축소
+- 공통 `NetUtils.isPortOpen(port, timeoutMs=500)`: 무타임아웃 소켓 hang 제거
+
+### 테스트
+- `DashboardViewModelTest` 6종 신규 (JVM, Robolectric 불필요): 병합·2초 재조회·재귀 없음·서버/수집 위임
+- 검증: 실기(R5CT215F4QK) 단위 app 6/6 + mac·plan 106/106, lint 오류 0, 설치 후 health 3000·3001 HTTP 200, 크래시 0
+
 ## [1.4.0] - 2026-09-14
 > 플랫폼: AND · :services:common 추출 (리팩토링 2단계)
 
