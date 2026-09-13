@@ -26,6 +26,9 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+    // R2b: 서버 JSON 헬퍼용 (ApplicationCall 확장 + JsonObject 빌더)
+    implementation(libs.ktor.server.core)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

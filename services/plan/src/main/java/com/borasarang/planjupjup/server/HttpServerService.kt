@@ -25,6 +25,12 @@ import com.borasarang.planjupjup.data.repository.TrendPoint
 import com.borasarang.planjupjup.data.repository.ValueRankItem
 import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
+import com.borasarang.common.server.pathId
+import com.borasarang.common.server.pathIdLong
+import com.borasarang.common.server.putIfNotNull
+import com.borasarang.common.server.receiveJsonObject
+import com.borasarang.common.server.respondError
+import com.borasarang.common.server.respondNotFound
 import com.borasarang.common.util.NetUtils
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -34,7 +40,6 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
-import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
@@ -50,7 +55,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -208,22 +212,14 @@ class HttpServerService : Service() {
                         ContentType.Application.Json)
                 }
                 get("/api/plans/{id}") {
-                    val id = call.parameters["id"]
+                    val id = call.pathId()
                     if (id.isNullOrBlank()) {
-                        call.respondText(
-                            """{"error":"id required"}""",
-                            ContentType.Application.Json,
-                            HttpStatusCode.BadRequest,
-                        )
+                        call.respondError("id required")
                         return@get
                     }
                     val found = application.planRepository.getPlanWithSources(id)
                     if (found == null) {
-                        call.respondText(
-                            """{"error":"Not found"}""",
-                            ContentType.Application.Json,
-                            HttpStatusCode.NotFound,
-                        )
+                        call.respondNotFound()
                     } else {
                         call.respondText(planJson(found), ContentType.Application.Json)
                     }
@@ -241,9 +237,9 @@ class HttpServerService : Service() {
                                     put("enabled", s.enabled)
                                     put("intervalHours", s.intervalHours)
                                     put("intervalMinutes", s.intervalMinutes)
-                                    s.lastRunAt?.let { put("lastRunAt", it) }
+                                    putIfNotNull("lastRunAt", s.lastRunAt)
                                     put("lastStatus", s.lastStatus)
-                                    s.errorMessage?.let { put("errorMessage", it) }
+                                    putIfNotNull("errorMessage", s.errorMessage)
                                 },
                             )
                         }
@@ -251,13 +247,9 @@ class HttpServerService : Service() {
                     call.respondText(arr.toString(), ContentType.Application.Json)
                 }
                 post("/api/sources/{id}/toggle") {
-                    val id = call.parameters["id"]
+                    val id = call.pathId()
                     if (id.isNullOrBlank()) {
-                        call.respondText(
-                            """{"error":"id required"}""",
-                            ContentType.Application.Json,
-                            HttpStatusCode.BadRequest,
-                        )
+                        call.respondError("id required")
                         return@post
                     }
                     val next = application.sourceRepository.toggleEnabled(id)
@@ -265,17 +257,8 @@ class HttpServerService : Service() {
                         ContentType.Application.Json)
                 }
                 post("/api/sync") {
-                    val body = try {
-                        call.receiveText()
-                    } catch (_: Exception) {
-                        ""
-                    }
-                    val sourceId = try {
-                        (Json.parseToJsonElement(body) as? JsonObject)
-                            ?.get("sourceId")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
-                    } catch (_: Exception) {
-                        null
-                    }
+                    val sourceId = call.receiveJsonObject()
+                        ?.get("sourceId")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
                     DebugLogger.i("수동수집", "즉시 수집 요청 sourceId=$sourceId")
                     application.crawlScheduler.triggerImmediate(sourceId)
                     call.respondText(
@@ -290,7 +273,7 @@ class HttpServerService : Service() {
                         buildJsonObject {
                             put("totalPlans", stats.totalPlans)
                             put("activeSources", stats.activeSources)
-                            stats.lastCollectedAt?.let { put("lastCollectedAt", it) }
+                            putIfNotNull("lastCollectedAt", stats.lastCollectedAt)
                         }.toString(),
                         ContentType.Application.Json,
                     )
@@ -404,46 +387,25 @@ class HttpServerService : Service() {
                     call.respondText(settingsJson(s), ContentType.Application.Json)
                 }
                 post("/api/settings") {
-                    val body = try {
-                        call.receiveText()
-                    } catch (_: Exception) {
-                        ""
-                    }
                     val current = application.preferences.getSettings()
                     try {
-                        val obj = Json.parseToJsonElement(body) as? JsonObject
+                        val obj = call.receiveJsonObject()
                         if (obj == null) {
-                            return@post call.respondText(
-                                """{"error":"E-AND-VALID-0501"}""",
-                                ContentType.Application.Json,
-                                HttpStatusCode.BadRequest,
-                            )
+                            return@post call.respondError("E-AND-VALID-0501")
                         }
                         val port = obj["port"]?.jsonPrimitive?.content?.toIntOrNull() ?: current.port
                         if (port !in Constants.MIN_PORT..Constants.MAX_PORT) {
-                            return@post call.respondText(
-                                """{"error":"E-AND-VALID-0502"}""",
-                                ContentType.Application.Json,
-                                HttpStatusCode.BadRequest,
-                            )
+                            return@post call.respondError("E-AND-VALID-0502")
                         }
                         val retentionDays = obj["retentionDays"]?.jsonPrimitive?.content
                             ?.toIntOrNull() ?: current.retentionDays
                         if (retentionDays !in Constants.MIN_RETENTION_DAYS..Constants.MAX_RETENTION_DAYS) {
-                            return@post call.respondText(
-                                """{"error":"E-AND-VALID-0501"}""",
-                                ContentType.Application.Json,
-                                HttpStatusCode.BadRequest,
-                            )
+                            return@post call.respondError("E-AND-VALID-0501")
                         }
                         val watchdogIntervalSec = obj["watchdogIntervalSec"]?.jsonPrimitive?.content
                             ?.toIntOrNull() ?: current.watchdogIntervalSec
                         if (watchdogIntervalSec !in Constants.MIN_WATCHDOG_SEC..Constants.MAX_WATCHDOG_SEC) {
-                            return@post call.respondText(
-                                """{"error":"E-AND-VALID-0501"}""",
-                                ContentType.Application.Json,
-                                HttpStatusCode.BadRequest,
-                            )
+                            return@post call.respondError("E-AND-VALID-0501")
                         }
                         val next = SettingsData(
                             port = port,
@@ -500,22 +462,14 @@ class HttpServerService : Service() {
                     )
                 }
                 get("/api/notifications/{id}") {
-                    val id = call.parameters["id"]?.toLongOrNull()
+                    val id = call.pathIdLong()
                     if (id == null) {
-                        call.respondText(
-                            """{"error":"id required"}""",
-                            ContentType.Application.Json,
-                            HttpStatusCode.BadRequest,
-                        )
+                        call.respondError("id required")
                         return@get
                     }
                     val log = application.notificationRepository.getById(id)
                     if (log == null) {
-                        call.respondText(
-                            """{"error":"Not found"}""",
-                            ContentType.Application.Json,
-                            HttpStatusCode.NotFound,
-                        )
+                        call.respondNotFound()
                         return@get
                     }
                     call.respondText(
@@ -527,13 +481,9 @@ class HttpServerService : Service() {
                     )
                 }
                 post("/api/notifications/{id}/read") {
-                    val id = call.parameters["id"]?.toLongOrNull()
+                    val id = call.pathIdLong()
                     if (id == null) {
-                        call.respondText(
-                            """{"error":"id required"}""",
-                            ContentType.Application.Json,
-                            HttpStatusCode.BadRequest,
-                        )
+                        call.respondError("id required")
                         return@post
                     }
                     val updated = application.notificationRepository.markAsRead(id)
@@ -550,13 +500,9 @@ class HttpServerService : Service() {
                     )
                 }
                 delete("/api/notifications/{id}") {
-                    val id = call.parameters["id"]?.toLongOrNull()
+                    val id = call.pathIdLong()
                     if (id == null) {
-                        call.respondText(
-                            """{"error":"id required"}""",
-                            ContentType.Application.Json,
-                            HttpStatusCode.BadRequest,
-                        )
+                        call.respondError("id required")
                         return@delete
                     }
                     val deleted = application.notificationRepository.delete(id)
@@ -566,12 +512,9 @@ class HttpServerService : Service() {
                     )
                 }
                 post("/api/notifications/cleanup") {
-                    val body = try { call.receiveText() } catch (_: Exception) { "" }
-                    val days = try {
-                        (Json.parseToJsonElement(body) as? JsonObject)
-                            ?.get("days")?.jsonPrimitive?.content?.toIntOrNull()
-                            ?: currentRetentionDays()
-                    } catch (_: Exception) { currentRetentionDays() }
+                    val days = call.receiveJsonObject()
+                        ?.get("days")?.jsonPrimitive?.content?.toIntOrNull()
+                        ?: currentRetentionDays()
                     val cutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days.toLong())
                     val deleted = application.notificationRepository.deleteOlderThan(cutoff)
                     call.respondText(
@@ -733,17 +676,17 @@ class HttpServerService : Service() {
             put("mvnoNetwork", p.mvnoNetwork)
             put("planName", p.planName)
             put("price", p.price)
-            p.priceAfterDiscount?.let { put("priceAfterDiscount", it) }
-            p.discountMonths?.let { put("discountMonths", it) }
+            putIfNotNull("priceAfterDiscount", p.priceAfterDiscount)
+            putIfNotNull("discountMonths", p.discountMonths)
             put("dataAmount", p.dataAmount)
             put("voice", p.voice)
             put("sms", p.sms)
             put("networkType", p.networkType)
-            p.eventBadge?.let { put("eventBadge", it) }
+            putIfNotNull("eventBadge", p.eventBadge)
             put("collectedAt", p.collectedAt)
             put("firstCollectedAt", p.firstCollectedAt)
             put("isNew", p.isNew)
-            p.tags?.let { put("tags", it) }
+            putIfNotNull("tags", p.tags)
         }
     }
 
@@ -795,7 +738,7 @@ class HttpServerService : Service() {
             put("avgDataGb", o.avgDataGb)
             put("crawlCountToday", o.crawlCountToday)
             put("crawlFail24h", o.crawlFail24h)
-            o.lastCollectedAt?.let { put("lastCollectedAt", it) }
+            putIfNotNull("lastCollectedAt", o.lastCollectedAt)
         }.toString()
     }
 
@@ -810,7 +753,7 @@ class HttpServerService : Service() {
             put("maxPrice", b.maxPrice)
             put("avgDataGb", b.avgDataGb)
             put("g5Count", b.g5Count)
-            b.pricePerGb?.let { put("pricePerGb", it) }
+            putIfNotNull("pricePerGb", b.pricePerGb)
         }
     }
 
@@ -824,7 +767,7 @@ class HttpServerService : Service() {
             put("avgDataGb", n.avgDataGb)
             put("g5Ratio", n.g5Ratio)
             put("unlimitedRatio", n.unlimitedRatio)
-            n.pricePerGb?.let { put("pricePerGb", it) }
+            putIfNotNull("pricePerGb", n.pricePerGb)
         }
     }
 
@@ -832,8 +775,8 @@ class HttpServerService : Service() {
         return buildJsonObject {
             put("label", b.label)
             put("count", b.count)
-            b.min?.let { put("min", it) }
-            b.max?.let { put("max", it) }
+            putIfNotNull("min", b.min)
+            putIfNotNull("max", b.max)
         }
     }
 
@@ -872,7 +815,7 @@ class HttpServerService : Service() {
             put("success24h", h.success24h)
             put("fail24h", h.fail24h)
             put("avgDurationSec", h.avgDurationSec)
-            h.lastCollectedAt?.let { put("lastCollectedAt", it) }
+            putIfNotNull("lastCollectedAt", h.lastCollectedAt)
             put("sources", buildJsonArray { h.sources.forEach { add(sourceHealthElement(it)) } })
         }.toString()
     }
@@ -882,8 +825,8 @@ class HttpServerService : Service() {
             put("sourceId", s.sourceId)
             put("sourceName", s.sourceName)
             put("lastStatus", s.lastStatus)
-            s.lastRunAt?.let { put("lastRunAt", it) }
-            s.errorMessage?.let { put("errorMessage", it) }
+            putIfNotNull("lastRunAt", s.lastRunAt)
+            putIfNotNull("errorMessage", s.errorMessage)
             put("successRate", s.successRate)
         }
     }

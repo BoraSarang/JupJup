@@ -74,6 +74,14 @@
 - [x] N3 폴리시+테스트+실기 검증 (connected app 4/4 + mac 6/6, 포털 200/200, 크래시 0)
 - [x] N4 문서+DoD+커밋
 
+## R8 리팩토링 2단계 — :services:common 추출
+- [x] PLAN_R2 초안
+- [x] 2a 모듈 + JupLog(릴리스 파일 로그) + NetUtils + SourceLocks + SettingsStores
+- [x] 2b 서버 JSON 헬퍼 단일화 (mac 삭제·plan 20곳, 동작 동일만)
+- [x] 빌드 + 단위 + lint + 실기 검증 (health·파일로그·승계·API 동등성·크래시 0)
+- [x] versionName 1.4.0 (versionCode 6)으로 bump
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## R7 리팩토링 1단계 — P0 안전 수정
 - [x] PLAN_R1 초안
 - [x] plan DB 폴백 데드코드 + 백업

@@ -1,5 +1,19 @@
 # CHANGELOG — JupJup
 
+## [1.4.0] - 2026-09-14
+> 플랫폼: AND · :services:common 추출 (리팩토링 2단계)
+
+### 구조
+- `:services:common` 신규 (namespace `com.borasarang.common`, 리소스 접두 `jup_`)
+- `JupLog` 코어: logcat(디버그만) + 파일 로그(항상, `files/logs/<태그>.log`, 512KB 로테이션) — 릴리스 로그 소실 해결. 양 `DebugLogger`는 시그니처 동일 파사드로 위임
+- `NetUtils`·`SourceLocks`·DataStore 팩토리(`SettingsStores`, 파일명 승계) 이관, 양 모듈 삭제
+- 서버 JSON 헬퍼 단일화 (`escapeJson` 무손실·`receiveJsonObject`·`respondError/NotFound`·`putIfNotNull`·`pathId/Long`) — mac privates 삭제, plan 20곳 치환 (동작 동일 지점만)
+- 제외 (후속 단계): `TimeUtils` (주기 옵션 상이), `BootReceiver` (3단계), Entity (5단계), plan toggle/sync 의미·stats envelope (4단계)
+
+### 수정
+- 공통 모듈 lint 권한 오류 수정 (매니페스트에 INTERNET·NETWORK_STATE·WIFI_STATE 선언)
+- 검증: 실기(R5CT215F4QK) 단위·lint 통과, 설치 후 health 3000·3001 HTTP 200, 파일 로그 2종 생성, 설정 승계 확인, API 응답 동등성(400·404·sources·settings) 확인, 크래시 0
+
 ## [1.3.2] - 2026-09-14
 > 플랫폼: AND · P0 안전 수정 (리팩토링 1단계)
 

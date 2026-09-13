@@ -17,6 +17,13 @@ import com.borasarang.macjupjup.data.repository.SettingsView
 import com.borasarang.macjupjup.data.repository.toView
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
+import com.borasarang.common.server.escapeJson
+import com.borasarang.common.server.pathId
+import com.borasarang.common.server.pathIdLong
+import com.borasarang.common.server.putIfNotNull
+import com.borasarang.common.server.receiveJsonObject
+import com.borasarang.common.server.respondError
+import com.borasarang.common.server.respondNotFound
 import com.borasarang.common.util.NetUtils
 import com.borasarang.macjupjup.util.maskToken
 import io.ktor.http.ContentType
@@ -27,7 +34,6 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
-import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.delete
@@ -43,7 +49,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -864,62 +869,6 @@ class HttpServerService : Service() {
             put("notifFailure", s.notifFailure)
         }.toString()
     }
-
-    private fun escapeJson(s: String): String {
-        return s.replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-    }
-
-    /** 에러 envelope 단일 진실 (H-1). 성공 응답은 respondText 직접 사용 */
-    private suspend fun io.ktor.server.application.ApplicationCall.respondError(
-        msg: String,
-        status: io.ktor.http.HttpStatusCode = io.ktor.http.HttpStatusCode.BadRequest,
-    ) {
-        respondText(
-            """{"error":"${escapeJson(msg)}"}""",
-            ContentType.Application.Json,
-            status,
-        )
-    }
-
-    private suspend fun io.ktor.server.application.ApplicationCall.respondNotFound(
-        msg: String = "Not found",
-    ) = respondError(msg, io.ktor.http.HttpStatusCode.NotFound)
-
-/** nullable put 단일 진실 (H-4). appElement 25연타 축소용 */
-private fun kotlinx.serialization.json.JsonObjectBuilder.putIfNotNull(key: String, value: String?) {
-    value?.let { put(key, it) }
-}
-
-private fun kotlinx.serialization.json.JsonObjectBuilder.putIfNotNull(key: String, value: Long?) {
-    value?.let { put(key, it) }
-}
-
-private fun kotlinx.serialization.json.JsonObjectBuilder.putIfNotNull(key: String, value: Double?) {
-    value?.let { put(key, it) }
-}
-
-private fun kotlinx.serialization.json.JsonObjectBuilder.putIfNotNull(key: String, value: Int?) {
-    value?.let { put(key, it) }
-}
-
-    /** 요청 바디 JSON 파싱 단일 진실 (H-2). 실패 시 null */
-    private suspend fun io.ktor.server.application.ApplicationCall.receiveJsonObject(): JsonObject? {
-        return try {
-            Json.parseToJsonElement(receiveText()) as? JsonObject
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    /** 경로 파라미터 id 단일 진실 (H-3). 비어 있으면 null */
-    private fun io.ktor.server.application.ApplicationCall.pathId(): String? =
-        parameters["id"]?.takeIf { it.isNotBlank() }
-
-    private fun io.ktor.server.application.ApplicationCall.pathIdLong(): Long? =
-        parameters["id"]?.toLongOrNull()
 
     companion object {
         const val ACTION_RESTART = "com.borasarang.macjupjup.RESTART_SERVER"
