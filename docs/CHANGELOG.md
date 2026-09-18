@@ -1,5 +1,79 @@
 # CHANGELOG — JupJup
 
+## [Unreleased]
+> 플랫폼: AND · 프롬프트팩토리 웹 v3 리포트 중심 개편 (PLAN_v6)
+
+### 변경
+- **웹 v3**: 상태카드·새로고침·3탭 삭제 → 슬림 헤더(로고+상태점+마지막실행+⚙️) + 프롬프트 칩 + 2열 마스터-디테일(PC 왼쪽 날짜·오른쪽 본문, 모바일 전체화면)
+- **모달 2층 폐지**: 기록보기 불가(상세 모달이 프롬프트 모달 뒤에 깔림) 근본 해결 — 실행 항목 인라인 렌더
+- **마크다운**: mac_web T-142 그대로 이식 + GFM 표 패치, `<br>`·`<URL>` 보존, `*라벨:*` 굵게, alert→toast
+- **설정 서랍**: ⚙️ 우측 서랍에 프롬프트 폼 + 공급자·모델(검색·모두사용/해제·갱신 `added` 수정)
+- **시드 프롬프트 출력 형식**: 표는 변경 요약에만, 서비스별 목록은 `###`+불릿 1모델1줄
+- 본문 최대폭 1200→1600px, 헤더·칩을 본문 폭에 정렬
+
+## [1.11.0] - 2026-09-18
+> 플랫폼: AND · 프롬프트팩토리 다중 프롬프트 재설계
+
+### 신규
+- **프롬프트 CRUD**: `Prompt` 엔티티 + DB v2 마이그레이션 (MIGRATION_1_2, 기존 실행기록 초기화)
+  - 제목·본문·공급자·모델·스케줄(daily/once·시각)·활성화·이전결과주입
+- **다중 프롬프트 관리**: 프롬프트별 스케줄 개별 예약 (`pf_prompt_{id}`), 실행 결과 리스트
+- **이전 결과 주입**: `usePreviousResult` ON이면 직전 SUCCESS 응답 원문을 `[어제까지 기록]`에 삽입
+- **공급자별 API 키 관리**: `ProviderKeyStore` (DataStore `pf_api_keys`) — 웹에서 등록/교체
+- **모델 카탈로그**: `ModelCatalog` (AIModelTalk 패턴 이식) — 런타임 목록 갱신 + 모델 활성 토글
+- **웹 v2 (조회+관리)**: 프롬프트 탭(인사이트+카드→상세 결과), 실행 기록, 관리 탭(프롬프트 폼+공급자·키·모델)
+- **인사이트 API**: `/api/insights` 프롬프트별 최근 SUCCESS 500자 요약
+- **시드 프롬프트**: MD(`무료AI모델-일일리포트-프롬프트.md`) 원문 1개 자동 등록
+- 앱 홈: 프롬프트 등록·활성 건수 표시 (설정·공급자 관리 스텁화)
+
+### 구조
+- 라우트 v2: `prompts` CRUD / `prompts/{id}/executions` / `execute(promptId)` / `providers`(key·models·refresh·enabled)
+- 스케줄러·워커: 프롬프트id 기반 재설계
+- `PfSettings` 축소(port/autoStart만) — 단일 프롬프트 필드 제거
+- `PfServiceAdapter`: 활성 프롬프트 수 표시, `triggerImmediate(first.id)`
+
+### 개선 (S23 실기 발견)
+- 모달 닫기 × 터치 타겟 44→48px
+- 탭 전환 시 프롬프트/상세 모달 자동 닫힘
+
+### 테스트
+- 빌드 `:app:assembleDebug` SUCCESS · 단위 테스트 SUCCESS · lint **BUILD SUCCESSFUL**
+- 실기 검증 (10.207.33.235:5555, 1.11.0): 시드 1건 자동 등록(**MD 원문과 diff 일치**),
+  API키 등록→즉시 실행 **SUCCESS ×2** (id11 84.8s / id12 56.8s),
+  **이전 결과 주입 확인**(id12 prompt에 직전 SUCCESS 삽입), `/api/insights` 정상,
+  웹 UI 데스크톱+모바일(390×844) agent-browser 검증 PASS (콘솔 에러 0)
+- versionName 1.11.0 (versionCode 13)
+
+## [1.10.0] - 2026-09-18
+> 플랫폼: AND · 프롬프트팩토리 신규 서비스
+
+### 신규
+- **`:services:promptfactory` 모듈** 추가 (네임스페이스 `com.borasarang.promptfactoryjupjup`, 포트 3002)
+- **AI 클라이언트 3종**: OpenRouter, NVIDIA NIM, Google AI Studio — 각각 OkHttp + kotlinx.serialization 기반
+- **Room DB**: `PromptExecution` 엔티티 + `PromptExecutionDao` (실행 기록 저장/조회/삭제)
+- **DataStore 설정**: 공급자/모델/프롬프트/스케줄/API키/활성화 여부 영속 저장
+- **WorkManager 스케줄러**: 매일/1회 실행 스케줄 + 즉시 실행 트리거
+- **Ktor HTTP 서버** (포트 3002): `/api/health`, `/api/executions`, `/api/execute`, `/api/settings`, `/api/models`
+- **웹 포털** (`pf_web/`): 실행 기록 목록/상세, 설정 변경, 모델 목록, 즉시 실행
+- **UI 4종 프래그먼트**: 홈/공급자관리/설정/알림
+- **ServiceAdapter + ServiceRegistry** 연동: 대시보드 3열 카드 표시
+- **MainActivity 세그먼트** 3열 확장 (맥줍줍/요금줍줍/프롬프트팩토리)
+- 기본 프롬프트: 무료 AI 모델 트래킹 리포트 (참고 파일 내장)
+- `PromptFactoryRuntime` object: DB/DataStore/스케줄러 초기화
+
+### 구조
+- app build.gradle.kts: `:services:promptfactory` 의존성 추가
+- JupJupApplication: `PromptFactoryRuntime.initialize()` 호출
+- Services.kt: `Service.PROMPTFACTORY` enum + fragment 분기
+- strings.xml: `nav_pf`, `dashboard_pf_title` 추가
+
+### 테스트
+- 빌드: `:app:assembleDebug` + `:services:promptfactory:assembleDebug` **BUILD SUCCESSFUL**
+- lint: `:app:lintDebug` **BUILD SUCCESSFUL** (오류 0)
+- 단위 테스트: `:services:promptfactory:testDebugUnitTest` **BUILD SUCCESSFUL**
+- 실기 검증 (S22, 1.10.0): pf 대시보드 카드 표시·서버 3002 기동·health 200·**AI 실행 SUCCESS 3건** (nemotron-3-super-120b 35.9s 등)·autoStart 자동 기동 확인
+- **실기 중 버그 수정**: `PfServiceAdapter.setServerRunning` 토글 역전 (running=true 시 start 호출) → Mac/Plan과 동일하게 stop으로 수정, 대시보드 pf 카드 추가
+
 ## [1.9.0] - 2026-09-14
 > 플랫폼: AND · 잔여 정리 (리팩토링 7단계)
 

@@ -58,7 +58,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.serviceSegment.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (suppressNavCallbacks || !isChecked) return@addOnButtonCheckedListener
-            val next = if (checkedId == R.id.seg_plan) Service.PLAN else Service.MAC
+            val next = when (checkedId) {
+                R.id.seg_plan -> Service.PLAN
+                R.id.seg_pf -> Service.PROMPTFACTORY
+                else -> Service.MAC
+            }
             if (next == currentService) return@addOnButtonCheckedListener
             currentService = next
             currentTab = ServiceTab.DASHBOARD
@@ -104,7 +108,11 @@ class MainActivity : AppCompatActivity() {
         applyTab()
         suppressNavCallbacks = true
         try {
-            val segId = if (currentService == Service.PLAN) R.id.seg_plan else R.id.seg_mac
+            val segId = when (currentService) {
+                Service.PLAN -> R.id.seg_plan
+                Service.PROMPTFACTORY -> R.id.seg_pf
+                else -> R.id.seg_mac
+            }
             if (binding.serviceSegment.checkedButtonId != segId) {
                 binding.serviceSegment.check(segId)
             }
@@ -117,9 +125,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun serviceTitle(): String = getString(
-        if (currentService == Service.MAC) R.string.nav_mac else R.string.nav_plan,
-    )
+    private fun serviceTitle(): String = when (currentService) {
+        Service.MAC -> getString(R.string.nav_mac)
+        Service.PLAN -> getString(R.string.nav_plan)
+        Service.PROMPTFACTORY -> getString(R.string.nav_pf)
+    }
 
     private fun tabItemId(tab: ServiceTab): Int = when (tab) {
         ServiceTab.DASHBOARD -> R.id.nav_tab_dashboard
@@ -147,18 +157,19 @@ class MainActivity : AppCompatActivity() {
     private fun showAbout() {
         MacDebugLogger.i("내비", "앱 정보 열기")
         lifecycleScope.launch {
-            val (macPort, planPort, ip) = try {
+            var macPort = MacConstants.DEFAULT_PORT
+            var planPort = PlanConstants.DEFAULT_PORT
+            var pfPort = 3002
+            var ip: String? = null
+            try {
                 withContext(Dispatchers.IO) {
-                    // R5: getLocalIp(바인더+NIC 열거) Main 호출 금지 → IO 합류
-                    Triple(
-                        MacJupJupRuntime.preferences.getSettings().port,
-                        PlanJupJupRuntime.preferences.getSettings().port,
-                        NetUtils.getLocalIp(this@MainActivity),
-                    )
+                    macPort = MacJupJupRuntime.preferences.getSettings().port
+                    planPort = PlanJupJupRuntime.preferences.getSettings().port
+                    pfPort = com.borasarang.promptfactoryjupjup.PromptFactoryRuntime.preferences.getSettings().port
+                    ip = NetUtils.getLocalIp(this@MainActivity)
                 }
             } catch (e: Exception) {
                 MacDebugLogger.e("내비", "E-AND-DB-0404", "앱 정보 포트 조회 실패: ${e.message}", e)
-                Triple(MacConstants.DEFAULT_PORT, PlanConstants.DEFAULT_PORT, null)
             }
             val view = layoutInflater.inflate(R.layout.dialog_about, null)
             view.findViewById<TextView>(R.id.about_version).text =

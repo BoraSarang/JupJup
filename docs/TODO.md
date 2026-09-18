@@ -2,6 +2,25 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R15 프롬프트팩토리 UX 정리 (v1.11.x, PLAN_v6)
+- [x] PLAN_v6 초안
+- [x] 백엔드: refresh 응답 added 포함 + 일괄 enabled API + setAllEnabled
+- [x] 웹: 프롬프트별 마지막 응답 1건 카드 + 마크다운 렌더 + 기록보며 인라인 수정 + 모두사용/해제 + duration 포맷
+- [x] 후속: 인사이트/카드 중복 제거 + GFM 테이블 렌더 + 모델 검색
+- [x] v3 전면 개편: 슬림헤더+칩+2열 마스터디테일+서랍, 맥줍 md/CSS 이식, 모달2층 제거, toast
+- [x] 빌드 + JS 체크 (실기 검증 잔여: 표 리포트·날짜 전환·서랍 저장·토스트)
+
+## R14 프롬프트팩토리 재설계 — 다중 프롬프트 관리 (v1.11.0)
+- [x] PLAN_v5 초안
+- [x] DB v2 마이그레이션 (Prompt 엔티티·DAO·MIGRATION_1_2·초기화)
+- [x] ProviderKeyStore (공급자별 API키 DataStore) + ModelCatalog (갱신·활성토글)
+- [x] 라우트 재설계 (prompts CRUD/executions/insights/providers)
+- [x] 스케줄러·워커 프롬프트id별 + 이전결과 주입
+- [x] 웹 재설계 (조회+관리, 모바일 대응) + 앱 축소·어댑터 정리
+- [x] 빌드 + 단위 + lint + 실기 검증 (시드 일치·SUCCESS×2·주입·웹UI)
+- [x] versionName 1.11.0 (versionCode 13)으로 bump
+- [x] 문서 갱신 (CHANGELOG·PLAN_v5·세션 로그)
+
 ## R13 잔여 정리 (R7)
 - [x] PLAN_R7 초안
 - [x] 7a 에러코드 조회/저장 분리 (0404 신규 + 조회 9곳)
@@ -147,3 +166,70 @@
 - [x] CI lint 실패 수정 (SpecifyForegroundServiceType, 라이브러리 매니페스트에 dataSync 선언)
 - [x] v1.3.0 태그 + GitHub Release (release.yml, CHANGELOG 1.3.0 섹션)
 - [x] 세션 로그 갱신
+
+## PF1 프롬프트팩토리 — 모듈 스캐폴드 (PLAN_v4)
+- [x] PLAN_v4 초안
+- [x] `:services:promptfactory` 모듈 생성 (build.gradle.kts, AndroidManifest.xml)
+- [x] `settings.gradle.kts` include 추가
+- [x] `build-logic/jupjup.base` 적용 확인
+- [x] 빌드 검증 (`:services:promptfactory:assembleDebug`)
+
+## PF2 프롬프트팩토리 — DB·DataStore·Runtime
+- [x] Room DB (`PromptFactoryDatabase`) + DAO + Entity
+- [x] DataStore PreferencesManager (`pf_settings`)
+- [x] PromptFactoryRuntime (object, initialize)
+- [x] DebugLogger (common.JupLog 파사드)
+- [x] Constants (포트 3002, 에러코드 프리픽스)
+
+## PF3 프롬프트팩토리 — AI 클라이언트
+- [x] AiProvider enum (OPENROUTER, NIM, GOOGLE_AI_STUDIO)
+- [x] AiClient 인터페이스
+- [x] OpenRouterClient 구현
+- [x] NimClient 구현
+- [x] GoogleAiStudioClient 구현
+- [x] AiClientFactory
+- [x] PromptExecutionRepository
+
+## PF4 프롬프트팩토리 — HTTP 서버
+- [x] HttpServerService (Ktor CIO 포트 3002)
+- [x] PfRoutes (`/api/health`, `/api/executions`, `/api/execute`, `/api/settings`, `/api/models`)
+- [x] PfAssetRoutes (pf_web/ 정적 서빙)
+
+## PF5 프롬프트팩토리 — 스케줄러
+- [x] PromptFactoryScheduler (WorkManager)
+- [x] PromptFactoryWorker (AI 호출 + DB 저장 + 알림)
+
+## PF6 프롬프트팩토리 — UI 통합
+- [x] HomeFragment, ProviderManageFragment, SettingsFragment, NotificationFragment
+- [x] PfServiceAdapter (app 모듈)
+- [x] ServiceRegistry에 PROMPTFACTORY 등록 (enum + fragment 분기)
+- [x] DashboardFragment 카드 표시
+- [x] MainActivity 내비 3열 세그먼트 추가
+
+## PF7 프롬프트팩토리 — 웹 페이지
+- [x] pf_web/index.html (목록 + 상세 + 설정 + 모델)
+- [x] pf_web/app.js (API 호출 + DOM 조작)
+- [x] pf_web/style.css (Material Design 스타일)
+- [x] pf_web/favicon.svg
+
+## PF8 프롬프트팩토리 — 검증 + 버전 bump
+- [x] 빌드 (`:app:assembleDebug` + `:services:promptfactory:assembleDebug`)
+- [x] 단위 테스트 (`:services:promptfactory:testDebugUnitTest`)
+- [x] lint 오류 0 (`:app:lintDebug`)
+- [x] versionName 1.10.0 (versionCode 12) bump
+- [x] error_message_ko.json에 E-AND-REPORT-08xx 추가
+
+## PF9 프롬프트팩토리 — 문서 갱신
+- [x] DESIGN.md v1.4 반영
+- [x] CHANGELOG.md 1.10.0 섹션
+- [x] AGENTS.local.md에 포트 3002 + pf_ 접두사 언급
+- [x] error_message_ko.json E-AND-REPORT-08xx 추가
+- [x] 세션 로그 (.agent/session-2026-09-18-and.md)
+
+## PF10 프롬프트팩토리 — 실기 검증 (S22, 1.10.0)
+- [x] 대시보드 pf 카드 3번째 추가 (fragment_dashboard.xml + DashboardViewModel Triple + DashboardFragment)
+- [x] `PfServiceAdapter.setServerRunning` 토글 역전 버그 수정
+- [x] 서버 3002 기동 + `/api/health` 200 + 웹 포털 에셋 서빙
+- [x] 프롬프트 저장 (무료AI모델-일일리포트-프롬프트.md) + AI 실행 SUCCESS 3건 (nemotron-3-super 등)
+- [x] autoStart=true → 앱 재시작 후 서버 자동 기동 확인
+- [x] 대시보드 pf 카드 갱신 확인 (실행 횟수 10회, 활성, 서버 실행 중)

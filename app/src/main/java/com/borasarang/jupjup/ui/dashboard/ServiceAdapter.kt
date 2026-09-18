@@ -11,6 +11,9 @@ import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.server.HttpServerService as PlanHttpServerService
 import com.borasarang.planjupjup.util.DebugLogger as PlanDebugLogger
 import com.borasarang.planjupjup.util.TimeUtils as PlanTimeUtils
+import com.borasarang.promptfactoryjupjup.PromptFactoryRuntime
+import com.borasarang.promptfactoryjupjup.server.HttpServerService as PfHttpServerService
+import com.borasarang.promptfactoryjupjup.util.DebugLogger as PfDebugLogger
 
 /**
  * 서비스 어댑터 (R3). DashboardViewModel이 양쪽 Runtime을 직접 import하던 결합을 흡수한다.
@@ -143,6 +146,79 @@ object PlanServiceAdapter : ServiceAdapter {
         } else {
             PlanDebugLogger.i("서버", "대시보드 서버 시작(plan)")
             PlanHttpServerService.start(context)
+        }
+    }
+}
+
+object PfServiceAdapter : ServiceAdapter {
+    override val service = Service.PROMPTFACTORY
+
+    override suspend fun loadState(ip: String?): DashboardServiceUi {
+        val app = PromptFactoryRuntime
+        if (!app.isInitialized) {
+            return DashboardServiceUi(
+                isServerRunning = false,
+                address = "초기화 중…",
+                statValue1 = 0,
+                statValue2 = 0,
+                lastCollectedLabel = "대기 중",
+                crawlEnabled = false,
+            )
+        }
+        val settings = app.preferences.getSettings()
+        val count = app.promptExecutionRepository.count()
+        val prompts = app.promptRepository.getAll()
+        val activeCount = prompts.count { it.enabled }
+        return DashboardServiceUi(
+            isServerRunning = NetUtils.isPortOpen(settings.port),
+            address = "http://$ip:${settings.port}",
+            statValue1 = count,
+            statValue2 = activeCount,
+            lastCollectedLabel = if (activeCount > 0) "프롬프트 ${activeCount}개 활성" else "활성 프롬프트 없음",
+            crawlEnabled = activeCount > 0,
+        )
+    }
+
+    override suspend fun triggerCrawlIfEnabled(enabled: Boolean) {
+        if (!enabled) {
+            PfDebugLogger.w("실행", "활성 프롬프트 없음 — 즉시 실행 스킵")
+            return
+        }
+        PfDebugLogger.i("실행", "대시보드 즉시 실행 클릭")
+        try {
+            val first = PromptFactoryRuntime.promptRepository.getEnabled().firstOrNull()
+            if (first == null) {
+                PfDebugLogger.w("실행", "활성 프롬프트 없음")
+            } else {
+                PromptFactoryRuntime.scheduler.triggerImmediate(first.id)
+            }
+        } catch (e: Exception) {
+            PfDebugLogger.e("실행", "E-AND-REPORT-0804", "즉시 실행 예약 실패: ${e.message}", e)
+        }
+    }
+
+    override suspend fun setCrawlEnabled(enabled: Boolean) {
+        val app = PromptFactoryRuntime
+        try {
+            if (enabled) {
+                app.scheduler.rescheduleAll()
+                PfDebugLogger.i("실행", "실행 재개 — 스케줄 재예약")
+            } else {
+                app.scheduler.cancelAll()
+                PfDebugLogger.i("실행", "실행 일시정지 — 스케줄 취소")
+            }
+        } catch (e: Exception) {
+            PfDebugLogger.e("실행", "E-AND-REPORT-0803", "실행 중지/재개 저장 실패: ${e.message}", e)
+        }
+    }
+
+    override fun setServerRunning(context: Context, running: Boolean) {
+        if (running) {
+            PfDebugLogger.i("서버", "대시보드 서버 중지")
+            PfHttpServerService.stop(context)
+        } else {
+            PfDebugLogger.i("서버", "대시보드 서버 시작")
+            PfHttpServerService.start(context)
         }
     }
 }

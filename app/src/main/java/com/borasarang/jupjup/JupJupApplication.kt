@@ -3,6 +3,7 @@ package com.borasarang.jupjup
 import android.app.Application
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.planjupjup.PlanJupJupRuntime
+import com.borasarang.promptfactoryjupjup.PromptFactoryRuntime
 
 /**
  * 줍줍 시리즈 통합 앱.
@@ -15,5 +16,6 @@ class JupJupApplication : Application() {
         super.onCreate()
         MacJupJupRuntime.initialize(this)
         PlanJupJupRuntime.initialize(this)
+        PromptFactoryRuntime.initialize(this)
     }
 }

@@ -40,6 +40,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/nav_plan" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/seg_pf"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/nav_pf" />
     </com.google.android.material.button.MaterialButtonToggleGroup>
 
     <FrameLayout
