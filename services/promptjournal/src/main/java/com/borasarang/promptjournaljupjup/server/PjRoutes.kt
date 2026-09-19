@@ -3,6 +3,7 @@ package com.borasarang.promptjournaljupjup.server
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.common.ai.AiProvider
 import com.borasarang.common.ai.ModelCatalog
+import com.borasarang.common.search.ExaSearchClient
 import com.borasarang.promptjournaljupjup.data.db.entity.Prompt
 import com.borasarang.promptjournaljupjup.data.db.entity.PromptExecution
 import com.borasarang.promptjournaljupjup.util.DebugLogger
@@ -37,6 +38,7 @@ fun pjRoutes(route: Route) {
         insightsRoute()
         providersRoute()
         settingsRoute()
+        searchRoute()
     }
 }
 
@@ -302,6 +304,55 @@ private fun Route.providersRoute() {
                 ?: return@post call.respondError("지원하지 않는 공급자: $name")
             ModelCatalog.setModelEnabled(provider, modelId, enabled)
             call.respondText("""{"ok":true}""", ContentType.Application.Json)
+        }
+    }
+}
+
+// ── 일반 설정 (포트·자동시작) ──────────────────────────────────────
+private fun Route.searchRoute() {
+    route("/search") {
+        get("/key") {
+            val hasKey = PromptJournalRuntime.preferences.getExaApiKey().isNotBlank()
+            call.respondText("""{"hasApiKey":$hasKey}""", ContentType.Application.Json)
+        }
+
+        post("/key") {
+            val body = call.receiveJsonObject() ?: return@post call.respondError("요청 바디가 없습니다")
+            val key = body["apiKey"]?.jsonPrimitive?.content ?: return@post call.respondError("apiKey가 필요합니다")
+            PromptJournalRuntime.preferences.saveExaApiKey(key)
+            DebugLogger.i("검색", "Exa API 키 저장 (${key.length}자, 마스킹)")
+            call.respondText("""{"ok":true}""", ContentType.Application.Json)
+        }
+
+        post("/test") {
+            val key = PromptJournalRuntime.preferences.getExaApiKey()
+            if (key.isBlank()) return@post call.respondError("Exa API 키가 설정되지 않았습니다")
+            val body = call.receiveJsonObject()
+            val query = body?.get("query")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
+                ?: "OpenRouter 무료 모델 최신 2026"
+            val result = ExaSearchClient(key).search(query, numResults = 3)
+            val payload = result.fold(
+                onSuccess = { list ->
+                    buildJsonObject {
+                        put("ok", JsonPrimitive(true))
+                        put("count", JsonPrimitive(list.size))
+                        put("query", JsonPrimitive(query))
+                        list.firstOrNull()?.let {
+                            put("sample", buildJsonObject {
+                                put("title", JsonPrimitive(it.title))
+                                put("url", JsonPrimitive(it.url))
+                            })
+                        }
+                    }.toString()
+                },
+                onFailure = { e ->
+                    buildJsonObject {
+                        put("ok", JsonPrimitive(false))
+                        put("error", JsonPrimitive(e.message ?: "검색 실패"))
+                    }.toString()
+                },
+            )
+            call.respondText(payload, ContentType.Application.Json)
         }
     }
 }

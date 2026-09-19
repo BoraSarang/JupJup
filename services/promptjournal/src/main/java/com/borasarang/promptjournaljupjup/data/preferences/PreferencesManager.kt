@@ -24,6 +24,7 @@ class PreferencesManager(private val context: Context) {
     private object Keys {
         val PORT = intPreferencesKey("server_port")
         val AUTO_START = booleanPreferencesKey("auto_start")
+        val EXA_API_KEY = stringPreferencesKey("exa_api_key")
     }
 
     suspend fun getSettings(): PjSettings {
@@ -39,6 +40,22 @@ class PreferencesManager(private val context: Context) {
         context.settingsStore.edit { prefs ->
             prefs[Keys.PORT] = settings.port.coerceIn(1024, 65535)
             prefs[Keys.AUTO_START] = settings.autoStart
+        }
+    }
+
+    // R21: Exa 검색엔진 API 키 — 평문 DataStore, 로컬 서버로만 노출
+    suspend fun getExaApiKey(): String {
+        return context.settingsStore.data.map { prefs -> prefs[Keys.EXA_API_KEY] ?: "" }.first()
+    }
+
+    suspend fun saveExaApiKey(value: String) {
+        val trimmed = value.trim()
+        context.settingsStore.edit { prefs ->
+            if (trimmed.isEmpty()) {
+                prefs.remove(Keys.EXA_API_KEY)
+            } else {
+                prefs[Keys.EXA_API_KEY] = trimmed
+            }
         }
     }
 

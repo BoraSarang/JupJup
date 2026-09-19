@@ -807,8 +807,12 @@
 
     /* ---------- 취재원 ---------- */
     function loadProviders() {
-        api('/api/providers').then(renderProviders).catch(function () {
+        api('/api/providers').then(function (providers) {
+            renderProviders(providers);
+            loadSearchEngine();
+        }).catch(function () {
             $('providerList').innerHTML = '<p class="empty-state">취재원 정보를 불러올 수 없습니다</p>';
+            loadSearchEngine();
         });
     }
     function renderProviders(providers) {
@@ -866,6 +870,67 @@
             cb.addEventListener('change', function () {
                 toggleModelEnabled(cb.closest('.provider-card').dataset.name, cb.dataset.model, cb.checked);
             });
+        });
+    }
+
+    /* ---------- 검색 엔진 (Exa) — 취재원 하단 카드 ---------- */
+    function loadSearchEngine() {
+        var list = $('providerList');
+        var old = list.querySelector('.provider-card[data-engine="exa"]');
+        if (old) old.remove();
+        api('/api/search/key').then(function (d) {
+            var hasKey = !!(d && d.hasApiKey);
+            var wrapper = document.createElement('div');
+            wrapper.innerHTML =
+                '<div class="provider-card" data-engine="exa">' +
+                '<div class="provider-card-header"><span class="provider-card-title">검색 엔진 · Exa</span>' +
+                '<div class="provider-card-actions"><button class="btn" data-action="search-test" type="button">검색 테스트</button></div></div>' +
+                '<div class="provider-key-status' + (hasKey ? ' has' : '') + '">' +
+                (hasKey ? '✓ 검색엔진 연결됨' : '검색엔진 미연결 — 아래에서 입력') +
+                ' <button class="btn" data-action="search-key" type="button">' + (hasKey ? '키 교체' : '키 등록') + '</button></div>' +
+                '<div class="provider-models"><p class="empty-state exa-note">' +
+                '리포트 생성 시 사실·최신 자료를 Exa 검색으로 실측 수집해 [웹 검색 결과]로 주입합니다. ' +
+                '무료 1,000건/월 (neural 검색 단가 $0.007/건).</p></div>' +
+                '</div>';
+            var card = wrapper.firstChild;
+            list.appendChild(card);
+            card.querySelector('[data-action="search-key"]').addEventListener('click', askSearchApiKey);
+            card.querySelector('[data-action="search-test"]').addEventListener('click', function (e) {
+                testSearch(e.currentTarget);
+            });
+        }).catch(function () { /* 키 상태 조회 실패 — 카드 생략 */ });
+    }
+
+    function askSearchApiKey() {
+        var key = prompt('Exa 검색엔진 API 키를 입력하세요 (빈 값 = 키 삭제)');
+        if (key === null) return;
+        api('/api/search/key', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey: key.trim() })
+        }).then(function (data) {
+            toast(data.ok ? 'Exa 키가 저장되었습니다' : '저장 실패: ' + (data.error || '오류'));
+            if (data.ok) loadProviders();
+        }).catch(function () { toast('저장 요청 실패'); });
+    }
+
+    function testSearch(btn) {
+        var original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '확인 중…';
+        api('/api/search/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        }).then(function (data) {
+            if (data.ok) {
+                toast('검색 정상 — ' + data.count + '건 · ' + (data.sample ? data.sample.title : ''));
+            } else {
+                toast('검색 실패: ' + (data.error || '오류'));
+            }
+        }).catch(function () { toast('검색 요청 실패'); }).then(function () {
+            btn.disabled = false;
+            btn.textContent = original;
         });
     }
 
