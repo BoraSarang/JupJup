@@ -1,10 +1,9 @@
-package com.borasarang.promptjournaljupjup.ai
+package com.borasarang.common.ai
 
 object AiClientFactory {
     fun create(provider: AiProvider, apiKey: String): AiClient {
         return when (provider) {
             AiProvider.OPENROUTER -> OpenRouterClient(apiKey)
-            AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient(apiKey)
         }
     }
 
@@ -16,7 +15,6 @@ object AiClientFactory {
     fun getModels(provider: AiProvider): List<AiClient.ModelInfo> {
         return when (provider) {
             AiProvider.OPENROUTER -> OpenRouterClient("").supportedModels
-            AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient("").supportedModels
         }
     }
 

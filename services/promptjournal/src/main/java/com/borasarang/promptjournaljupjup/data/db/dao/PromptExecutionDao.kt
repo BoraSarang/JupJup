@@ -31,6 +31,9 @@ interface PromptExecutionDao {
     @Query("DELETE FROM prompt_executions WHERE executedAt < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long): Int
 
+    @Query("DELETE FROM prompt_executions WHERE provider = :provider")
+    suspend fun deleteByProvider(provider: String): Int
+
     @Query("SELECT COUNT(*) FROM prompt_executions")
     suspend fun count(): Int
 }

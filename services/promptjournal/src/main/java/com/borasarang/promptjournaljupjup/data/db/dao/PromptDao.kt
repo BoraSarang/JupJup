@@ -26,6 +26,9 @@ interface PromptDao {
     @Query("DELETE FROM prompts WHERE id = :id")
     suspend fun deleteById(id: Long): Int
 
+    @Query("DELETE FROM prompts WHERE provider = :provider")
+    suspend fun deleteByProvider(provider: String): Int
+
     @Query("DELETE FROM prompts")
     suspend fun deleteAll(): Int
 

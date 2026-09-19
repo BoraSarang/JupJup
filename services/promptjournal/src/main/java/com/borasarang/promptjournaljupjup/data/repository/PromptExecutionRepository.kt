@@ -22,5 +22,8 @@ class PromptExecutionRepository(private val db: PromptJournalDatabase) {
 
     suspend fun deleteOlderThan(cutoff: Long): Int = dao.deleteOlderThan(cutoff)
 
+    /** 폐기 공급자 데이터 마이그레이션용 — 해당 실행기록 삭제 */
+    suspend fun deleteByProvider(provider: String): Int = dao.deleteByProvider(provider)
+
     suspend fun count(): Int = dao.count()
 }

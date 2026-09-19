@@ -1,4 +1,4 @@
-package com.borasarang.promptjournaljupjup.ai
+package com.borasarang.common.ai
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -7,27 +7,41 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/** R20: ModelCatalog 투입 상태 단위 테스트 (영속 store 미부착 = 메모리 전용) */
+/** R21: 공통 ModelCatalog 투입 상태 단위 테스트 (영속 store 미부착 = 메모리 전용) */
 class ModelCatalogTest {
+
+    private companion object {
+        const val SEED_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+        const val GEMINI_EXP = "google/gemini-2.0-flash-exp:free"
+    }
 
     @Before
     fun setUp() {
-        ModelCatalog.init()
+        // 기본 활성은 시드 기본 모델만 — Google AI Studio 제거 후 OpenRouter 단일
+        ModelCatalog.init(seedDefaultModelIds = setOf(SEED_MODEL))
     }
 
     @Test
-    fun init_기본_전체투입() {
+    fun init_기본은_시드기본만활성() {
         for (p in AiProvider.entries) {
             val all = ModelCatalog.allModels(p).map { it.id }.toSet()
             val enabled = ModelCatalog.enabledModelsFor(p).map { it.id }.toSet()
             assertFalse("기본 목록 비어있음: $p", all.isEmpty())
-            assertEquals(p.toString(), all, enabled)
+            assertEquals("시드 기본 모델만 활성: $p", setOf(SEED_MODEL), enabled)
+            assertEquals("공급자 수 = OpenRouter 1개", 1, AiProvider.entries.size)
         }
     }
 
     @Test
+    fun 사멸_모델_부재() {
+        val ids = ModelCatalog.allModels(AiProvider.OPENROUTER).map { it.id }.toSet()
+        assertFalse("사멸 모델($GEMINI_EXP) 제거 확인", ids.contains(GEMINI_EXP))
+    }
+
+    @Test
     fun 개별해제_해당모델만제외() = runBlocking {
-        val p = AiProvider.GOOGLE_AI_STUDIO
+        val p = AiProvider.OPENROUTER
+        ModelCatalog.setAllEnabled(p, true)
         val first = ModelCatalog.allModels(p).first().id
         ModelCatalog.setModelEnabled(p, first, false)
         val enabled = ModelCatalog.enabledModelsFor(p).map { it.id }.toSet()
@@ -39,7 +53,7 @@ class ModelCatalogTest {
 
     @Test
     fun 모두해제_후_모두투입() = runBlocking {
-        val p = AiProvider.GOOGLE_AI_STUDIO
+        val p = AiProvider.OPENROUTER
         ModelCatalog.setAllEnabled(p, false)
         assertTrue(ModelCatalog.enabledModelsFor(p).isEmpty())
         ModelCatalog.setAllEnabled(p, true)
@@ -50,9 +64,10 @@ class ModelCatalogTest {
     }
 
     @Test
-    fun merge_명시해제보존_신규자동투입() = runBlocking {
-        val p = AiProvider.GOOGLE_AI_STUDIO
-        val baseX = ModelCatalog.allModels(p).first().id
+    fun merge_명시해제보존_신규는미투입() = runBlocking {
+        val p = AiProvider.OPENROUTER
+        // 시드 기본(기본 활성) 모델을 명시 해제 → 병합 후에도 부활 금지
+        val baseX = SEED_MODEL
         ModelCatalog.setModelEnabled(p, baseX, false)
 
         val remote = listOf(
@@ -63,14 +78,15 @@ class ModelCatalogTest {
 
         val enabled = ModelCatalog.enabledModelsFor(p).map { it.id }.toSet()
         assertFalse("해제한 모델이 갱신으로 부활", enabled.contains(baseX))
-        assertTrue("신규 모델 자동 투입", enabled.contains("test/new-model-1"))
+        assertFalse("신규 원격 모델 자동 투입 금지", enabled.contains("test/new-model-1"))
+        assertTrue("신규 모델 목록에는 추가", ModelCatalog.allModels(p).any { it.id == "test/new-model-1" })
         assertEquals(1, result.added)
     }
 
     @Test
     fun 정적목록_시드기본포함() {
         val orIds = ModelCatalog.allModels(AiProvider.OPENROUTER).map { it.id }.toSet()
-        assertTrue(orIds.contains("nvidia/nemotron-3-super-120b-a12b:free"))
+        assertTrue(orIds.contains(SEED_MODEL))
     }
 
     @Test
@@ -84,11 +100,12 @@ class ModelCatalogTest {
 
     @Test
     fun merge_참조보호유지_미보호삭제() = runBlocking {
-        val p = AiProvider.GOOGLE_AI_STUDIO
+        val p = AiProvider.OPENROUTER
         val ghost = "test/ghost-model-9"
-        // 1차: 원격에 있던 모델 (자동 투입됨)
+        // 1차: 원격에 있던 모델 (목록 추가는 되지만 자동 투입은 안 됨)
         ModelCatalog.merge(p, listOf(AiClient.ModelInfo(id = ghost, name = ghost)))
         assertTrue(ModelCatalog.allModels(p).any { it.id == ghost })
+        ModelCatalog.setModelEnabled(p, ghost, true)
         // 2차: 원격에서 사라짐 + 미보호 → 목록에서 제거
         ModelCatalog.merge(p, emptyList())
         assertFalse(ModelCatalog.allModels(p).any { it.id == ghost })

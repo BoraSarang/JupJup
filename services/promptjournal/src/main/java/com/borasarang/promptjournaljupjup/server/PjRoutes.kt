@@ -1,9 +1,8 @@
 package com.borasarang.promptjournaljupjup.server
 
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
-import com.borasarang.promptjournaljupjup.ai.AiClientFactory
-import com.borasarang.promptjournaljupjup.ai.AiProvider
-import com.borasarang.promptjournaljupjup.ai.ModelCatalog
+import com.borasarang.common.ai.AiProvider
+import com.borasarang.common.ai.ModelCatalog
 import com.borasarang.promptjournaljupjup.data.db.entity.Prompt
 import com.borasarang.promptjournaljupjup.data.db.entity.PromptExecution
 import com.borasarang.promptjournaljupjup.util.DebugLogger

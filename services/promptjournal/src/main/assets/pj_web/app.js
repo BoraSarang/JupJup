@@ -4,8 +4,7 @@
 
     var API_BASE = '';
     var providerDisplay = {
-        'OPENROUTER': 'OpenRouter',
-        'GOOGLE_AI_STUDIO': 'Google AI Studio'
+        'OPENROUTER': 'OpenRouter'
     };
 
     var state = { prompts: [], selPrompt: null, execs: [], selExec: null, showDetailMobile: false };

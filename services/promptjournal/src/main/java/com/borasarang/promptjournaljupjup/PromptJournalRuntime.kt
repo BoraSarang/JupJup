@@ -3,12 +3,12 @@ package com.borasarang.promptjournaljupjup
 import android.content.Context
 import com.borasarang.promptjournaljupjup.data.db.PromptJournalDatabase
 import com.borasarang.promptjournaljupjup.data.db.entity.Prompt
+import com.borasarang.common.ai.ModelCatalog
+import com.borasarang.common.prefs.ModelEnabledStore
+import com.borasarang.common.prefs.ProviderKeyStore
 import com.borasarang.promptjournaljupjup.data.preferences.PreferencesManager
-import com.borasarang.promptjournaljupjup.data.preferences.ModelEnabledStore
-import com.borasarang.promptjournaljupjup.data.preferences.ProviderKeyStore
 import com.borasarang.promptjournaljupjup.data.repository.PromptExecutionRepository
 import com.borasarang.promptjournaljupjup.data.repository.PromptRepository
-import com.borasarang.promptjournaljupjup.ai.ModelCatalog
 import com.borasarang.promptjournaljupjup.server.HttpServerService
 import com.borasarang.promptjournaljupjup.util.DebugLogger
 import com.borasarang.promptjournaljupjup.worker.PromptJournalScheduler
@@ -70,14 +70,16 @@ object PromptJournalRuntime {
         promptRepository = PromptRepository(database)
         promptExecutionRepository = PromptExecutionRepository(database)
         preferences = PreferencesManager.getInstance(appContext)
-        providerKeys = ProviderKeyStore.getInstance(appContext)
+        providerKeys = ProviderKeyStore.getInstance(appContext, "pj_api_keys")
         scheduler = PromptJournalScheduler(appContext)
 
-        ModelCatalog.init()
-        ModelCatalog.attachStore(ModelEnabledStore.getInstance(appContext))
+        // R21: 공통 카탈로그 일반화 — 기본 활성은 시드 기본 모델만 (신규 자동 투입 없음)
+        ModelCatalog.init(seedDefaultModelIds = setOf(SEED_DEFAULT_MODEL_ID))
+        ModelCatalog.attachStore(ModelEnabledStore.getInstance(appContext, "pj_models"))
 
         appScope.launch(Dispatchers.IO) {
             ModelCatalog.restoreEnabled()
+            migrateDeprecatedData()
             seedIfEmpty()
 
             val settings = preferences.getSettings()
@@ -132,7 +134,7 @@ object PromptJournalRuntime {
             title = "무료 AI 모델 통합 일일 리포트",
             content = SEED_PROMPT,
             provider = "OPENROUTER",
-            modelId = "nvidia/nemotron-3-super-120b-a12b:free",
+            modelId = SEED_DEFAULT_MODEL_ID,
             scheduleType = "daily",
             scheduleValue = "09:00",
             enabled = true,
@@ -140,6 +142,21 @@ object PromptJournalRuntime {
         )
         promptRepository.save(seed)
         DebugLogger.i("앱", "시드 프롬프트 1개 등록: 무료 AI 모델 통합 일일 리포트")
+    }
+
+    /**
+     * R21: 폐기 공급자(Google AI Studio) 데이터 정리 — 해당 프롬프트와 실행기록 삭제.
+     * 확정된 삭제 범위: provider=GOOGLE_AI_STUDIO 행만. 멱등이라 재실행 안전.
+     */
+    private suspend fun migrateDeprecatedData() {
+        val promptCount = promptRepository.deleteByProvider(DEPRECATED_PROVIDER)
+        val executionCount = promptExecutionRepository.deleteByProvider(DEPRECATED_PROVIDER)
+        if (promptCount > 0 || executionCount > 0) {
+            DebugLogger.i(
+                "앱",
+                "폐기 공급자 데이터 정리: 프롬프트 ${promptCount}개, 실행기록 ${executionCount}건 삭제"
+            )
+        }
     }
 
     private fun backupDatabaseFile() {
@@ -157,6 +174,12 @@ object PromptJournalRuntime {
         }
     }
 
+    /** 폐기 공급자 — R21에서 Google AI Studio 제거. 해당 데이터는 시작 시 일괄 삭제 */
+    private const val DEPRECATED_PROVIDER = "GOOGLE_AI_STUDIO"
+
+    /** 시드 기본 모델 — 카탈로그 정적 보호 대상이자 초기 기본 활성 모델 (R21) */
+    private const val SEED_DEFAULT_MODEL_ID = "nvidia/nemotron-3-super-120b-a12b:free"
+
     private const val SEED_PROMPT = """너는 AI 모델 트래킹 애널리스트야. 오늘 날짜 기준으로 아래 서비스들의
 "완전 무료(Free)" 모델 현황과 관련 뉴스를 조사해서 한국어 리포트를
 작성해줘.
@@ -168,7 +191,7 @@ object PromptJournalRuntime {
 - OpenCode Zen (https://opencode.ai/docs/zen/)
 - OpenRouter 무료 모델 (":free" 접미사 붙은 모델들, https://openrouter.ai/models?max_price=0 또는 공식 모델 목록)
 - NVIDIA NIM / build.nvidia.com (무료 API 크레딧으로 제공되는 모델들)
-- 그 외 확인해볼 것: Google AI Studio(Gemini 무료 티어), Groq, Cerebras
+- 그 외 확인해볼 것: Groq, Cerebras
   Cloud, SambaNova Cloud, Together AI 무료 티어, Cloudflare Workers AI,
   GitHub Models, Hugging Face Inference Providers 무료 티어 등
   → 이 목록에 없더라도 "오늘 새로 알게 된 무료 서비스"가 있으면

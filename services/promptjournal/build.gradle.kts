@@ -39,9 +39,6 @@ dependencies {
 
     implementation(libs.androidx.work.runtime.ktx)
 
-    // OkHttp for AI API calls
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

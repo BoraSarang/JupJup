@@ -1,4 +1,4 @@
-package com.borasarang.promptjournaljupjup.ai
+package com.borasarang.common.ai
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,7 +15,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
-class GoogleAiStudioClient(private val apiKey: String) : AiClient {
+class OpenRouterClient(private val apiKey: String) : AiClient {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -25,29 +25,31 @@ class GoogleAiStudioClient(private val apiKey: String) : AiClient {
     private val json = Json { ignoreUnknownKeys = true }
 
     override val supportedModels: List<AiClient.ModelInfo> = listOf(
-        AiClient.ModelInfo("gemini-2.0-flash", "Gemini 2.0 Flash", 1048576, 8192),
-        AiClient.ModelInfo("gemini-2.5-flash", "Gemini 2.5 Flash", 1048576, 65536),
-        AiClient.ModelInfo("gemini-2.5-pro", "Gemini 2.5 Pro", 1048576, 65536),
+        AiClient.ModelInfo("deepseek/deepseek-chat-v3-0324:free", "DeepSeek V3 (Free)", 131072, 8192),
+        AiClient.ModelInfo("meta-llama/llama-4-maverick:free", "Llama 4 Maverick (Free)", 1048576, 8192),
+        AiClient.ModelInfo("qwen/qwen3-235b-a22b:free", "Qwen3 235B (Free)", 40960, 8192),
+        AiClient.ModelInfo("microsoft/mai-ds-r1:free", "MAI DS R1 (Free)", 131072, 8192),
+        // 시드 기본값 — 정적 보호 대상 (갱신 병합에서 삭제 금지, 편집폼 항상 선택 가능)
+        AiClient.ModelInfo("nvidia/nemotron-3-super-120b-a12b:free", "Nemotron 3 Super 120B (Free)"),
     )
 
     override suspend fun complete(prompt: String, modelId: String): Result<String> = withContext(Dispatchers.IO) {
         try {
             val requestBody = buildJsonObject {
-                put("contents", buildJsonArray {
+                put("model", JsonPrimitive(modelId))
+                put("messages", buildJsonArray {
                     add(buildJsonObject {
-                        put("parts", buildJsonArray {
-                            add(buildJsonObject {
-                                put("text", JsonPrimitive(prompt))
-                            })
-                        })
+                        put("role", JsonPrimitive("user"))
+                        put("content", JsonPrimitive(prompt))
                     })
                 })
             }
 
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=$apiKey"
-
             val request = Request.Builder()
-                .url(url)
+                .url("${AiProvider.OPENROUTER.baseUrl}/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("HTTP-Referer", "https://github.com/BoraSarang/JupJup")
+                .addHeader("X-Title", "PromptJournal JupJup")
                 .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 
@@ -59,12 +61,10 @@ class GoogleAiStudioClient(private val apiKey: String) : AiClient {
             }
 
             val jsonResponse = json.parseToJsonElement(body).jsonObject
-            val content = jsonResponse["candidates"]
+            val content = jsonResponse["choices"]
                 ?.jsonArray?.get(0)
+                ?.jsonObject?.get("message")
                 ?.jsonObject?.get("content")
-                ?.jsonObject?.get("parts")
-                ?.jsonArray?.get(0)
-                ?.jsonObject?.get("text")
                 ?.jsonPrimitive?.content
                 ?: return@withContext Result.failure(Exception("응답 파싱 실패"))
 
