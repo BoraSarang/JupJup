@@ -31,6 +31,8 @@ data class AppStats(
 data class TrendStats(
     val byCategory: Map<String, Int>,
     val byLicense: Map<String, Int>,
+    /** 수집처별 앱 수 (대표 sourceId 기준, 개수 내림차순) */
+    val bySource: List<SourceCount>,
     val newLast7d: Int,
     val updatedLast7d: Int,
     val versionBumpsLast7d: Int,
@@ -52,6 +54,8 @@ data class AppFilter(
     val bumped: Boolean = false,
     /** true면 실제 버전 변경 증거(prevVersion 있음)만 — Watchlist 업데이트 탭 (T-132) */
     val updatedOnly: Boolean = false,
+    /** 비어 있으면 전체 (대표 sourceId 기준) */
+    val sourceIds: Set<String> = emptySet(),
 )
 
 data class PagedApps(
@@ -219,7 +223,7 @@ data class NotificationDetail(
     val finishedAt: Long,
 )
 
-data class SourceCount(val sourceName: String, val count: Int)
+data class SourceCount(val sourceName: String, val count: Int, val sourceId: String = "")
 data class CategoryCount(val category: String, val count: Int)
 data class LicenseCount(val license: String, val count: Int)
 

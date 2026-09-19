@@ -10,6 +10,9 @@ import com.borasarang.macjupjup.util.DebugLogger
 import com.borasarang.macjupjup.util.TimeUtils
 import androidx.room.withTransaction
 
+/** 등록 테이블에 없는 내부 수집처 표시명 (수동 시드 등 일회성) */
+private val INTERNAL_SOURCE_NAMES = mapOf("manual_seed" to "수동 시드")
+
 /** 앱 저장·조회·병합·정리 */
 class AppRepository(
     private val db: MacDatabase,
@@ -118,6 +121,8 @@ class AppRepository(
         val page = filter.page.coerceAtLeast(1)
         val offset = (page - 1) * pageSize
         val q = filter.q?.ifBlank { null }
+        val filterBySource = filter.sourceIds.isNotEmpty()
+        val sourceIds = filter.sourceIds.toList()
         val apps = db.appDao().listFiltered(
             license = filter.license,
             category = filter.category,
@@ -128,8 +133,10 @@ class AppRepository(
             offset = offset,
             bumped = filter.bumped,
             updatedOnly = filter.updatedOnly,
+            filterBySource = filterBySource,
+            sourceIds = sourceIds,
         )
-        val total = db.appDao().countFiltered(filter.license, filter.category, filter.tag, q, filter.bumped, filter.updatedOnly)
+        val total = db.appDao().countFiltered(filter.license, filter.category, filter.tag, q, filter.bumped, filter.updatedOnly, filterBySource, sourceIds)
         // P1-1: 대표 매핑 일괄 조회 (행당 getByApp N+1 제거)
         val mapsByApp = if (apps.isEmpty()) {
             emptyMap()
@@ -220,9 +227,18 @@ class AppRepository(
     suspend fun trends(): TrendStats = cache.cached("trends") {
         val dao = db.appDao()
         val weekAgo = System.currentTimeMillis() - 7 * TimeUtils.MILLIS_PER_DAY
+        val sourceNames = db.crawlSourceDao().getAll().associate { it.id to it.name }
+        val bySource = dao.countBySource().map { row ->
+            SourceCount(
+                sourceName = sourceNames[row.name] ?: INTERNAL_SOURCE_NAMES[row.name] ?: row.name,
+                count = row.cnt,
+                sourceId = row.name,
+            )
+        }.sortedByDescending { it.count }
         TrendStats(
             byCategory = dao.countByCategory().associate { it.name to it.cnt },
             byLicense = dao.countByLicense().associate { it.name to it.cnt },
+            bySource = bySource,
             newLast7d = dao.countNewSince(weekAgo),
             updatedLast7d = dao.countUpdatedSince(weekAgo),
             versionBumpsLast7d = dao.countVersionBumpsSince(weekAgo),

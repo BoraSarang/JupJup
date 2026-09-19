@@ -34,6 +34,7 @@ interface AppDao {
           AND (:q IS NULL OR name LIKE '%' || :q || '%' OR developer LIKE '%' || :q || '%')
           AND (:bumped = 0 OR (isNew = 0 AND version IS NOT NULL))
           AND (:updatedOnly = 0 OR prevVersion IS NOT NULL)
+          AND (:filterBySource = 0 OR sourceId IN (:sourceIds))
         ORDER BY
           CASE WHEN :sort = 'stars' THEN stars END DESC,
           CASE WHEN :sort = 'rating' THEN averageRating END DESC,
@@ -51,6 +52,8 @@ interface AppDao {
         offset: Int,
         bumped: Boolean = false,
         updatedOnly: Boolean = false,
+        filterBySource: Boolean = false,
+        sourceIds: List<String> = emptyList(),
     ): List<App>
 
     @Query(
@@ -60,7 +63,8 @@ interface AppDao {
           AND (:tag IS NULL OR tags LIKE '%' || :tag || '%')
           AND (:q IS NULL OR name LIKE '%' || :q || '%' OR developer LIKE '%' || :q || '%')
           AND (:bumped = 0 OR (isNew = 0 AND version IS NOT NULL))
-          AND (:updatedOnly = 0 OR prevVersion IS NOT NULL)"""
+          AND (:updatedOnly = 0 OR prevVersion IS NOT NULL)
+          AND (:filterBySource = 0 OR sourceId IN (:sourceIds))"""
     )
     suspend fun countFiltered(
         license: String?,
@@ -69,6 +73,8 @@ interface AppDao {
         q: String?,
         bumped: Boolean = false,
         updatedOnly: Boolean = false,
+        filterBySource: Boolean = false,
+        sourceIds: List<String> = emptyList(),
     ): Int
 
     @Query("SELECT * FROM apps WHERE trackId = :trackId LIMIT 1")
@@ -137,6 +143,10 @@ interface AppDao {
 
     @Query("SELECT license AS name, COUNT(*) AS cnt FROM apps GROUP BY license")
     suspend fun countByLicense(): List<NameCount>
+
+    /** 수집처별 앱 수 (대표 sourceId 기준) */
+    @Query("SELECT sourceId AS name, COUNT(*) AS cnt FROM apps GROUP BY sourceId")
+    suspend fun countBySource(): List<NameCount>
 
     @Query("SELECT COUNT(*) FROM apps WHERE firstSeenAt >= :since")
     suspend fun countNewSince(since: Long): Int

@@ -37,6 +37,7 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
             category = params["category"]?.takeIf { it.isNotBlank() },
             tag = params["tag"]?.takeIf { it.isNotBlank() },
             q = params["q"]?.takeIf { it.isNotBlank() },
+            sourceIds = params["sourceIds"]?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet() ?: emptySet(),
             sort = params["sort"] ?: "newest",
             page = params["page"]?.toIntOrNull() ?: 1,
             pageSize = params["pageSize"]?.toIntOrNull()
