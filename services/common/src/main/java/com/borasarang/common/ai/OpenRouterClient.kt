@@ -70,7 +70,24 @@ class OpenRouterClient(private val apiKey: String) : AiClient {
                 return@withContext Result.failure(Exception("API 오류 ${response.code}: $body"))
             }
 
-            val jsonResponse = json.parseToJsonElement(body).jsonObject
+            val jsonResponse = try {
+                json.parseToJsonElement(body).jsonObject
+            } catch (e: Exception) {
+                return@withContext Result.failure(Exception("응답 파싱 실패 — 본문: ${body.take(300)}"))
+            }
+
+            // OpenRouter는 일부 상류(provider) 오류를 HTTP 200 + error 필드로 반환
+            val errObj = jsonResponse["error"]
+            if (errObj != null) {
+                val errMessage = (errObj as? JsonObject)
+                    ?.get("message")?.jsonPrimitive?.content
+                    ?: errObj.toString()
+                val errCode = jsonResponse["code"]?.jsonPrimitive?.content
+                return@withContext Result.failure(
+                    Exception("API 오류${errCode?.let { " $it" } ?: ""}: $errMessage")
+                )
+            }
+
             val message = jsonResponse["choices"]
                 ?.jsonArray?.get(0)
                 ?.jsonObject?.get("message")
