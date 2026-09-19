@@ -22,13 +22,12 @@ jobs:
           java-version: '17'
 
       - name: Android SDK (라이선스 동의)
-        uses: android-actions/setup-android@v3
-        with:
-          # 'tools' 패키지는 upstream에서 삭제됨 — 명시 지정으로 회피
-          packages: |
-            platform-tools
-            build-tools;36.0.0
-            platforms;android-36
+        # setup-android 액션은 upstream 'tools' 패키지 삭제로 동작 불능 —
+        # 러너 내장 SDK + 직접 동의로 대체 (부족분은 AGP가 자동 설치)
+        run: |
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: Gradle 캐시
         uses: gradle/actions/setup-gradle@v4
