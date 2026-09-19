@@ -2,6 +2,22 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R22 프롬프트팩토리 → 프롬프트 저널 개명
+- [x] 인벤토리 (표시 40건·코드 60파일·DB/DataStore/Work 파일명)
+- [x] 표시 이름 교체 (한글·영문 `Prompt Journal`)
+- [x] 코드 식별자 개명 (모듈·패키지·클래스·리소스 `pj_`·enum·에셋·채널)
+- [x] 데이터 마이그레이션 (`migrateLegacyFiles` + `migrateLegacyWork`)
+- [x] 빌드 + 단위 + lint + 실기 검증 (3002·웹·프롬프트 2건·실행기록 승계)
+- [x] 문서 갱신 (AGENTS·DESIGN·CHANGELOG·PLAN 파일명·세션 로그)
+
+## R21 맥줍줍 웹 포털 리디자인 (PLAN_v9)
+- [x] PLAN_v9 초안 작성
+- [x] style.css 디자인 토큰 + 레이아웃 전면 재작성
+- [x] index.html 시맨틱 HTML 구조 재작성 (사이드바/그리드/모달)
+- [x] app.js 로직 전면 재작성 (사이드바 상태/카드 렌더/모달 탭)
+- [x] 빌드 + smoke/unit 테스트 + 실기 검증
+- [x] 문서 갱신 (CHANGELOG·DESIGN·세션 로그)
+
 ## R20 모델 투입 상태 영속화 (PLAN_v8)
 - [x] PLAN_v8 초안
 - [x] ModelEnabledStore + ModelCatalog 영속화·merge 수정
@@ -36,7 +52,7 @@
 - [x] 빌드 + JS 체크 (실기 검증 잔여: 최신호 발행·기사 복사·이 호 폐기·지침서 저장·동기화)
 - [x] 문서 갱신 (DESIGN·CHANGELOG·세션 로그)
 
-## R15 프롬프트팩토리 UX 정리 (v1.11.x, PLAN_v6)
+## R15 프롬프트 저널 UX 정리 (v1.11.x, PLAN_v6)
 - [x] PLAN_v6 초안
 - [x] 백엔드: refresh 응답 added 포함 + 일괄 enabled API + setAllEnabled
 - [x] 웹: 프롬프트별 마지막 응답 1건 카드 + 마크다운 렌더 + 기록보며 인라인 수정 + 모두사용/해제 + duration 포맷
@@ -44,7 +60,7 @@
 - [x] v3 전면 개편: 슬림헤더+칩+2열 마스터디테일+서랍, 맥줍 md/CSS 이식, 모달2층 제거, toast
 - [x] 빌드 + JS 체크 (실기 검증 잔여: 표 리포트·날짜 전환·서랍 저장·토스트)
 
-## R14 프롬프트팩토리 재설계 — 다중 프롬프트 관리 (v1.11.0)
+## R14 프롬프트 저널 재설계 — 다중 프롬프트 관리 (v1.11.0)
 - [x] PLAN_v5 초안
 - [x] DB v2 마이그레이션 (Prompt 엔티티·DAO·MIGRATION_1_2·초기화)
 - [x] ProviderKeyStore (공급자별 API키 DataStore) + ModelCatalog (갱신·활성토글)
@@ -201,21 +217,21 @@
 - [x] v1.3.0 태그 + GitHub Release (release.yml, CHANGELOG 1.3.0 섹션)
 - [x] 세션 로그 갱신
 
-## PF1 프롬프트팩토리 — 모듈 스캐폴드 (PLAN_v4)
+## PJ1 프롬프트 저널 — 모듈 스캐폴드 (PLAN_v4)
 - [x] PLAN_v4 초안
-- [x] `:services:promptfactory` 모듈 생성 (build.gradle.kts, AndroidManifest.xml)
+- [x] `:services:promptjournal` 모듈 생성 (build.gradle.kts, AndroidManifest.xml)
 - [x] `settings.gradle.kts` include 추가
 - [x] `build-logic/jupjup.base` 적용 확인
-- [x] 빌드 검증 (`:services:promptfactory:assembleDebug`)
+- [x] 빌드 검증 (`:services:promptjournal:assembleDebug`)
 
-## PF2 프롬프트팩토리 — DB·DataStore·Runtime
-- [x] Room DB (`PromptFactoryDatabase`) + DAO + Entity
-- [x] DataStore PreferencesManager (`pf_settings`)
-- [x] PromptFactoryRuntime (object, initialize)
+## PJ2 프롬프트 저널 — DB·DataStore·Runtime
+- [x] Room DB (`PromptJournalDatabase`) + DAO + Entity
+- [x] DataStore PreferencesManager (`pj_settings`)
+- [x] PromptJournalRuntime (object, initialize)
 - [x] DebugLogger (common.JupLog 파사드)
 - [x] Constants (포트 3002, 에러코드 프리픽스)
 
-## PF3 프롬프트팩토리 — AI 클라이언트
+## PJ3 프롬프트 저널 — AI 클라이언트
 - [x] AiProvider enum (OPENROUTER, NIM, GOOGLE_AI_STUDIO)
 - [x] AiClient 인터페이스
 - [x] OpenRouterClient 구현
@@ -224,46 +240,46 @@
 - [x] AiClientFactory
 - [x] PromptExecutionRepository
 
-## PF4 프롬프트팩토리 — HTTP 서버
+## PJ4 프롬프트 저널 — HTTP 서버
 - [x] HttpServerService (Ktor CIO 포트 3002)
-- [x] PfRoutes (`/api/health`, `/api/executions`, `/api/execute`, `/api/settings`, `/api/models`)
-- [x] PfAssetRoutes (pf_web/ 정적 서빙)
+- [x] PjRoutes (`/api/health`, `/api/executions`, `/api/execute`, `/api/settings`, `/api/models`)
+- [x] PjAssetRoutes (pj_web/ 정적 서빙)
 
-## PF5 프롬프트팩토리 — 스케줄러
-- [x] PromptFactoryScheduler (WorkManager)
-- [x] PromptFactoryWorker (AI 호출 + DB 저장 + 알림)
+## PJ5 프롬프트 저널 — 스케줄러
+- [x] PromptJournalScheduler (WorkManager)
+- [x] PromptJournalWorker (AI 호출 + DB 저장 + 알림)
 
-## PF6 프롬프트팩토리 — UI 통합
+## PJ6 프롬프트 저널 — UI 통합
 - [x] HomeFragment, ProviderManageFragment, SettingsFragment, NotificationFragment
-- [x] PfServiceAdapter (app 모듈)
-- [x] ServiceRegistry에 PROMPTFACTORY 등록 (enum + fragment 분기)
+- [x] PjServiceAdapter (app 모듈)
+- [x] ServiceRegistry에 PROMPTJOURNAL 등록 (enum + fragment 분기)
 - [x] DashboardFragment 카드 표시
 - [x] MainActivity 내비 3열 세그먼트 추가
 
-## PF7 프롬프트팩토리 — 웹 페이지
-- [x] pf_web/index.html (목록 + 상세 + 설정 + 모델)
-- [x] pf_web/app.js (API 호출 + DOM 조작)
-- [x] pf_web/style.css (Material Design 스타일)
-- [x] pf_web/favicon.svg
+## PJ7 프롬프트 저널 — 웹 페이지
+- [x] pj_web/index.html (목록 + 상세 + 설정 + 모델)
+- [x] pj_web/app.js (API 호출 + DOM 조작)
+- [x] pj_web/style.css (Material Design 스타일)
+- [x] pj_web/favicon.svg
 
-## PF8 프롬프트팩토리 — 검증 + 버전 bump
-- [x] 빌드 (`:app:assembleDebug` + `:services:promptfactory:assembleDebug`)
-- [x] 단위 테스트 (`:services:promptfactory:testDebugUnitTest`)
+## PJ8 프롬프트 저널 — 검증 + 버전 bump
+- [x] 빌드 (`:app:assembleDebug` + `:services:promptjournal:assembleDebug`)
+- [x] 단위 테스트 (`:services:promptjournal:testDebugUnitTest`)
 - [x] lint 오류 0 (`:app:lintDebug`)
 - [x] versionName 1.10.0 (versionCode 12) bump
 - [x] error_message_ko.json에 E-AND-REPORT-08xx 추가
 
-## PF9 프롬프트팩토리 — 문서 갱신
+## PJ9 프롬프트 저널 — 문서 갱신
 - [x] DESIGN.md v1.4 반영
 - [x] CHANGELOG.md 1.10.0 섹션
-- [x] AGENTS.local.md에 포트 3002 + pf_ 접두사 언급
+- [x] AGENTS.local.md에 포트 3002 + pj_ 접두사 언급
 - [x] error_message_ko.json E-AND-REPORT-08xx 추가
 - [x] 세션 로그 (.agent/session-2026-09-18-and.md)
 
-## PF10 프롬프트팩토리 — 실기 검증 (S22, 1.10.0)
-- [x] 대시보드 pf 카드 3번째 추가 (fragment_dashboard.xml + DashboardViewModel Triple + DashboardFragment)
-- [x] `PfServiceAdapter.setServerRunning` 토글 역전 버그 수정
+## PJ10 프롬프트 저널 — 실기 검증 (S22, 1.10.0)
+- [x] 대시보드 pj 카드 3번째 추가 (fragment_dashboard.xml + DashboardViewModel Triple + DashboardFragment)
+- [x] `PjServiceAdapter.setServerRunning` 토글 역전 버그 수정
 - [x] 서버 3002 기동 + `/api/health` 200 + 웹 포털 에셋 서빙
 - [x] 프롬프트 저장 (무료AI모델-일일리포트-프롬프트.md) + AI 실행 SUCCESS 3건 (nemotron-3-super 등)
 - [x] autoStart=true → 앱 재시작 후 서버 자동 기동 확인
-- [x] 대시보드 pf 카드 갱신 확인 (실행 횟수 10회, 활성, 서버 실행 중)
+- [x] 대시보드 pj 카드 갱신 확인 (실행 횟수 10회, 활성, 서버 실행 중)

@@ -55,13 +55,13 @@ class DashboardViewModelTest {
 
     private lateinit var mac: FakeAdapter
     private lateinit var plan: FakeAdapter
-    private lateinit var pf: FakeAdapter
+    private lateinit var pj: FakeAdapter
 
     @Before
     fun setUp() {
         mac = FakeAdapter(Service.MAC)
         plan = FakeAdapter(Service.PLAN)
-        pf = FakeAdapter(Service.PROMPTFACTORY)
+        pj = FakeAdapter(Service.PROMPTJOURNAL)
     }
 
     @After
@@ -75,11 +75,11 @@ class DashboardViewModelTest {
         Dispatchers.setMain(main)
         mac.state = DashboardServiceUi(isServerRunning = true, address = "http://1:3000", statValue1 = 10)
         plan.state = DashboardServiceUi(isServerRunning = true, address = "http://1:3001", statValue1 = 5)
-        pf.state = DashboardServiceUi(isServerRunning = true, address = "http://1:3002", statValue1 = 3)
+        pj.state = DashboardServiceUi(isServerRunning = true, address = "http://1:3002", statValue1 = 3)
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTFACTORY to pf),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
             main,
         )
         viewModel.refresh()
@@ -89,11 +89,11 @@ class DashboardViewModelTest {
         assertFalse(ui.isChecking)
         assertTrue(ui.mac.isServerRunning)
         assertTrue(ui.plan.isServerRunning)
-        assertTrue(ui.pf.isServerRunning)
+        assertTrue(ui.pj.isServerRunning)
         assertEquals("http://1:3000", ui.mac.address)
         assertEquals(10, ui.mac.statValue1)
         assertEquals(5, ui.plan.statValue1)
-        assertEquals(3, ui.pf.statValue1)
+        assertEquals(3, ui.pj.statValue1)
     }
 
     @Test
@@ -108,11 +108,11 @@ class DashboardViewModelTest {
             ),
         )
         plan.state = DashboardServiceUi(isServerRunning = true)
-        pf.state = DashboardServiceUi(isServerRunning = true)
+        pj.state = DashboardServiceUi(isServerRunning = true)
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTFACTORY to pf),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
             main,
         )
         viewModel.refresh()
@@ -123,7 +123,7 @@ class DashboardViewModelTest {
 
         assertEquals(2, mac.calls.count { it == "loadState" })
         assertEquals(2, plan.calls.count { it == "loadState" })
-        assertEquals(2, pf.calls.count { it == "loadState" })
+        assertEquals(2, pj.calls.count { it == "loadState" })
         assertTrue(viewModel.uiState.value.mac.isServerRunning)
     }
 
@@ -133,11 +133,11 @@ class DashboardViewModelTest {
         Dispatchers.setMain(main)
         mac.state = DashboardServiceUi(isServerRunning = false)
         plan.state = DashboardServiceUi(isServerRunning = false)
-        pf.state = DashboardServiceUi(isServerRunning = false)
+        pj.state = DashboardServiceUi(isServerRunning = false)
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTFACTORY to pf),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
             main,
         )
         viewModel.refresh()
@@ -158,7 +158,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTFACTORY to pf),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
             main,
         )
         // 먼저 상태 병합 후 토글 (초기 crawlEnabled/isServerRunning 반영)
@@ -179,7 +179,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTFACTORY to pf),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
             main,
         )
         viewModel.refresh()
@@ -199,7 +199,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTFACTORY to pf),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
             main,
         )
         viewModel.refresh()

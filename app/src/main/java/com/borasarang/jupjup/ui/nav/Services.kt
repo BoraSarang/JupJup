@@ -10,13 +10,13 @@ import com.borasarang.planjupjup.ui.home.HomeFragment as PlanHomeFragment
 import com.borasarang.planjupjup.ui.notif.NotificationFragment as PlanNotificationFragment
 import com.borasarang.planjupjup.ui.settings.SettingsFragment as PlanSettingsFragment
 import com.borasarang.planjupjup.ui.source.SourceManageFragment as PlanSourceManageFragment
-import com.borasarang.promptfactoryjupjup.ui.home.HomeFragment as PfHomeFragment
-import com.borasarang.promptfactoryjupjup.ui.notif.NotificationFragment as PfNotificationFragment
-import com.borasarang.promptfactoryjupjup.ui.settings.SettingsFragment as PfSettingsFragment
-import com.borasarang.promptfactoryjupjup.ui.provider.ProviderManageFragment as PfProviderManageFragment
+import com.borasarang.promptjournaljupjup.ui.home.HomeFragment as PjHomeFragment
+import com.borasarang.promptjournaljupjup.ui.notif.NotificationFragment as PjNotificationFragment
+import com.borasarang.promptjournaljupjup.ui.settings.SettingsFragment as PjSettingsFragment
+import com.borasarang.promptjournaljupjup.ui.provider.ProviderManageFragment as PjProviderManageFragment
 
 /** 줍줍 시리즈 서비스. 문자열("MAC"/"PLAN") 대신 이 enum을 전달한다 (R3) */
-enum class Service { MAC, PLAN, PROMPTFACTORY }
+enum class Service { MAC, PLAN, PROMPTJOURNAL }
 
 /** 하단 기능 탭 */
 enum class ServiceTab { DASHBOARD, HOME, SOURCE, NOTIF, SETTINGS }
@@ -31,7 +31,7 @@ object ServiceRegistry {
         mapOf(
             Service.MAC to com.borasarang.jupjup.ui.dashboard.MacServiceAdapter,
             Service.PLAN to com.borasarang.jupjup.ui.dashboard.PlanServiceAdapter,
-            Service.PROMPTFACTORY to com.borasarang.jupjup.ui.dashboard.PfServiceAdapter,
+            Service.PROMPTJOURNAL to com.borasarang.jupjup.ui.dashboard.PjServiceAdapter,
         )
 
     fun fragment(service: Service, tab: ServiceTab): Fragment = when (tab) {
@@ -39,22 +39,22 @@ object ServiceRegistry {
         ServiceTab.HOME -> when (service) {
             Service.MAC -> MacHomeFragment()
             Service.PLAN -> PlanHomeFragment()
-            Service.PROMPTFACTORY -> PfHomeFragment()
+            Service.PROMPTJOURNAL -> PjHomeFragment()
         }
         ServiceTab.SOURCE -> when (service) {
             Service.MAC -> MacSourceManageFragment()
             Service.PLAN -> PlanSourceManageFragment()
-            Service.PROMPTFACTORY -> PfProviderManageFragment()
+            Service.PROMPTJOURNAL -> PjProviderManageFragment()
         }
         ServiceTab.NOTIF -> when (service) {
             Service.MAC -> MacNotificationFragment()
             Service.PLAN -> PlanNotificationFragment()
-            Service.PROMPTFACTORY -> PfNotificationFragment()
+            Service.PROMPTJOURNAL -> PjNotificationFragment()
         }
         ServiceTab.SETTINGS -> when (service) {
             Service.MAC -> MacSettingsFragment()
             Service.PLAN -> PlanSettingsFragment()
-            Service.PROMPTFACTORY -> PfSettingsFragment()
+            Service.PROMPTJOURNAL -> PjSettingsFragment()
         }
     }
 

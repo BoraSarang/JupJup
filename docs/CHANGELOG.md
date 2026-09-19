@@ -1,7 +1,29 @@
 # CHANGELOG — JupJup
 
 ## [Unreleased]
-> 플랫폼: AND · 프롬프트팩토리 뉴스룸 리디자인 (PLAN_v7, 외부 키트 적용)
+> 플랫폼: AND · 프롬프트팩토리 → 프롬프트 저널 개명 (R22)
+- **표시 이름**: `프롬프트팩토리` → `프롬프트 저널` 전수 (화면·웹·문서·로그), 영문 `Prompt Factory` → `Prompt Journal`
+- **코드 식별자**: `:services:promptjournal` 모듈, `com.borasarang.promptjournaljupjup` 패키지,
+  `PromptJournal{Runtime,Database,Scheduler,Worker}` · `Pj{Routes,AssetRoutes,ServiceAdapter,Settings}` ·
+  리소스 `pf_*` → `pj_*` (레이아웃·문자열·색상·ID) · `PROMPTJOURNAL` enum · `pj_web` 에셋 · 알림 채널 `jupjup_pj_server`
+- **데이터 승계** (1회 마이그레이션): `promptfactory.db(+journal/shm/wal)` → `promptjournal.db`,
+  DataStore `pf_{settings,api_keys,models}` → `pj_*`, 구 Work(`promptfactory_prompt` 태그·`pf_prompt_{id}`) 취소 후 재예약
+- 실기 검증: 빌드·단위·lint 통과, 3002 health `promptjournal` 응답, 프롬프트 2건·실행기록·설정 승계 확인
+
+> 플랫폼: MAC · 맥줍줍 웹 포털 리디자인 (PLAN_v9, Apple 네이티브 톤)
+- **사이드바 네비게이션**: 타임라인/Watchlist/통계 분리, 필터를 `출처`(GitHub/MAS/Homebrew 카운트)·`유형`(전체/오픈소스/프리/유료) 그룹화
+- **카드 시스템**: 48px 아이콘 + 제목 + 설명 2줄 클램프, 언어 컬러닷(Swift/파이썬/JS/TS/Rust/Go/C++), NEW 도트, ★별점 간결화
+- **그리드**: 3열 반응형(1100px↓ 2열, 720px↓ 1열), rounded-2xl, 소프트 섀도우, hover 떠오름
+- **모달 재구성**: 64px 히어로 아이콘 + 메타 pill + CTA(홈페이지/GitHub Repo) 상단 배치, 탭(소개/특징/새기능) 구조
+- **톤**: 배경 #f5f5f7, Pretendard 폰트, 다크모드 지원, macOS 메뉴바 앱답게 둥글고 가볍게
+- **모바일**: ≤720px에서 사이드바 오버레이 드로어 전환, 터치 타겟 44px 이상
+- **핫픽스**: 모달 포커스 링(닫기 버튼으로 초기 포커스) · 통계 막대 미표시(클래스 불일치) · 알림센터 깨진 아이콘(숨김 처리) ·
+  소요시간 표기(`9시간 9분` + `YYYY-MM-DD HH:mm`) · 모달 상단 고정(6vh) · 카드 언어닷 세로 중앙 ·
+  사이드바 배지 전체 카운트 고정 + 카테고리 타임라인 하위 이전(타임라인 선택 시만 표시) ·
+  좁은 화면 잘림(그리드 `minmax(0,1fr)` + 카드/탑바 오버플로) · 다크모드 모달 글자색(dialog UA override) ·
+  버전 테이블 셀 마크다운 렌더링
+
+> 플랫폼: AND · 프롬프트 저널 뉴스룸 리디자인 (PLAN_v7, 외부 키트 적용)
 - **Masthead**: `PROMPT JOURNAL / 프롬프트 저널` serif + 오늘 날짜 + 제N호 박스, Tailwind CDN + Noto Serif KR
 - **발행 아카이브**: 왼쪽 리스트에 제N호·조간/석간/단신 + 헤드라인 요약, BREAKING/휴간 배지
 - **기사 지면**: 응답 첫 줄 H1 헤드라인 + kicker + `제N호 발행 · 날짜 조간 · 취재 N초` 메타, factbox 얇은 border
@@ -15,11 +37,11 @@
   요약 표 paper(#fafaf7) 배경, 휴간 회색점, 인사이트 lead serif 17px/1.7, keep-all, masthead 간격 축소
 - **역슬래시 (R19)**: LLM이 뱉는 `\모델ID\`를 코드 칩으로 (본문·아카이브 요약·서비스 카드+ID 복사),
   빈 응답·라벨뿐인 첫줄의 H1은 `신규 무료 모델 없음`으로
-- **모델 투입 상태 영속화 (R20)**: `ModelEnabledStore` (DataStore `pf_models`) — 해제/투입이 재시작 후에도 유지.
+- **모델 투입 상태 영속화 (R20)**: `ModelEnabledStore` (DataStore `pj_models`) — 해제/투입이 재시작 후에도 유지.
   `merge` 수정으로 갱신 시 명시 해제가 부활하지 않음. `ModelCatalogTest` 4종.
-- 백엔드·API·DB 변경 없음 (pf_web 3파일 + 시드 프롬프트 문구만)
+- 백엔드·API·DB 변경 없음 (pj_web 3파일 + 시드 프롬프트 문구만)
 
-> 플랫폼: AND · 프롬프트팩토리 웹 v3 리포트 중심 개편 (PLAN_v6)
+> 플랫폼: AND · 프롬프트 저널 웹 v3 리포트 중심 개편 (PLAN_v6)
 
 ### 변경
 - **웹 v3**: 상태카드·새로고침·3탭 삭제 → 슬림 헤더(로고+상태점+마지막실행+⚙️) + 프롬프트 칩 + 2열 마스터-디테일(PC 왼쪽 날짜·오른쪽 본문, 모바일 전체화면)
@@ -30,14 +52,14 @@
 - 본문 최대폭 1200→1600px, 헤더·칩을 본문 폭에 정렬
 
 ## [1.11.0] - 2026-09-18
-> 플랫폼: AND · 프롬프트팩토리 다중 프롬프트 재설계
+> 플랫폼: AND · 프롬프트 저널 다중 프롬프트 재설계
 
 ### 신규
 - **프롬프트 CRUD**: `Prompt` 엔티티 + DB v2 마이그레이션 (MIGRATION_1_2, 기존 실행기록 초기화)
   - 제목·본문·공급자·모델·스케줄(daily/once·시각)·활성화·이전결과주입
-- **다중 프롬프트 관리**: 프롬프트별 스케줄 개별 예약 (`pf_prompt_{id}`), 실행 결과 리스트
+- **다중 프롬프트 관리**: 프롬프트별 스케줄 개별 예약 (`pj_prompt_{id}`), 실행 결과 리스트
 - **이전 결과 주입**: `usePreviousResult` ON이면 직전 SUCCESS 응답 원문을 `[어제까지 기록]`에 삽입
-- **공급자별 API 키 관리**: `ProviderKeyStore` (DataStore `pf_api_keys`) — 웹에서 등록/교체
+- **공급자별 API 키 관리**: `ProviderKeyStore` (DataStore `pj_api_keys`) — 웹에서 등록/교체
 - **모델 카탈로그**: `ModelCatalog` (AIModelTalk 패턴 이식) — 런타임 목록 갱신 + 모델 활성 토글
 - **웹 v2 (조회+관리)**: 프롬프트 탭(인사이트+카드→상세 결과), 실행 기록, 관리 탭(프롬프트 폼+공급자·키·모델)
 - **인사이트 API**: `/api/insights` 프롬프트별 최근 SUCCESS 500자 요약
@@ -47,8 +69,8 @@
 ### 구조
 - 라우트 v2: `prompts` CRUD / `prompts/{id}/executions` / `execute(promptId)` / `providers`(key·models·refresh·enabled)
 - 스케줄러·워커: 프롬프트id 기반 재설계
-- `PfSettings` 축소(port/autoStart만) — 단일 프롬프트 필드 제거
-- `PfServiceAdapter`: 활성 프롬프트 수 표시, `triggerImmediate(first.id)`
+- `PjSettings` 축소(port/autoStart만) — 단일 프롬프트 필드 제거
+- `PjServiceAdapter`: 활성 프롬프트 수 표시, `triggerImmediate(first.id)`
 
 ### 개선 (S23 실기 발견)
 - 모달 닫기 × 터치 타겟 44→48px
@@ -63,34 +85,34 @@
 - versionName 1.11.0 (versionCode 13)
 
 ## [1.10.0] - 2026-09-18
-> 플랫폼: AND · 프롬프트팩토리 신규 서비스
+> 플랫폼: AND · 프롬프트 저널 신규 서비스
 
 ### 신규
-- **`:services:promptfactory` 모듈** 추가 (네임스페이스 `com.borasarang.promptfactoryjupjup`, 포트 3002)
+- **`:services:promptjournal` 모듈** 추가 (네임스페이스 `com.borasarang.promptjournaljupjup`, 포트 3002)
 - **AI 클라이언트 3종**: OpenRouter, NVIDIA NIM, Google AI Studio — 각각 OkHttp + kotlinx.serialization 기반
 - **Room DB**: `PromptExecution` 엔티티 + `PromptExecutionDao` (실행 기록 저장/조회/삭제)
 - **DataStore 설정**: 공급자/모델/프롬프트/스케줄/API키/활성화 여부 영속 저장
 - **WorkManager 스케줄러**: 매일/1회 실행 스케줄 + 즉시 실행 트리거
 - **Ktor HTTP 서버** (포트 3002): `/api/health`, `/api/executions`, `/api/execute`, `/api/settings`, `/api/models`
-- **웹 포털** (`pf_web/`): 실행 기록 목록/상세, 설정 변경, 모델 목록, 즉시 실행
+- **웹 포털** (`pj_web/`): 실행 기록 목록/상세, 설정 변경, 모델 목록, 즉시 실행
 - **UI 4종 프래그먼트**: 홈/공급자관리/설정/알림
 - **ServiceAdapter + ServiceRegistry** 연동: 대시보드 3열 카드 표시
-- **MainActivity 세그먼트** 3열 확장 (맥줍줍/요금줍줍/프롬프트팩토리)
+- **MainActivity 세그먼트** 3열 확장 (맥줍줍/요금줍줍/프롬프트 저널)
 - 기본 프롬프트: 무료 AI 모델 트래킹 리포트 (참고 파일 내장)
-- `PromptFactoryRuntime` object: DB/DataStore/스케줄러 초기화
+- `PromptJournalRuntime` object: DB/DataStore/스케줄러 초기화
 
 ### 구조
-- app build.gradle.kts: `:services:promptfactory` 의존성 추가
-- JupJupApplication: `PromptFactoryRuntime.initialize()` 호출
-- Services.kt: `Service.PROMPTFACTORY` enum + fragment 분기
-- strings.xml: `nav_pf`, `dashboard_pf_title` 추가
+- app build.gradle.kts: `:services:promptjournal` 의존성 추가
+- JupJupApplication: `PromptJournalRuntime.initialize()` 호출
+- Services.kt: `Service.PROMPTJOURNAL` enum + fragment 분기
+- strings.xml: `nav_pj`, `dashboard_pj_title` 추가
 
 ### 테스트
-- 빌드: `:app:assembleDebug` + `:services:promptfactory:assembleDebug` **BUILD SUCCESSFUL**
+- 빌드: `:app:assembleDebug` + `:services:promptjournal:assembleDebug` **BUILD SUCCESSFUL**
 - lint: `:app:lintDebug` **BUILD SUCCESSFUL** (오류 0)
-- 단위 테스트: `:services:promptfactory:testDebugUnitTest` **BUILD SUCCESSFUL**
-- 실기 검증 (S22, 1.10.0): pf 대시보드 카드 표시·서버 3002 기동·health 200·**AI 실행 SUCCESS 3건** (nemotron-3-super-120b 35.9s 등)·autoStart 자동 기동 확인
-- **실기 중 버그 수정**: `PfServiceAdapter.setServerRunning` 토글 역전 (running=true 시 start 호출) → Mac/Plan과 동일하게 stop으로 수정, 대시보드 pf 카드 추가
+- 단위 테스트: `:services:promptjournal:testDebugUnitTest` **BUILD SUCCESSFUL**
+- 실기 검증 (S22, 1.10.0): pj 대시보드 카드 표시·서버 3002 기동·health 200·**AI 실행 SUCCESS 3건** (nemotron-3-super-120b 35.9s 등)·autoStart 자동 기동 확인
+- **실기 중 버그 수정**: `PjServiceAdapter.setServerRunning` 토글 역전 (running=true 시 start 호출) → Mac/Plan과 동일하게 stop으로 수정, 대시보드 pj 카드 추가
 
 ## [1.9.0] - 2026-09-14
 > 플랫폼: AND · 잔여 정리 (리팩토링 7단계)

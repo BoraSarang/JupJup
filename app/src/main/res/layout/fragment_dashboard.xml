@@ -400,9 +400,9 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 프롬프트팩토리 카드 -->
+        <!-- 프롬프트 저널 카드 -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/dashboard_pf_card"
+            android:id="@+id/dashboard_pj_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -416,7 +416,7 @@
                 android:padding="16dp">
 
                 <LinearLayout
-                    android:id="@+id/dashboard_pf_header"
+                    android:id="@+id/dashboard_pj_header"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
@@ -426,7 +426,7 @@
                     app:layout_constraintTop_toTopOf="parent">
 
                     <View
-                        android:id="@+id/dashboard_pf_dot"
+                        android:id="@+id/dashboard_pj_dot"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:background="@drawable/dot_status" />
@@ -435,11 +435,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="@string/dashboard_pf_title"
+                        android:text="@string/dashboard_pj_title"
                         android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                     <TextView
-                        android:id="@+id/dashboard_pf_active_badge"
+                        android:id="@+id/dashboard_pj_active_badge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
@@ -453,7 +453,7 @@
                         android:visibility="gone" />
 
                     <TextView
-                        android:id="@+id/dashboard_pf_status"
+                        android:id="@+id/dashboard_pj_status"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -463,7 +463,7 @@
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/dashboard_pf_address"
+                    android:id="@+id/dashboard_pj_address"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -472,17 +472,17 @@
                     android:textColor="?attr/colorOnSurfaceVariant"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_pf_header" />
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_pj_header" />
 
                 <LinearLayout
-                    android:id="@+id/dashboard_pf_stats"
+                    android:id="@+id/dashboard_pj_stats"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_pf_address">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_pj_address">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -492,7 +492,7 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/dashboard_pf_stat_value1"
+                            android:id="@+id/dashboard_pj_stat_value1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/dashboard_stat_zero"
@@ -515,7 +515,7 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/dashboard_pf_stat_value2"
+                            android:id="@+id/dashboard_pj_stat_value2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/dashboard_stat_zero"
@@ -538,7 +538,7 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/dashboard_pf_stat_value3"
+                            android:id="@+id/dashboard_pj_stat_value3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/dashboard_stat_zero"
@@ -555,42 +555,42 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/dashboard_pf_actions"
+                    android:id="@+id/dashboard_pj_actions"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_pf_stats">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_pj_stats">
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/dashboard_pf_btn_crawl"
+                        android:id="@+id/dashboard_pj_btn_crawl"
                         style="@style/Widget.Material3.Button"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/dashboard_pf_btn_run_now" />
+                        android:text="@string/dashboard_pj_btn_run_now" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/dashboard_pf_btn_toggle"
+                        android:id="@+id/dashboard_pj_btn_toggle"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
-                        android:text="@string/dashboard_pf_btn_disable" />
+                        android:text="@string/dashboard_pj_btn_disable" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/dashboard_pf_btn_server"
+                    android:id="@+id/dashboard_pj_btn_server"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/dashboard_pf_btn_start_server"
+                    android:text="@string/dashboard_pj_btn_start_server"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_pf_actions" />
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_pj_actions" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 

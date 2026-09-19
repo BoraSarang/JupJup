@@ -43,7 +43,7 @@ dependencies {
     implementation(project(":services:common"))
     implementation(project(":services:mac"))
     implementation(project(":services:plan"))
-    implementation(project(":services:promptfactory"))
+    implementation(project(":services:promptjournal"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

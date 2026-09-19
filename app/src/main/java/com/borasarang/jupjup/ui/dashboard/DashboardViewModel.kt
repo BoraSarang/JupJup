@@ -32,12 +32,12 @@ data class DashboardUiState(
     val isChecking: Boolean = true,
     val mac: DashboardServiceUi = DashboardServiceUi(),
     val plan: DashboardServiceUi = DashboardServiceUi(),
-    val pf: DashboardServiceUi = DashboardServiceUi(),
+    val pj: DashboardServiceUi = DashboardServiceUi(),
 ) {
     fun forService(service: Service): DashboardServiceUi = when (service) {
         Service.MAC -> mac
         Service.PLAN -> plan
-        Service.PROMPTFACTORY -> pf
+        Service.PROMPTJOURNAL -> pj
     }
 }
 
@@ -72,14 +72,14 @@ class DashboardViewModel(
                     Triple(
                         adapters.getValue(Service.MAC).loadState(ip),
                         adapters.getValue(Service.PLAN).loadState(ip),
-                        adapters.getValue(Service.PROMPTFACTORY).loadState(ip),
+                        adapters.getValue(Service.PROMPTJOURNAL).loadState(ip),
                     )
                 }
                 _uiState.value = DashboardUiState(
                     isChecking = false,
                     mac = fresh.first,
                     plan = fresh.second,
-                    pf = fresh.third,
+                    pj = fresh.third,
                 )
                 val anyStopped = !fresh.first.isServerRunning ||
                     !fresh.second.isServerRunning ||
@@ -132,7 +132,7 @@ class DashboardViewModel(
         _uiState.value = when (service) {
             Service.MAC -> _uiState.value.copy(mac = _uiState.value.mac.copy(isCrawling = crawling))
             Service.PLAN -> _uiState.value.copy(plan = _uiState.value.plan.copy(isCrawling = crawling))
-            Service.PROMPTFACTORY -> _uiState.value.copy(pf = _uiState.value.pf.copy(isCrawling = crawling))
+            Service.PROMPTJOURNAL -> _uiState.value.copy(pj = _uiState.value.pj.copy(isCrawling = crawling))
         }
     }
 

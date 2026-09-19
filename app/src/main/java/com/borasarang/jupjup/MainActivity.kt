@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
             if (suppressNavCallbacks || !isChecked) return@addOnButtonCheckedListener
             val next = when (checkedId) {
                 R.id.seg_plan -> Service.PLAN
-                R.id.seg_pf -> Service.PROMPTFACTORY
+                R.id.seg_pj -> Service.PROMPTJOURNAL
                 else -> Service.MAC
             }
             if (next == currentService) return@addOnButtonCheckedListener
@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val segId = when (currentService) {
                 Service.PLAN -> R.id.seg_plan
-                Service.PROMPTFACTORY -> R.id.seg_pf
+                Service.PROMPTJOURNAL -> R.id.seg_pj
                 else -> R.id.seg_mac
             }
             if (binding.serviceSegment.checkedButtonId != segId) {
@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity() {
     private fun serviceTitle(): String = when (currentService) {
         Service.MAC -> getString(R.string.nav_mac)
         Service.PLAN -> getString(R.string.nav_plan)
-        Service.PROMPTFACTORY -> getString(R.string.nav_pf)
+        Service.PROMPTJOURNAL -> getString(R.string.nav_pj)
     }
 
     private fun tabItemId(tab: ServiceTab): Int = when (tab) {
@@ -159,13 +159,13 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             var macPort = MacConstants.DEFAULT_PORT
             var planPort = PlanConstants.DEFAULT_PORT
-            var pfPort = 3002
+            var pjPort = 3002
             var ip: String? = null
             try {
                 withContext(Dispatchers.IO) {
                     macPort = MacJupJupRuntime.preferences.getSettings().port
                     planPort = PlanJupJupRuntime.preferences.getSettings().port
-                    pfPort = com.borasarang.promptfactoryjupjup.PromptFactoryRuntime.preferences.getSettings().port
+                    pjPort = com.borasarang.promptjournaljupjup.PromptJournalRuntime.preferences.getSettings().port
                     ip = NetUtils.getLocalIp(this@MainActivity)
                 }
             } catch (e: Exception) {

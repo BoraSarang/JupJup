@@ -1,105 +1,205 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>맥줍줍 - 맥 앱 트렌드 레이더</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>맥줍줍 - 맥 앱 트렌드 레이더</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="header">
-        <div class="header-content">
-            <button class="logo logo-link" id="logoLink" type="button" title="전체 앱으로 이동" aria-label="맥줍줍 메인(전체 앱)">🍎 맥줍줍</button>
-            <div class="header-info">
-                <button id="langToggle" class="btn-lang" type="button" title="한국어/원문 전환">한국어</button>
-                <span id="lastUpdated">마지막 업데이트: -</span>
-                <button id="totalCount" class="badge badge-sync" type="button" title="지금 수집하기">총 0개</button>
-                <button id="translateNow" class="badge" type="button" title="한글 번역 즉시 실행">🌐 번역</button>
-                <button id="notifBell" class="btn-notif" type="button" aria-label="알림 센터 열기">
-                    <span aria-hidden="true">🔔</span>
-                </button>
-                <button id="filterToggle" class="btn-filter" type="button" aria-controls="filterPanel" aria-expanded="false" title="필터 펼치기">☰ 필터</button>
-            </div>
+  <aside class="sidebar" role="navigation" aria-label="메인 네비게이션" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">맥줍줍</span>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="사이드바 접기/펼치기" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="뷰 선택">
+      <ul class="nav-list" role="list" id="navList">
+        <li class="nav-item nav-parent">
+          <a class="nav-link active" href="#timeline" data-view="timeline" role="button" tabindex="0">
+            <span class="nav-icon" aria-hidden="true">📋</span>
+            <span class="nav-label">타임라인</span>
+            <span class="nav-count" id="navCountTimeline">806</span>
+          </a>
+          <ul class="nav-sublist" id="categorySubnav" aria-label="타임라인 카테고리">
+            <li><label class="nav-subitem"><input type="radio" name="category" value="" checked><span>전체</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="생산성"><span>생산성</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="유틸리티"><span>유틸리티</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="보안·프라이버시"><span>보안·프라이버시</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="미디어·엔터"><span>미디어·엔터</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="개발"><span>개발</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="디자인·크리에이티브"><span>디자인·크리에이티브</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="금융"><span>금융</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="글쓰기·노트"><span>글쓰기·노트</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="시스템최적화"><span>시스템최적화</span></label></li>
+            <li><label class="nav-subitem"><input type="radio" name="category" value="커뮤니케이션"><span>커뮤니케이션</span></label></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#watchlist" data-view="watchlist" role="button" tabindex="0">
+            <span class="nav-icon" aria-hidden="true">👁</span>
+            <span class="nav-label">Watchlist</span>
+            <span class="nav-count" id="navCountWatchlist">12</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#stats" data-view="stats" role="button" tabindex="0">
+            <span class="nav-icon" aria-hidden="true">📊</span>
+            <span class="nav-label">통계</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <section class="sidebar-filters" aria-label="필터">
+      <fieldset class="filter-group">
+        <legend>출처</legend>
+        <div class="filter-options" id="sourceFilters">
+          <label class="filter-option">
+            <input type="checkbox" value="github" checked>
+            <span>GitHub</span>
+            <small id="countGithub">342</small>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" value="mas" checked>
+            <span>Mac App Store</span>
+            <small id="countMas">298</small>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" value="homebrew" checked>
+            <span>Homebrew</span>
+            <small id="countHomebrew">166</small>
+          </label>
         </div>
-        <div id="filterPanel">
-        <nav class="top-nav" aria-label="포털 메뉴">
-            <div class="view-tabs" role="tablist" aria-label="보기 전환">
-                <button class="tab-btn active" data-view="timeline" type="button" role="tab" aria-selected="true">타임라인</button>
-                <button class="tab-btn" data-view="watchlist" type="button" role="tab" aria-selected="false">👁 Watchlist</button>
-                <button class="tab-btn" data-view="stats" type="button" role="tab" aria-selected="false">📊 통계</button>
-            </div>
-        </nav>
-        <div class="chip-row" id="licenseChips" aria-label="라이선스 필터">
-            <button class="chip active" data-license="" type="button">전체</button>
-            <button class="chip chip-oss" data-license="OSS" type="button">오픈소스</button>
-            <button class="chip chip-free" data-license="FREE" type="button">프리</button>
-            <button class="chip chip-paid" data-license="PAID" type="button">유료</button>
-            <span class="chip-sep" aria-hidden="true"></span>
-            <button class="chip chip-tag" data-tag="AI-Agent" type="button">AI-Agent</button>
-            <button class="chip chip-tag" data-tag="MenuBar" type="button">MenuBar</button>
+      </fieldset>
+      <fieldset class="filter-group">
+        <legend>유형</legend>
+        <div class="filter-options" id="typeFilters">
+          <label class="filter-option">
+            <input type="radio" name="licenseType" value="" checked>
+            <span>전체</span>
+          </label>
+          <label class="filter-option">
+            <input type="radio" name="licenseType" value="OSS">
+            <span>오픈소스</span>
+          </label>
+          <label class="filter-option">
+            <input type="radio" name="licenseType" value="FREE">
+            <span>프리</span>
+          </label>
+          <label class="filter-option">
+            <input type="radio" name="licenseType" value="PAID">
+            <span>유료</span>
+          </label>
         </div>
-        <div class="chip-row chip-scroll" id="categoryChips" aria-label="카테고리 필터"></div>
+      </fieldset>
+    </section>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+  <main class="main-content" role="main" id="mainContent">
+    <header class="top-bar" role="banner">
+      <h1 class="top-bar-title">맥줍줍</h1>
+      <div class="top-bar-actions">
+        <div class="search-wrapper">
+          <input type="search" id="globalSearch" placeholder="앱 검색 (cc-usage, Quota...)" aria-label="앱 검색" autocomplete="off">
         </div>
+        <button class="top-bar-btn" id="langToggle" type="button" aria-label="언어 전환">한국어</button>
+        <button class="top-bar-btn" id="notifBell" type="button" aria-label="알림 센터 열기" aria-haspopup="dialog">
+          <span aria-hidden="true">🔔</span>
+        </button>
+      </div>
     </header>
 
-    <main class="main">
-        <section class="timeline-section" id="timelineSection">
-            <div class="grid-header">
-                <div class="grid-header-left">
-                    <div class="sort-dropdown">
-                        <label for="sortSelect">정렬</label>
-                        <select id="sortSelect">
-                            <option value="newest">최신순</option>
-                            <option value="updated">업데이트순</option>
-                            <option value="stars">스타순</option>
-                            <option value="rating">평점순</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid-header-right">
-                    <div class="search-bar" role="search" aria-label="앱 검색">
-                        <input type="search" id="keyword" class="search-input" placeholder="앱 이름·개발사 검색" aria-label="키워드 검색">
-                    </div>
-                    <div id="visibleCount" class="visible-count" aria-live="polite">검색 결과 0개</div>
-                </div>
-            </div>
-            <div class="app-grid" id="appGrid" role="list" aria-label="앱 목록"></div>
-            <nav class="pagination" id="pagination" aria-label="페이지네이션"></nav>
-        </section>
-
-        <section class="watchlist-section" id="watchlistSection" hidden>
-            <h2>👁 Watchlist <small>버전 추적 앱</small></h2>
-            <div class="period-row" id="watchModeRow" aria-label="Watchlist 범위">
-                <button type="button" data-mode="updated" class="active">업데이트</button>
-                <button type="button" data-mode="settled">전체 버전앱</button>
-            </div>
-            <div class="app-grid" id="watchGrid" role="list" aria-label="버전 업데이트 목록"></div>
-            <nav class="pagination" id="watchPagination" aria-label="버전 목록 페이지네이션"></nav>
-        </section>
-
-        <section class="stats-section" id="statsSection" aria-label="트렌드 대시보드" hidden>
-            <h2>📊 트렌드 대시보드</h2>
-            <div class="period-row" id="collectPeriod" aria-label="수집량 기간">
-                <span>수집량:</span>
-                <button type="button" data-days="7">7일</button>
-                <button type="button" data-days="14" class="active">14일</button>
-                <button type="button" data-days="30">30일</button>
-            </div>
-            <div id="statsContent"><div class="empty-state">통계 불러오는 중…</div></div>
-        </section>
-    </main>
-
-    <dialog class="app-modal" id="appModal">
-        <div class="app-modal-head">
-            <h2 id="appModalTitle">앱 상세</h2>
-            <button id="appModalClose" class="btn-filter-close" type="button" aria-label="닫기">✕</button>
+    <div class="view-port" id="viewPort">
+      <section id="timelineView" class="view-panel active" role="region" aria-label="타임라인" aria-labelledby="timelineTitle">
+        <header class="view-header">
+          <h2 id="timelineTitle" class="view-title">타임라인</h2>
+          <div class="view-toolbar">
+            <select id="sortSelect" class="sort-select" aria-label="정렬 방식">
+              <option value="newest">최신순</option>
+              <option value="updated">업데이트순</option>
+              <option value="stars">스타순</option>
+              <option value="rating">평점순</option>
+            </select>
+            <span id="visibleCount" class="visible-count" aria-live="polite">검색 결과 0개</span>
+          </div>
+        </header>
+        <div class="app-grid" id="appGrid" role="list" aria-label="앱 목록"></div>
+        <nav class="pagination" id="pagination" aria-label="페이지네이션"></nav>
+        <div class="empty-state" id="emptyTimeline" hidden>
+          <div class="empty-state-icon">📦</div>
+          <p class="empty-state-title">조건에 맞는 앱이 없습니다</p>
+          <p class="empty-state-desc">필터를 조정하거나 검색어를 바꿔보세요.</p>
         </div>
-        <div class="app-modal-body" id="appModalBody"></div>
-    </dialog>
+      </section>
 
-    <div class="toast" id="toast" role="status" hidden></div>
+      <section id="watchlistView" class="view-panel" role="region" aria-label="Watchlist" aria-labelledby="watchlistTitle" hidden>
+        <header class="view-header">
+          <h2 id="watchlistTitle" class="view-title">Watchlist</h2>
+          <div class="view-toolbar watch-mode-tabs" role="tablist" aria-label="Watchlist 모드">
+            <button class="watch-mode-tab active" role="tab" aria-selected="true" data-mode="updated" type="button">업데이트</button>
+            <button class="watch-mode-tab" role="tab" aria-selected="false" data-mode="settled" type="button">전체 버전앱</button>
+          </div>
+        </header>
+        <div class="app-grid" id="watchGrid" role="list" aria-label="버전 업데이트 목록"></div>
+        <nav class="pagination" id="watchPagination" aria-label="버전 목록 페이지네이션"></nav>
+        <div class="empty-state" id="emptyWatchlist" hidden>
+          <div class="empty-state-icon">👁</div>
+          <p class="empty-state-title">버전 업데이트가 없습니다</p>
+          <p class="empty-state-desc">Watchlist에 추가된 앱의 새 버전이 나올 때 알림받을 수 있습니다.</p>
+        </div>
+      </section>
 
-    <script src="app.js"></script>
+      <section id="statsView" class="view-panel" role="region" aria-label="통계" aria-labelledby="statsTitle" hidden>
+        <header class="view-header">
+          <h2 id="statsTitle" class="view-title">트렌드 대시보드</h2>
+        </header>
+        <div id="statsContent">
+          <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <p class="empty-state-title">통계 불러오는 중…</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <dialog class="app-modal" id="appModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <form method="dialog">
+      <div class="modal-hero">
+        <img class="modal-icon" id="modalIcon" src="" alt="" width="64" height="64" aria-hidden="true">
+        <div class="modal-hero-text">
+          <h2 id="modalTitle">앱 상세</h2>
+          <p class="modal-dev" id="modalDev"></p>
+          <div class="modal-meta-pills" id="modalMetaPills"></div>
+        </div>
+        <div class="modal-cta" id="modalCta"></div>
+      </div>
+      <div class="modal-tabs" role="tablist" aria-label="상세 탭" id="modalTabs">
+        <button class="modal-tab" role="tab" aria-selected="true" data-tab="intro" type="button" id="tabIntro">소개</button>
+        <button class="modal-tab" role="tab" aria-selected="false" data-tab="features" type="button" id="tabFeatures">특징</button>
+        <button class="modal-tab" role="tab" aria-selected="false" data-tab="changelog" type="button" id="tabChangelog">새 기능</button>
+      </div>
+      <div class="modal-panels" id="modalPanels">
+        <div role="tabpanel" id="panelIntro" class="modal-panel active" aria-labelledby="tabIntro"></div>
+        <div role="tabpanel" id="panelFeatures" class="modal-panel" aria-labelledby="tabFeatures" hidden></div>
+        <div role="tabpanel" id="panelChangelog" class="modal-panel" aria-labelledby="tabChangelog" hidden></div>
+      </div>
+      <button class="sidebar-toggle" style="position:absolute;top:12px;right:12px;z-index:10" id="modalClose" type="button" aria-label="닫기">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
 </body>
 </html>
