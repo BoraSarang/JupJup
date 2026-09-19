@@ -32,9 +32,13 @@ data class DashboardUiState(
     val isChecking: Boolean = true,
     val mac: DashboardServiceUi = DashboardServiceUi(),
     val plan: DashboardServiceUi = DashboardServiceUi(),
+    val pj: DashboardServiceUi = DashboardServiceUi(),
 ) {
-    fun forService(service: Service): DashboardServiceUi =
-        if (service == Service.MAC) mac else plan
+    fun forService(service: Service): DashboardServiceUi = when (service) {
+        Service.MAC -> mac
+        Service.PLAN -> plan
+        Service.PROMPTJOURNAL -> pj
+    }
 }
 
 /**
@@ -65,12 +69,23 @@ class DashboardViewModel(
                     NetUtils.getLocalIp(getApplication()) ?: ""
                 }
                 val fresh = withContext(ioDispatcher) {
-                    adapters.getValue(Service.MAC).loadState(ip) to
-                        adapters.getValue(Service.PLAN).loadState(ip)
+                    Triple(
+                        adapters.getValue(Service.MAC).loadState(ip),
+                        adapters.getValue(Service.PLAN).loadState(ip),
+                        adapters.getValue(Service.PROMPTJOURNAL).loadState(ip),
+                    )
                 }
-                _uiState.value = DashboardUiState(isChecking = false, mac = fresh.first, plan = fresh.second)
-                if (retry && (!fresh.first.isServerRunning || !fresh.second.isServerRunning)) {
-                    MacDebugLogger.i("대시보드", "서버 미기동 감지 — ${SERVER_SETTLE_MS}ms 뒤 재조회")
+                _uiState.value = DashboardUiState(
+                    isChecking = false,
+                    mac = fresh.first,
+                    plan = fresh.second,
+                    pj = fresh.third,
+                )
+                val anyStopped = !fresh.first.isServerRunning ||
+                    !fresh.second.isServerRunning ||
+                    !fresh.third.isServerRunning
+                if (retry && anyStopped) {
+                    MacDebugLogger.i("대시보드", "서버 미기동 감지 — ${SERVER_SETTLE_MS}ms 뒤 1회 재조회")
                     delay(SERVER_SETTLE_MS)
                     refresh(retry = false)
                 }
@@ -114,10 +129,10 @@ class DashboardViewModel(
     }
 
     private fun setCrawling(service: Service, crawling: Boolean) {
-        _uiState.value = if (service == Service.MAC) {
-            _uiState.value.copy(mac = _uiState.value.mac.copy(isCrawling = crawling))
-        } else {
-            _uiState.value.copy(plan = _uiState.value.plan.copy(isCrawling = crawling))
+        _uiState.value = when (service) {
+            Service.MAC -> _uiState.value.copy(mac = _uiState.value.mac.copy(isCrawling = crawling))
+            Service.PLAN -> _uiState.value.copy(plan = _uiState.value.plan.copy(isCrawling = crawling))
+            Service.PROMPTJOURNAL -> _uiState.value.copy(pj = _uiState.value.pj.copy(isCrawling = crawling))
         }
     }
 

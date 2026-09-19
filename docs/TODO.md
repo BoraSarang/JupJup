@@ -2,6 +2,83 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R23 모델 관리 수정 + Zen 추가 + NIM 삭제 (PLAN_v10)
+- [x] PLAN_v10 초안
+- [x] stale 내성 (편집폼 placeholder + 정적 nemotron + merge 가드 + restore 유지)
+- [x] OpenCode Zen 공급자 (enum·ZenClient·factory·catalog·refresh·웹)
+- [x] NIM 삭제 (NimClient·enum·분기·웹·테스트)
+- [x] ModelCatalogTest 7/7 + 빌드 + lint + 실기 검증
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
+## R22 프롬프트팩토리 → 프롬프트 저널 개명
+- [x] 인벤토리 (표시 40건·코드 60파일·DB/DataStore/Work 파일명)
+- [x] 표시 이름 교체 (한글·영문 `Prompt Journal`)
+- [x] 코드 식별자 개명 (모듈·패키지·클래스·리소스 `pj_`·enum·에셋·채널)
+- [x] 데이터 마이그레이션 (`migrateLegacyFiles` + `migrateLegacyWork`)
+- [x] 빌드 + 단위 + lint + 실기 검증 (3002·웹·프롬프트 2건·실행기록 승계)
+- [x] 문서 갱신 (AGENTS·DESIGN·CHANGELOG·PLAN 파일명·세션 로그)
+
+## R21 맥줍줍 웹 포털 리디자인 (PLAN_v9)
+- [x] PLAN_v9 초안 작성
+- [x] style.css 디자인 토큰 + 레이아웃 전면 재작성
+- [x] index.html 시맨틱 HTML 구조 재작성 (사이드바/그리드/모달)
+- [x] app.js 로직 전면 재작성 (사이드바 상태/카드 렌더/모달 탭)
+- [x] 빌드 + smoke/unit 테스트 + 실기 검증
+- [x] 문서 갱신 (CHANGELOG·DESIGN·세션 로그)
+
+## R20 모델 투입 상태 영속화 (PLAN_v8)
+- [x] PLAN_v8 초안
+- [x] ModelEnabledStore + ModelCatalog 영속화·merge 수정
+- [x] ModelCatalogTest 신규 (4/4)
+- [x] 빌드 + 설치 + 실기 검증
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
+## R19 역슬래시·헤드라인 폴백 (사용자 피드백 2종)
+- [x] `\id\` → 코드 칩 (deslash 수동 스캐너, 본문/요약/카드+복사버튼)
+- [x] 내용 없을 땐 H1 = 신규 무료 모델 없음 (빈 응답·라벨뿐인 첫줄)
+- [x] 하네스 13어설션 + 빌드 + 설치 + 3포트 헬스체크 + 문서 갱신
+
+## R18 뉴스룸 v2 다듬기 (v2 키트 6개 항목)
+- [x] H1 35자 추출 (레거시 긴 첫줄 대응) + kicker 일일 브리핑 날짜 + 아카이브 요약=인사이트 1줄
+- [x] 서비스 표→카드형 섹션 (배지+ID 복사+비고+↗출처), 요약 표는 paper 배경
+- [x] 휴간 회색점 + 인사이트 lead 타이포 + keep-all + masthead 간격
+- [x] 빌드 + 설치 + 실기 검증
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
+## R17 뉴스룸 다듬기 3종 (v1.12.0, 사용자 피드백)
+- [x] 시드 프롬프트 헤드라인 지침 (첫 줄 35자 이내 평문) + 기기 1번 프롬프트 PUT 동기화
+- [x] BREAKING 조건부 (신규 모델 있을 때만, 없으면 휴간) + 메타에서 SUCCESS/모델명 제거 (툴팁으로)
+- [x] 왼쪽 요약 2줄 클램프 CSS
+- [x] 브리핑 채널 목록 (편집/폐간) — 서랍 Tab1 빈 화면 수정
+- [x] 빌드 + 설치 + 3포트 헬스체크 + 문서 갱신
+
+## R16 뉴스룸 리디자인 — 발행 아카이브 (v1.12.0, PLAN_v7)
+- [x] PLAN_v7 초안
+- [x] 웹: Masthead + Tailwind CDN + serif + 발행주기 Pill
+- [x] 웹: 아카이브 뱃지 (제N호·조간/석간·BREAKING/휴간) + 기사 지면 (H1/kicker/factbox)
+- [x] 웹: 용어사전 전량 치환 + 설정 서랍 2탭 (브리핑 채널/취재원 관리)
+- [x] 빌드 + JS 체크 (실기 검증 잔여: 최신호 발행·기사 복사·이 호 폐기·지침서 저장·동기화)
+- [x] 문서 갱신 (DESIGN·CHANGELOG·세션 로그)
+
+## R15 프롬프트 저널 UX 정리 (v1.11.x, PLAN_v6)
+- [x] PLAN_v6 초안
+- [x] 백엔드: refresh 응답 added 포함 + 일괄 enabled API + setAllEnabled
+- [x] 웹: 프롬프트별 마지막 응답 1건 카드 + 마크다운 렌더 + 기록보며 인라인 수정 + 모두사용/해제 + duration 포맷
+- [x] 후속: 인사이트/카드 중복 제거 + GFM 테이블 렌더 + 모델 검색
+- [x] v3 전면 개편: 슬림헤더+칩+2열 마스터디테일+서랍, 맥줍 md/CSS 이식, 모달2층 제거, toast
+- [x] 빌드 + JS 체크 (실기 검증 잔여: 표 리포트·날짜 전환·서랍 저장·토스트)
+
+## R14 프롬프트 저널 재설계 — 다중 프롬프트 관리 (v1.11.0)
+- [x] PLAN_v5 초안
+- [x] DB v2 마이그레이션 (Prompt 엔티티·DAO·MIGRATION_1_2·초기화)
+- [x] ProviderKeyStore (공급자별 API키 DataStore) + ModelCatalog (갱신·활성토글)
+- [x] 라우트 재설계 (prompts CRUD/executions/insights/providers)
+- [x] 스케줄러·워커 프롬프트id별 + 이전결과 주입
+- [x] 웹 재설계 (조회+관리, 모바일 대응) + 앱 축소·어댑터 정리
+- [x] 빌드 + 단위 + lint + 실기 검증 (시드 일치·SUCCESS×2·주입·웹UI)
+- [x] versionName 1.11.0 (versionCode 13)으로 bump
+- [x] 문서 갱신 (CHANGELOG·PLAN_v5·세션 로그)
+
 ## R13 잔여 정리 (R7)
 - [x] PLAN_R7 초안
 - [x] 7a 에러코드 조회/저장 분리 (0404 신규 + 조회 9곳)
@@ -147,3 +224,70 @@
 - [x] CI lint 실패 수정 (SpecifyForegroundServiceType, 라이브러리 매니페스트에 dataSync 선언)
 - [x] v1.3.0 태그 + GitHub Release (release.yml, CHANGELOG 1.3.0 섹션)
 - [x] 세션 로그 갱신
+
+## PJ1 프롬프트 저널 — 모듈 스캐폴드 (PLAN_v4)
+- [x] PLAN_v4 초안
+- [x] `:services:promptjournal` 모듈 생성 (build.gradle.kts, AndroidManifest.xml)
+- [x] `settings.gradle.kts` include 추가
+- [x] `build-logic/jupjup.base` 적용 확인
+- [x] 빌드 검증 (`:services:promptjournal:assembleDebug`)
+
+## PJ2 프롬프트 저널 — DB·DataStore·Runtime
+- [x] Room DB (`PromptJournalDatabase`) + DAO + Entity
+- [x] DataStore PreferencesManager (`pj_settings`)
+- [x] PromptJournalRuntime (object, initialize)
+- [x] DebugLogger (common.JupLog 파사드)
+- [x] Constants (포트 3002, 에러코드 프리픽스)
+
+## PJ3 프롬프트 저널 — AI 클라이언트
+- [x] AiProvider enum (OPENROUTER, NIM, GOOGLE_AI_STUDIO)
+- [x] AiClient 인터페이스
+- [x] OpenRouterClient 구현
+- [x] NimClient 구현
+- [x] GoogleAiStudioClient 구현
+- [x] AiClientFactory
+- [x] PromptExecutionRepository
+
+## PJ4 프롬프트 저널 — HTTP 서버
+- [x] HttpServerService (Ktor CIO 포트 3002)
+- [x] PjRoutes (`/api/health`, `/api/executions`, `/api/execute`, `/api/settings`, `/api/models`)
+- [x] PjAssetRoutes (pj_web/ 정적 서빙)
+
+## PJ5 프롬프트 저널 — 스케줄러
+- [x] PromptJournalScheduler (WorkManager)
+- [x] PromptJournalWorker (AI 호출 + DB 저장 + 알림)
+
+## PJ6 프롬프트 저널 — UI 통합
+- [x] HomeFragment, ProviderManageFragment, SettingsFragment, NotificationFragment
+- [x] PjServiceAdapter (app 모듈)
+- [x] ServiceRegistry에 PROMPTJOURNAL 등록 (enum + fragment 분기)
+- [x] DashboardFragment 카드 표시
+- [x] MainActivity 내비 3열 세그먼트 추가
+
+## PJ7 프롬프트 저널 — 웹 페이지
+- [x] pj_web/index.html (목록 + 상세 + 설정 + 모델)
+- [x] pj_web/app.js (API 호출 + DOM 조작)
+- [x] pj_web/style.css (Material Design 스타일)
+- [x] pj_web/favicon.svg
+
+## PJ8 프롬프트 저널 — 검증 + 버전 bump
+- [x] 빌드 (`:app:assembleDebug` + `:services:promptjournal:assembleDebug`)
+- [x] 단위 테스트 (`:services:promptjournal:testDebugUnitTest`)
+- [x] lint 오류 0 (`:app:lintDebug`)
+- [x] versionName 1.10.0 (versionCode 12) bump
+- [x] error_message_ko.json에 E-AND-REPORT-08xx 추가
+
+## PJ9 프롬프트 저널 — 문서 갱신
+- [x] DESIGN.md v1.4 반영
+- [x] CHANGELOG.md 1.10.0 섹션
+- [x] AGENTS.local.md에 포트 3002 + pj_ 접두사 언급
+- [x] error_message_ko.json E-AND-REPORT-08xx 추가
+- [x] 세션 로그 (.agent/session-2026-09-18-and.md)
+
+## PJ10 프롬프트 저널 — 실기 검증 (S22, 1.10.0)
+- [x] 대시보드 pj 카드 3번째 추가 (fragment_dashboard.xml + DashboardViewModel Triple + DashboardFragment)
+- [x] `PjServiceAdapter.setServerRunning` 토글 역전 버그 수정
+- [x] 서버 3002 기동 + `/api/health` 200 + 웹 포털 에셋 서빙
+- [x] 프롬프트 저장 (무료AI모델-일일리포트-프롬프트.md) + AI 실행 SUCCESS 3건 (nemotron-3-super 등)
+- [x] autoStart=true → 앱 재시작 후 서버 자동 기동 확인
+- [x] 대시보드 pj 카드 갱신 확인 (실행 횟수 10회, 활성, 서버 실행 중)

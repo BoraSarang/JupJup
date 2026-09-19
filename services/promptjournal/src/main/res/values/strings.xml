@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pj_app_name">프롬프트 저널</string>
+    <string name="pj_app_name_full">프롬프트 저널</string>
+
+    <string name="pj_notif_channel_server">프롬프트 저널 서버</string>
+    <string name="pj_notif_server_starting">서버 시작 중…</string>
+    <string name="pj_notif_server_running">서버 실행 중</string>
+
+    <string name="pj_tab_home">홈</string>
+    <string name="pj_tab_provider">공급자 관리</string>
+    <string name="pj_tab_settings">설정</string>
+    <string name="pj_tab_notif">알림</string>
+</resources>

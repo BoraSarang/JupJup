@@ -84,12 +84,24 @@ class DashboardFragment : Fragment() {
         binding.dashboardPlanBtnServer.setOnClickListener {
             viewModel.toggleServer(Service.PLAN)
         }
+
+        binding.dashboardPjBtnCrawl.setOnClickListener {
+            if (_binding?.dashboardPjBtnToggle?.isEnabled != true) return@setOnClickListener
+            viewModel.triggerCrawl(Service.PROMPTJOURNAL)
+        }
+        binding.dashboardPjBtnToggle.setOnClickListener {
+            viewModel.toggleCrawl(Service.PROMPTJOURNAL)
+        }
+        binding.dashboardPjBtnServer.setOnClickListener {
+            viewModel.toggleServer(Service.PROMPTJOURNAL)
+        }
     }
 
     private fun render(state: DashboardUiState) {
         applyActiveHighlight()
         renderMac(state.mac)
         renderPlan(state.plan)
+        renderPj(state.pj)
     }
 
     /** 활성 서비스 카드 강조: 스트로크 + "현재" 배지 */
@@ -97,6 +109,8 @@ class DashboardFragment : Fragment() {
         val b = _binding ?: return
         if (!isAdded) return
         val macActive = activeService == Service.MAC
+        val planActive = activeService == Service.PLAN
+        val pjActive = activeService == Service.PROMPTJOURNAL
         val strokePx = (2 * resources.displayMetrics.density).toInt()
         val primary = com.google.android.material.color.MaterialColors.getColor(
             requireContext(),
@@ -106,9 +120,12 @@ class DashboardFragment : Fragment() {
         b.dashboardMacCard.strokeWidth = if (macActive) strokePx else 0
         b.dashboardMacCard.strokeColor = if (macActive) primary else android.graphics.Color.TRANSPARENT
         b.dashboardMacActiveBadge.visibility = if (macActive) View.VISIBLE else View.GONE
-        b.dashboardPlanCard.strokeWidth = if (!macActive) strokePx else 0
-        b.dashboardPlanCard.strokeColor = if (!macActive) primary else android.graphics.Color.TRANSPARENT
-        b.dashboardPlanActiveBadge.visibility = if (!macActive) View.VISIBLE else View.GONE
+        b.dashboardPlanCard.strokeWidth = if (planActive) strokePx else 0
+        b.dashboardPlanCard.strokeColor = if (planActive) primary else android.graphics.Color.TRANSPARENT
+        b.dashboardPlanActiveBadge.visibility = if (planActive) View.VISIBLE else View.GONE
+        b.dashboardPjCard.strokeWidth = if (pjActive) strokePx else 0
+        b.dashboardPjCard.strokeColor = if (pjActive) primary else android.graphics.Color.TRANSPARENT
+        b.dashboardPjActiveBadge.visibility = if (pjActive) View.VISIBLE else View.GONE
     }
 
     private fun renderMac(s: DashboardServiceUi) {
@@ -167,6 +184,36 @@ class DashboardFragment : Fragment() {
 
         binding.dashboardPlanBtnServer.text =
             getString(if (s.isServerRunning) R.string.dashboard_btn_stop_server else R.string.dashboard_btn_start_server)
+    }
+
+    private fun renderPj(s: DashboardServiceUi) {
+        binding.dashboardPjDot.backgroundTintList = ContextCompat.getColorStateList(
+            requireContext(),
+            if (s.isServerRunning) com.borasarang.promptjournaljupjup.R.color.pj_status_success
+            else com.borasarang.promptjournaljupjup.R.color.pj_status_error,
+        )
+        binding.dashboardPjStatus.text =
+            if (s.isServerRunning) getString(R.string.dashboard_status_running)
+            else getString(R.string.dashboard_status_stopped)
+
+        binding.dashboardPjAddress.text =
+            s.address.ifBlank { getString(R.string.dashboard_address_placeholder) }
+
+        binding.dashboardPjStatValue1.text = s.statValue1.toString()
+        binding.dashboardPjStatValue2.text = s.statValue2.toString()
+        binding.dashboardPjStatValue3.text =
+            s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) }
+
+        binding.dashboardPjBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
+        binding.dashboardPjBtnCrawl.text =
+            getString(if (s.isCrawling) R.string.dashboard_pj_btn_running else R.string.dashboard_pj_btn_run_now)
+
+        binding.dashboardPjBtnToggle.text =
+            getString(if (s.crawlEnabled) R.string.dashboard_pj_btn_disable else R.string.dashboard_pj_btn_enable)
+        binding.dashboardPjBtnToggle.isEnabled = !s.isCrawling
+
+        binding.dashboardPjBtnServer.text =
+            getString(if (s.isServerRunning) R.string.dashboard_pj_btn_stop_server else R.string.dashboard_pj_btn_start_server)
     }
 
     override fun onDestroyView() {
