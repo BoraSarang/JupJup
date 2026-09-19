@@ -51,7 +51,7 @@ class ModelCatalogTest {
 
     @Test
     fun merge_명시해제보존_신규자동투입() = runBlocking {
-        val p = AiProvider.OPENCODE_ZEN
+        val p = AiProvider.GOOGLE_AI_STUDIO
         val baseX = ModelCatalog.allModels(p).first().id
         ModelCatalog.setModelEnabled(p, baseX, false)
 
@@ -71,9 +71,6 @@ class ModelCatalogTest {
     fun 정적목록_시드기본포함() {
         val orIds = ModelCatalog.allModels(AiProvider.OPENROUTER).map { it.id }.toSet()
         assertTrue(orIds.contains("nvidia/nemotron-3-super-120b-a12b:free"))
-        val zenIds = ModelCatalog.allModels(AiProvider.OPENCODE_ZEN).map { it.id }.toSet()
-        assertTrue(zenIds.contains("big-pickle"))
-        assertTrue(zenIds.contains("nemotron-3-ultra-free"))
     }
 
     @Test
@@ -87,7 +84,7 @@ class ModelCatalogTest {
 
     @Test
     fun merge_참조보호유지_미보호삭제() = runBlocking {
-        val p = AiProvider.OPENCODE_ZEN
+        val p = AiProvider.GOOGLE_AI_STUDIO
         val ghost = "test/ghost-model-9"
         // 1차: 원격에 있던 모델 (자동 투입됨)
         ModelCatalog.merge(p, listOf(AiClient.ModelInfo(id = ghost, name = ghost)))

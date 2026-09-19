@@ -45,7 +45,6 @@ object ModelCatalog {
             val base = when (provider) {
                 AiProvider.OPENROUTER -> OpenRouterClient("").supportedModels
                 AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient("").supportedModels
-                AiProvider.OPENCODE_ZEN -> ZenClient("").supportedModels
             }
             staticBase[provider] = base
             currentModels[provider] = base
@@ -139,7 +138,6 @@ object ModelCatalog {
             val remote = when (provider) {
                 AiProvider.OPENROUTER -> fetchOpenRouter(apiKey)
                 AiProvider.GOOGLE_AI_STUDIO -> fetchGoogle(apiKey)
-                AiProvider.OPENCODE_ZEN -> fetchZen(apiKey)
             }
             merge(provider, remote, protectedIds)
         } catch (e: Exception) {
@@ -170,24 +168,7 @@ object ModelCatalog {
         }
     }
 
-    /** OpenCode Zen 모델 목록 — OpenAI식 {data:[{id}]}, 무료(-free)만 편입 (유료 오폭 방지) */
-    private suspend fun fetchZen(apiKey: String): List<AiClient.ModelInfo> = withContext(Dispatchers.IO) {
-        val req = Request.Builder()
-            .url("${AiProvider.OPENCODE_ZEN.baseUrl}/models")
-            .addHeader("Authorization", "Bearer $apiKey")
-            .build()
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw Exception("HTTP ${resp.code}")
-            val body = resp.body?.string() ?: ""
-            val root = json.parseToJsonElement(body).jsonObject
-            root["data"]?.jsonArray.orEmpty().mapNotNull { item ->
-                val obj = item.jsonObject
-                val id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null
-                if (!id.endsWith("-free")) return@mapNotNull null
-                AiClient.ModelInfo(id = id, name = id)
-            }
-        }
-    }
+
 
     private suspend fun fetchGoogle(apiKey: String): List<AiClient.ModelInfo> = withContext(Dispatchers.IO) {
         val req = Request.Builder()

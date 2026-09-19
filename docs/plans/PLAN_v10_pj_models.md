@@ -17,11 +17,12 @@
 - `restoreEnabled`·병합 메모리에서 미등록 투입 ID 유지 (DataStore 침식 방지)
 - `ModelCatalogTest` 7종 (기존 4 + 정적 포함·정적 삭제금지·참조 보호 3종)
 
-## 3. OpenCode Zen 공급자
+## 3. OpenCode Zen 공급자 — 추가 후 삭제
 
-- `OPENCODE_ZEN("OpenCode Zen", "https://opencode.ai/zen/v1")` enum 맨 끝 추가
-- `ZenClient` (chat/completions, Bearer) + 정적 무료 8종 + `fetchZen` (`-free`만 편입)
-- 키는 기존 취재원 키 등록 흐름 사용, refresh 실패·무키는 기존 목록 유지
+- 추가했었으나 실기 검증에서 Zen 무료 티어가 OpenCode 외부 API 호출을 403 차단함이 확인됨
+  (`FreeTierError: OpenCode's free tier can only be used from within OpenCode`)
+- 유료 모델 편입·유료 테스트는 사용자 결정으로 제외 → 공급자 통째로 삭제
+- 교훈: 외부 게이트웨이 무료 티어는 인앱 사용 가능 여부를 실기 호출로 먼저 확인할 것
 
 ## 4. NIM 삭제
 

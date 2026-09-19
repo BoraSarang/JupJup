@@ -5,7 +5,7 @@
 - **불일치 수정**: 편집폼에 저장값과 다른 모델이 표시되던 문제 (카탈로그에 없던 nemotron이 첫 항목으로 둔갑).
   저장 ID가 목록에 없으면 `(목록에 없음)` placeholder로 그대로 표시, 자동 치환 금지
 - **카탈로그 가드**: 정적 base 분리 보관·삭제 금지, 프롬프트 참조 ID 삭제 금지, 미등록 투입 ID 유지
-- **OpenCode Zen 공급자**: `chat/completions` 클라이언트 + 무료 8종 정적 + `-free`만 동기화
+- **OpenCode Zen 추가 후 삭제**: 무료 티어가 OpenCode 외부 API를 403 차단함이 실기 확인됨 → 통째로 제거
 - **NIM 삭제**: 코드·웹·테스트에서 제거 (사용 프롬프트 0건, 실행기록 표기는 유지)
 - 검증: ModelCatalogTest 7/7, 실기 providers OR 6·ZEN 8·NIM 소멸, 프롬프트 값 유지
 

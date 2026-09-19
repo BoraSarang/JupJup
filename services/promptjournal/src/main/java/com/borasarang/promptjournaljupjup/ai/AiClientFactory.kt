@@ -5,7 +5,6 @@ object AiClientFactory {
         return when (provider) {
             AiProvider.OPENROUTER -> OpenRouterClient(apiKey)
             AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient(apiKey)
-            AiProvider.OPENCODE_ZEN -> ZenClient(apiKey)
         }
     }
 
@@ -18,7 +17,6 @@ object AiClientFactory {
         return when (provider) {
             AiProvider.OPENROUTER -> OpenRouterClient("").supportedModels
             AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient("").supportedModels
-            AiProvider.OPENCODE_ZEN -> ZenClient("").supportedModels
         }
     }
 

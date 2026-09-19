@@ -5,8 +5,7 @@
     var API_BASE = '';
     var providerDisplay = {
         'OPENROUTER': 'OpenRouter',
-        'GOOGLE_AI_STUDIO': 'Google AI Studio',
-        'OPENCODE_ZEN': 'OpenCode Zen'
+        'GOOGLE_AI_STUDIO': 'Google AI Studio'
     };
 
     var state = { prompts: [], selPrompt: null, execs: [], selExec: null, showDetailMobile: false };
