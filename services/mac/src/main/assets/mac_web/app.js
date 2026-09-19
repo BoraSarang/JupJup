@@ -21,7 +21,8 @@
     sidebarCollapsed: false,
     sidebarMobileOpen: false,
     filters: {
-      sources: ['github', 'mas', 'homebrew'],
+      sources: [],
+      allSources: [],
       licenseType: '',
       category: '',
       q: '',
@@ -138,14 +139,14 @@
       link.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); link.click(); } };
     });
 
-    $$('#sourceFilters input[type="checkbox"]').forEach(cb => {
-      cb.onchange = () => {
-        state.filters.sources = $$('#sourceFilters input[type="checkbox"]:checked', sidebar).length
-          ? Array.from($$('#sourceFilters input[type="checkbox"]:checked', sidebar)).map(c => c.value)
-          : [];
-        state.filters.page = 1;
-        reloadCurrentView();
-      };
+    // 출처 체크박스는 trends 로드 후 동적 렌더 — 변경 감지는 컨테이너 위임
+    $('sourceFilters').addEventListener('change', () => {
+      const checked = Array.from($$('#sourceFilters input[type="checkbox"]:checked')).map(c => c.value);
+      const total = $$('#sourceFilters input[type="checkbox"]').length;
+      // 전체 선택 또는 전체 해제 = 필터 없음 (빈 결과 함정 방지)
+      state.filters.sources = (checked.length === 0 || checked.length === total) ? [] : checked;
+      state.filters.page = 1;
+      reloadCurrentView();
     });
 
     $$('#typeFilters input[type="radio"]').forEach(radio => {
@@ -189,12 +190,22 @@
     }).catch(() => {});
   }
 
-  function updateFilterSourceCounts(counts) {
-    const map = { github: 'countGithub', mas: 'countMas', homebrew: 'countHomebrew' };
-    Object.entries(map).forEach(([src, id]) => {
-      const el = $(id);
-      if (el) el.textContent = counts[src] || 0;
-    });
+  /* 출처 필터 렌더 (trends.bySource 실측 — 전체 선택 상태 유지) */
+  function renderSourceFilters(list) {
+    const box = $('sourceFilters');
+    const prevChecked = new Set(
+      Array.from($$('#sourceFilters input[type="checkbox"]:checked')).map(c => c.value)
+    );
+    const firstRender = prevChecked.size === 0 && !box.dataset.ready;
+    state.filters.allSources = list.map(s => s.sourceId);
+    box.dataset.ready = '1';
+    box.innerHTML = list.map(s => {
+      const checked = firstRender || prevChecked.has(s.sourceId) ? ' checked' : '';
+      return '<label class="filter-option">' +
+        '<input type="checkbox" value="' + esc(s.sourceId) + '"' + checked + '>' +
+        '<span>' + esc(s.sourceName) + '</span>' +
+        '<small>' + s.count + '</small></label>';
+    }).join('') || '<div class="empty-state" style="padding:12px 0;font-size:12px;">수집처 없음</div>';
   }
 
   /* ---------- 뷰 전환 ---------- */
@@ -348,7 +359,7 @@
     if (state.filters.licenseType) p.set('license', state.filters.licenseType);
     if (state.filters.category) p.set('category', state.filters.category);
     if (state.filters.q) p.set('q', state.filters.q);
-    // NOTE: 백엔드 AppFilter에 출처 필터 없음 — 사이드바 출처 체크는 UI 표시용으로 유지
+    if (state.filters.sources.length) p.set('sourceIds', state.filters.sources.join(','));
     return '/api/apps?' + p.toString();
   }
 
@@ -389,7 +400,7 @@
     if (state.filters.licenseType) p.set('license', state.filters.licenseType);
     if (state.filters.category) p.set('category', state.filters.category);
     if (state.filters.q) p.set('q', state.filters.q);
-    // NOTE: 백엔드 AppFilter에 출처 필터 없음 — 사이드바 출처 체크는 UI 표시용으로 유지
+    if (state.filters.sources.length) p.set('sourceIds', state.filters.sources.join(','));
     return '/api/apps?' + p.toString();
   }
 
@@ -799,9 +810,13 @@
         const el = $('lastUpdated');
         if (el) el.textContent = '마지막 업데이트: ' + new Date(s.lastCollectedAt).toLocaleString();
       }
-      updateFilterSourceCounts({ github: 342, mas: 298, homebrew: 166 });
       loadNavCounts();
     }).catch(() => {});
+    api('/api/stats/trends').then(t => {
+      renderSourceFilters(t.bySource || []);
+    }).catch(() => {
+      $('sourceFilters').innerHTML = '<div class="empty-state" style="padding:12px 0;font-size:12px;">불러오기 실패</div>';
+    });
   }
 
   /* ---------- 헤더 액션 ---------- */
@@ -809,7 +824,7 @@
     // 로고 클릭 = 전체 초기화
     const logoLink = $('sidebar').querySelector('.sidebar-logo') || $('top-bar-title');
     if (logoLink) logoLink.onclick = () => {
-      state.filters = { sources: ['github', 'mas', 'homebrew'], licenseType: '', category: '', q: '', sort: 'newest', page: 1, watchMode: 'updated' };
+      state.filters = { sources: [], allSources: state.filters.allSources, licenseType: '', category: '', q: '', sort: 'newest', page: 1, watchMode: 'updated' };
       $$('#sourceFilters input[type="checkbox"]').forEach(cb => cb.checked = true);
       $$('#typeFilters input[type="radio"]')[0].checked = true;
       $$('#categorySubnav input[type="radio"]')[0].checked = true;

@@ -1,6 +1,13 @@
 # CHANGELOG — JupJup
 
 ## [Unreleased]
+
+## [1.12.0] - 2026-09-19
+> 플랫폼: MAC · 출처 필터 실측화 (R24, PLAN_v11)
+- **실측 수집처**: 사이드바 출처를 실제 5종 + 실측 카운트로 교체 (하드코딩 placeholder 제거)
+- **필터 동작화**: `sourceIds` 파라미터 → 대표 sourceId 기준 목록 필터 (DB 스키마 변경 없음)
+- **트렌드 API**: `/api/stats/trends`에 `bySource[]` 추가
+
 > 플랫폼: AND · 모델 관리 수정 + Zen 추가 + NIM 삭제 (R23, PLAN_v10)
 - **불일치 수정**: 편집폼에 저장값과 다른 모델이 표시되던 문제 (카탈로그에 없던 nemotron이 첫 항목으로 둔갑).
   저장 ID가 목록에 없으면 `(목록에 없음)` placeholder로 그대로 표시, 자동 치환 금지

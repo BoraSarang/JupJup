@@ -36,6 +36,17 @@ internal fun HttpServerService.macStatsRoutes(route: Route) {
                 put("byLicense", buildJsonObject {
                     t.byLicense.forEach { (k, v) -> put(k, v) }
                 })
+                put("bySource", buildJsonArray {
+                    t.bySource.forEach { s ->
+                        add(
+                            buildJsonObject {
+                                put("sourceId", s.sourceId)
+                                put("sourceName", s.sourceName)
+                                put("count", s.count)
+                            },
+                        )
+                    }
+                })
                 put("newLast7d", t.newLast7d)
                 put("updatedLast7d", t.updatedLast7d)
                 put("versionBumpsLast7d", t.versionBumpsLast7d)

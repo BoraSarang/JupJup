@@ -2,6 +2,19 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R25 1.12.0 릴리스
+- [x] versionName 1.12.0 (versionCode 14) bump
+- [x] release.yml setup-android 제거 (ci.yml과 동일 수정)
+- [x] CHANGELOG Unreleased → 1.12.0 확정
+- [ ] PR 머지 → v1.12.0 태그 + GitHub Release (release.yml)
+
+## R24 출처 필터 실측화 (PLAN_v11)
+- [x] PLAN_v11 초안
+- [x] 백엔드: countBySource + sourceIds 필터 + trends.bySource
+- [x] 프론트: 출처 동적 렌더 + 필터 전송 + 리셋
+- [x] 실기 검증 (합계 일치·필터 조합·브라우저 상호작용)
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## R23 모델 관리 수정 + Zen 추가 + NIM 삭제 (PLAN_v10)
 - [x] PLAN_v10 초안
 - [x] stale 내성 (편집폼 placeholder + 정적 nemotron + merge 가드 + restore 유지)
