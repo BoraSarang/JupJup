@@ -17,6 +17,8 @@ import com.borasarang.promptjournaljupjup.server.HttpServerService
 import com.borasarang.promptjournaljupjup.util.DebugLogger
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import com.borasarang.common.ai.AiClient
 
 class PromptJournalWorker(
     context: Context,
@@ -64,8 +66,11 @@ class PromptJournalWorker(
 
         DebugLogger.i("워커", "AI 호출 시작 id=${prompt.id} title=${prompt.title} model=${prompt.modelId}")
 
-        val result = client.complete(finalPrompt, prompt.modelId)
+        var aiRetries = 0
+        val result = completeWithTransientRetry(client, prompt.modelId, finalPrompt) { aiRetries = it }
         val durationMs = System.currentTimeMillis() - startMs
+        val errorMessage = result.exceptionOrNull()?.message
+            ?.let { if (aiRetries > 0) "$it (${aiRetries}회 재시도 후 실패)" else it }
 
         val execution = PromptExecution(
             promptId = prompt.id,
@@ -76,7 +81,7 @@ class PromptJournalWorker(
             executedAt = startMs,
             durationMs = durationMs,
             status = if (result.isSuccess) "SUCCESS" else "FAILED",
-            errorMessage = result.exceptionOrNull()?.message
+            errorMessage = errorMessage
         )
 
         val id = app.promptExecutionRepository.save(execution)
@@ -199,4 +204,44 @@ class PromptJournalWorker(
             SearchSpec("OpenRouter 무료 모델 공식 카탈로그 max_price=0", 3, 3000),
         )
     }
+}
+
+private const val MAX_AI_RETRIES = 2
+private const val RETRY_DELAY_MS = 5_000L
+
+/** 일시 오류 재시도 판정 힌트 (소문자 매칭) */
+private val TRANSIENT_HINTS = listOf(
+    "timeout", "socket", "429", "503",
+    "overloaded", "temporarily", "rate limit", "too many requests",
+)
+
+internal fun isTransientError(e: Throwable?): Boolean {
+    val msg = e?.message?.lowercase() ?: return false
+    return TRANSIENT_HINTS.any { msg.contains(it) }
+}
+
+/** 일시적 provider 오류(timeout/429/503/과부하)면 최대 [maxRetries]회 재시도. 성공 여부와 무관하게 시도 횟수를 [onRetry]로 통지. */
+internal suspend fun completeWithTransientRetry(
+    client: AiClient,
+    modelId: String,
+    finalPrompt: String,
+    maxRetries: Int = MAX_AI_RETRIES,
+    retryDelayMs: Long = RETRY_DELAY_MS,
+    onRetry: (Int) -> Unit = {},
+): Result<String> {
+    var result = client.complete(finalPrompt, modelId)
+    var retries = 0
+    while (result.isFailure && retries < maxRetries) {
+        val err = result.exceptionOrNull()
+        if (!isTransientError(err)) {
+            DebugLogger.w("워커", "AI 호출 실패(비일시 오류, 재시도 안 함): ${err?.message}")
+            break
+        }
+        retries++
+        onRetry(retries)
+        DebugLogger.w("워커", "AI 호출 일시 오류 — $retries/$maxRetries 재시도: ${err?.message}")
+        delay(retryDelayMs)
+        result = client.complete(finalPrompt, modelId)
+    }
+    return result
 }
