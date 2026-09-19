@@ -3,12 +3,12 @@ package com.borasarang.promptjournaljupjup
 import android.content.Context
 import com.borasarang.promptjournaljupjup.data.db.PromptJournalDatabase
 import com.borasarang.promptjournaljupjup.data.db.entity.Prompt
+import com.borasarang.common.ai.ModelCatalog
+import com.borasarang.common.prefs.ModelEnabledStore
+import com.borasarang.common.prefs.ProviderKeyStore
 import com.borasarang.promptjournaljupjup.data.preferences.PreferencesManager
-import com.borasarang.promptjournaljupjup.data.preferences.ModelEnabledStore
-import com.borasarang.promptjournaljupjup.data.preferences.ProviderKeyStore
 import com.borasarang.promptjournaljupjup.data.repository.PromptExecutionRepository
 import com.borasarang.promptjournaljupjup.data.repository.PromptRepository
-import com.borasarang.promptjournaljupjup.ai.ModelCatalog
 import com.borasarang.promptjournaljupjup.server.HttpServerService
 import com.borasarang.promptjournaljupjup.util.DebugLogger
 import com.borasarang.promptjournaljupjup.worker.PromptJournalScheduler
@@ -70,14 +70,16 @@ object PromptJournalRuntime {
         promptRepository = PromptRepository(database)
         promptExecutionRepository = PromptExecutionRepository(database)
         preferences = PreferencesManager.getInstance(appContext)
-        providerKeys = ProviderKeyStore.getInstance(appContext)
+        providerKeys = ProviderKeyStore.getInstance(appContext, "pj_api_keys")
         scheduler = PromptJournalScheduler(appContext)
 
-        ModelCatalog.init()
-        ModelCatalog.attachStore(ModelEnabledStore.getInstance(appContext))
+        // R21: 공통 카탈로그 일반화 — 기본 활성은 시드 기본 모델만 (신규 자동 투입 없음)
+        ModelCatalog.init(seedDefaultModelIds = setOf(SEED_DEFAULT_MODEL_ID))
+        ModelCatalog.attachStore(ModelEnabledStore.getInstance(appContext, "pj_models"))
 
         appScope.launch(Dispatchers.IO) {
             ModelCatalog.restoreEnabled()
+            migrateDeprecatedData()
             seedIfEmpty()
 
             val settings = preferences.getSettings()
@@ -132,7 +134,7 @@ object PromptJournalRuntime {
             title = "무료 AI 모델 통합 일일 리포트",
             content = SEED_PROMPT,
             provider = "OPENROUTER",
-            modelId = "nvidia/nemotron-3-super-120b-a12b:free",
+            modelId = SEED_DEFAULT_MODEL_ID,
             scheduleType = "daily",
             scheduleValue = "09:00",
             enabled = true,
@@ -140,6 +142,21 @@ object PromptJournalRuntime {
         )
         promptRepository.save(seed)
         DebugLogger.i("앱", "시드 프롬프트 1개 등록: 무료 AI 모델 통합 일일 리포트")
+    }
+
+    /**
+     * R21: 폐기 공급자(Google AI Studio) 데이터 정리 — 해당 프롬프트와 실행기록 삭제.
+     * 확정된 삭제 범위: provider=GOOGLE_AI_STUDIO 행만. 멱등이라 재실행 안전.
+     */
+    private suspend fun migrateDeprecatedData() {
+        val promptCount = promptRepository.deleteByProvider(DEPRECATED_PROVIDER)
+        val executionCount = promptExecutionRepository.deleteByProvider(DEPRECATED_PROVIDER)
+        if (promptCount > 0 || executionCount > 0) {
+            DebugLogger.i(
+                "앱",
+                "폐기 공급자 데이터 정리: 프롬프트 ${promptCount}개, 실행기록 ${executionCount}건 삭제"
+            )
+        }
     }
 
     private fun backupDatabaseFile() {
@@ -157,6 +174,12 @@ object PromptJournalRuntime {
         }
     }
 
+    /** 폐기 공급자 — R21에서 Google AI Studio 제거. 해당 데이터는 시작 시 일괄 삭제 */
+    private const val DEPRECATED_PROVIDER = "GOOGLE_AI_STUDIO"
+
+    /** 시드 기본 모델 — 카탈로그 정적 보호 대상이자 초기 기본 활성 모델 (R21) */
+    private const val SEED_DEFAULT_MODEL_ID = "nvidia/nemotron-3-super-120b-a12b:free"
+
     private const val SEED_PROMPT = """너는 AI 모델 트래킹 애널리스트야. 오늘 날짜 기준으로 아래 서비스들의
 "완전 무료(Free)" 모델 현황과 관련 뉴스를 조사해서 한국어 리포트를
 작성해줘.
@@ -168,20 +191,25 @@ object PromptJournalRuntime {
 - OpenCode Zen (https://opencode.ai/docs/zen/)
 - OpenRouter 무료 모델 (":free" 접미사 붙은 모델들, https://openrouter.ai/models?max_price=0 또는 공식 모델 목록)
 - NVIDIA NIM / build.nvidia.com (무료 API 크레딧으로 제공되는 모델들)
-- 그 외 확인해볼 것: Google AI Studio(Gemini 무료 티어), Groq, Cerebras
+- 그 외 확인해볼 것: Groq, Cerebras
   Cloud, SambaNova Cloud, Together AI 무료 티어, Cloudflare Workers AI,
   GitHub Models, Hugging Face Inference Providers 무료 티어 등
   → 이 목록에 없더라도 "오늘 새로 알게 된 무료 서비스"가 있으면
     반드시 별도로 언급해줘.
 
-[조사 방법 원칙]
-- 반드시 각 서비스의 공식 문서/공식 모델 목록 페이지를 웹서치·웹fetch로
-  직접 확인해서 판단할 것. 오래된 블로그, 커뮤니티 위키, 서드파티 글의
-  옛날 목록은 참고만 하고 "공식 기준 현재값"으로 덮어쓸 것.
+[취재 데이터 근거]
+- 이 프롬프트에 주입된 [웹 검색 결과]가 이번 리포트의 유일한 웹 근거다.
+  주입된 자료(제목·날짜·URL·발췌)를 바탕으로 판단하고, 근거가 된 항목에는
+  출처 URL을 병기할 것.
+- [웹 검색 결과]로 확인할 수 없는 항목은 무조건 "검색 결과 없음"이라고
+  명시하고 추측으로 채우지 말 것. 브라우징 기능이 없다고 말하거나 응답을
+  보류하지 말 것. 부족하면 "기준시점: 검색 결과 없음" 한 줄로 요약하라.
+- 검색 결과가 서드파티 글이면 일단 참고만 하고, 출처 URL·작성일 기준으로
+  신뢰도를 판단해 "공식 기준 현재값"을 추정하되 그 근거를 밝힐 것.
 - 완전 무료(rate limit 안에서 $0)인 모델만 "무료 모델"로 집계하고,
   "며칠간 무료 크레딧 제공" 같은 건 별도로 표시할 것.
-- 스텔스(정체불명) 모델이 있으면 GitHub, Reddit, X(트위터) 등에서
-  정체 추정 정보나 커뮤니티 반응을 추가로 찾아줘.
+- 스텔스(정체불명) 모델이 있으면 검색 결과 내 GitHub, Reddit, X(트위터)
+  언급을 활용해 정체 추정 정보나 커뮤니티 반응을 정리해줘.
 
 [서비스별 조사 항목]
 각 서비스마다:
@@ -228,6 +256,7 @@ object PromptJournalRuntime {
 - 🆕 신규 추가된 무료 모델 (서비스명 포함)
 - ❌ 무료 목록에서 빠진 모델 (서비스명 포함)
 - 🔄 스펙/가격/정책이 바뀐 모델
+[웹 검색 결과 — 없으면 이 줄과 아래 내용 삭제]
 전날 기록:
 [어제까지 기록 — 없으면 이 줄과 아래 내용 삭제]
 

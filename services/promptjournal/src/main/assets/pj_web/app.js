@@ -4,8 +4,7 @@
 
     var API_BASE = '';
     var providerDisplay = {
-        'OPENROUTER': 'OpenRouter',
-        'GOOGLE_AI_STUDIO': 'Google AI Studio'
+        'OPENROUTER': 'OpenRouter'
     };
 
     var state = { prompts: [], selPrompt: null, execs: [], selExec: null, showDetailMobile: false };
@@ -405,10 +404,14 @@
         $('pfProvider').addEventListener('change', function () { populateModelSelect($('pfProvider').value); });
         var tc = $('tabChannel');
         var ts = $('tabSources');
+        var tr = $('tabRuns');
         if (tc && ts) {
             tc.addEventListener('click', function () { switchDrawerTab('channel'); });
             ts.addEventListener('click', function () { switchDrawerTab('sources'); });
         }
+        if (tr) tr.addEventListener('click', function () { switchDrawerTab('runs'); });
+        var runRefresh = $('btnRunRefresh');
+        if (runRefresh) runRefresh.addEventListener('click', loadRuns);
         updateMasthead();
         loadAll();
     }
@@ -456,7 +459,7 @@
     }
 
     /* ---------- 마스터-디테일 ---------- */
-    function selectPrompt(id) {
+    function selectPrompt(id, focusExecId) {
         state.selPrompt = id;
         state.selExec = null;
         state.showDetailMobile = false;
@@ -468,7 +471,8 @@
             state.execs = exs || [];
             renderDates();
             if (state.execs.length) {
-                selectExec(state.execs[0].id);
+                var target = focusExecId ? state.execs.find(function (e) { return e.id === focusExecId; }) : null;
+                selectExec((target || state.execs[0]).id);
                 var last = state.execs[0];
                 $('lastRun').textContent = editionLabel(last);
             } else {
@@ -672,15 +676,96 @@
         $('drawerBackdrop').hidden = false;
     }
     function closeDrawer() {
+        stopRunPolling();
         $('drawer').hidden = true;
         $('drawerBackdrop').hidden = true;
     }
     function switchDrawerTab(which) {
         var ch = which === 'channel';
+        var runs = which === 'runs';
         $('tabChannel').classList.toggle('active', ch);
-        $('tabSources').classList.toggle('active', !ch);
+        $('tabSources').classList.toggle('active', which === 'sources');
+        $('tabRuns').classList.toggle('active', runs);
         $('panelChannel').hidden = !ch;
-        $('panelSources').hidden = ch;
+        $('panelSources').hidden = which !== 'sources';
+        $('panelRuns').hidden = !runs;
+        if (runs) {
+            loadRuns();
+            startRunPolling();
+        } else {
+            stopRunPolling();
+        }
+    }
+
+    /* ---------- 실행기록 (모든 채널 실행 내역) ---------- */
+    var runPollTimer = null;
+    function startRunPolling() {
+        stopRunPolling();
+        runPollTimer = setInterval(loadRuns, 10000);
+    }
+    function stopRunPolling() {
+        if (runPollTimer) { clearInterval(runPollTimer); runPollTimer = null; }
+    }
+    function loadRuns() {
+        api('/api/executions?limit=80').then(function (exs) {
+            if ($('panelRuns').hidden) return;
+            state.runs = exs || [];
+            renderRuns();
+        }).catch(function () {
+            if ($('panelRuns').hidden) return;
+            $('runList').innerHTML = '<p class="empty-state">실행 기록을 불러올 수 없습니다</p>';
+        });
+    }
+    function runDateLabel(ms) {
+        var d = new Date(ms);
+        return d.toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    function renderRuns() {
+        var list = $('runList');
+        if (!state.runs.length) {
+            list.innerHTML = '<p class="empty-state">아직 실행 기록이 없습니다. 채널을 만들어 발행해 보세요.</p>';
+            return;
+        }
+        list.innerHTML = state.runs.map(function (ex) {
+            var ok = ex.status === 'SUCCESS';
+            var err = ex.errorMessage || '';
+            var canView = state.prompts.some(function (x) { return x.id === ex.promptId; });
+            var p = state.prompts.find(function (x) { return x.id === ex.promptId; });
+            return '<div class="run-item' + (ok ? '' : ' failed') + '">' +
+                '<div class="run-head">' +
+                '<span class="run-status ' + (ok ? 'ok' : 'fail') + '">' + (ok ? '✓ 성공' : '✕ 실패') + '</span>' +
+                '<span class="run-title">' + esc(p ? p.title : ('채널 #' + ex.promptId)) + '</span>' +
+                '</div>' +
+                '<div class="run-model">' + esc(ex.modelId || '') + ' · ' + runDateLabel(ex.executedAt) +
+                ' · ' + esc(formatDuration(ex.durationMs)) + '</div>' +
+                (err ? '<div class="run-error">' + esc(err) + '</div>' : '') +
+                '<div class="run-actions">' +
+                (canView ? '<button class="btn btn-sm" data-run="view" data-id="' + ex.id + '" data-prompt="' + ex.promptId + '" type="button">보기</button>' : '') +
+                (!ok ? '<button class="btn btn-sm" data-run="retry" data-id="' + ex.promptId + '" type="button">재발행</button>' : '') +
+                '<button class="btn btn-sm btn-danger" data-run="del" data-id="' + ex.id + '" type="button">폐기</button>' +
+                '</div></div>';
+        }).join('');
+        list.querySelectorAll('[data-run]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var act = btn.dataset.run;
+                if (act === 'view') {
+                    stopRunPolling();
+                    closeDrawer();
+                    selectPrompt(Number(btn.dataset.prompt), Number(btn.dataset.id));
+                } else if (act === 'retry') {
+                    api('/api/prompts/' + btn.dataset.id + '/execute', { method: 'POST' }).then(function (d) {
+                        toast(d.ok ? '재발행이 예약되었습니다' : '재발행 실패: ' + (d.error || '오류'));
+                        if (d.ok) setTimeout(loadRuns, 5000);
+                    }).catch(function () { toast('재발행 예약에 실패했습니다'); });
+                } else if (act === 'del') {
+                    if (!confirm('이 실행 기록을 폐기할까요?')) return;
+                    fetch(API_BASE + '/api/executions/' + btn.dataset.id, { method: 'DELETE' }).then(function () {
+                        toast('실행 기록을 폐기했습니다');
+                        loadRuns();
+                    }).catch(function () { toast('폐기에 실패했습니다'); });
+                }
+            });
+        });
     }
     function newPrompt() {
         openDrawer();
@@ -808,8 +893,12 @@
 
     /* ---------- 취재원 ---------- */
     function loadProviders() {
-        api('/api/providers').then(renderProviders).catch(function () {
+        api('/api/providers').then(function (providers) {
+            renderProviders(providers);
+            loadSearchEngine();
+        }).catch(function () {
             $('providerList').innerHTML = '<p class="empty-state">취재원 정보를 불러올 수 없습니다</p>';
+            loadSearchEngine();
         });
     }
     function renderProviders(providers) {
@@ -868,6 +957,77 @@
                 toggleModelEnabled(cb.closest('.provider-card').dataset.name, cb.dataset.model, cb.checked);
             });
         });
+    }
+
+    /* ---------- 검색 엔진 (Exa) — 취재원 하단 카드 ---------- */
+    function loadSearchEngine() {
+        var list = $('providerList');
+        var old = list.querySelector('.provider-card[data-engine="exa"]');
+        if (old) old.remove();
+        api('/api/search/key').then(function (d) {
+            var hasKey = !!(d && d.hasApiKey);
+            var wrapper = document.createElement('div');
+            wrapper.innerHTML =
+                '<div class="provider-card" data-engine="exa">' +
+                '<div class="provider-card-header"><span class="provider-card-title">검색 엔진 · Exa</span>' +
+                '<div class="provider-card-actions"><button class="btn" data-action="search-test" type="button">검색 테스트</button></div></div>' +
+                '<div class="provider-key-status' + (hasKey ? ' has' : '') + '">' +
+                (hasKey ? '✓ 검색엔진 연결됨' : '검색엔진 미연결 — 아래에서 입력') +
+                ' <button class="btn" data-action="search-key" type="button">' + (hasKey ? '키 교체' : '키 등록') + '</button></div>' +
+                '<div class="exa-status" data-role="exa-status"></div>' +
+                '<div class="provider-models"><p class="empty-state exa-note">' +
+                '리포트 생성 시 사실·최신 자료를 Exa 검색으로 실측 수집해 [웹 검색 결과]로 주입합니다. ' +
+                '무료 1,000건/월 (neural 검색 단가 $0.007/건).</p></div>' +
+                '</div>';
+            var card = wrapper.firstChild;
+            list.appendChild(card);
+            card.querySelector('[data-action="search-key"]').addEventListener('click', askSearchApiKey);
+            card.querySelector('[data-action="search-test"]').addEventListener('click', function (e) {
+                testSearch(e.currentTarget);
+            });
+        }).catch(function () { /* 키 상태 조회 실패 — 카드 생략 */ });
+    }
+
+    function askSearchApiKey() {
+        var key = prompt('Exa 검색엔진 API 키를 입력하세요 (빈 값 = 키 삭제)');
+        if (key === null) return;
+        api('/api/search/key', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey: key.trim() })
+        }).then(function (data) {
+            toast(data.ok ? 'Exa 키가 저장되었습니다' : '저장 실패: ' + (data.error || '오류'));
+            if (data.ok) loadProviders();
+        }).catch(function () { toast('저장 요청 실패'); });
+    }
+
+    function testSearch(btn) {
+        var original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '확인 중…';
+        var statusEl = btn.closest('.provider-card').querySelector('[data-role="exa-status"]');
+        api('/api/search/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        }).then(function (data) {
+            toast(data.ok ? '검색 정상 — ' + data.count + '건' : '검색 실패: ' + (data.error || '오류'));
+            renderExaStatus(statusEl, data);
+        }).catch(function () {
+            toast('검색 요청 실패');
+            renderExaStatus(statusEl, { ok: false, error: '검색 요청 실패' });
+        }).then(function () {
+            btn.disabled = false;
+            btn.textContent = original;
+        });
+    }
+
+    function renderExaStatus(el, data) {
+        if (!el) return;
+        el.className = 'exa-status ' + (data.ok ? 'ok' : 'fail');
+        el.textContent = data.ok
+            ? '✓ 검색 정상 · ' + data.count + '건' + (data.sample ? ' — ' + data.sample.title : '')
+            : '⚠ 검색 비정상 — ' + (data.error || '오류');
     }
 
     function refreshProviderModels(name, btn) {

@@ -16,6 +16,8 @@ dependencies {
     // R2b: 서버 JSON 헬퍼용 (ApplicationCall 확장 + JsonObject 빌더)
     implementation(libs.ktor.server.core)
     implementation(libs.kotlinx.serialization.json)
+    // R21: 공통 AI/검색 클라이언트 (OpenRouter · Exa)
+    implementation(libs.okhttp)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -1,5 +1,6 @@
-package com.borasarang.promptjournaljupjup.ai
+package com.borasarang.common.ai
 
+import com.borasarang.common.prefs.ModelEnabledStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -11,10 +12,11 @@ import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
 /**
- * 공급자별 모델 카탈로그 — AIModelTalk ModelCatalog 패턴 이식.
+ * 공급자별 모델 카탈로그 — AIModelTalk ModelCatalog 패턴 이식 (R21 공통 모듈).
  * - 기본 목록: 정적 (실측 검증된 무료 모델)
- * - 런타임 갱신: 공급자 /models 조회 → 병합 (새 모델 추가, 활성 상태 유지)
+ * - 런타임 갱신: 공급자 /models 조회 → 병합 (목록 갱신, 활성 상태 불변)
  * - 활성(사용) 모델 토글: 프롬프트 등록 시 모델 select에서 사용
+ * - 기본 활성은 서비스가 지정한 시드 기본 모델만 (신규/원격 모델 자동 투입 없음)
  */
 object ModelCatalog {
 
@@ -38,22 +40,26 @@ object ModelCatalog {
     private val previousRemoteIds: MutableMap<AiProvider, List<AiClient.ModelInfo>> = mutableMapOf()
 
     /** 투입 상태 영속 저장소 (미부착 시 메모리 전용 — JVM 테스트용) */
-    private var enabledStore: com.borasarang.promptjournaljupjup.data.preferences.ModelEnabledStore? = null
+    private var enabledStore: ModelEnabledStore? = null
 
-    fun init() {
+    /** 초기 활성(기본 투입) 모델 — 서비스가 지정. R21: 신규 모델 자동 투입 제거 */
+    private val seedDefaultModelIds: MutableSet<String> = mutableSetOf()
+
+    fun init(seedDefaultModelIds: Set<String> = emptySet()) {
+        this.seedDefaultModelIds.clear()
+        this.seedDefaultModelIds.addAll(seedDefaultModelIds)
         for (provider in AiProvider.entries) {
             val base = when (provider) {
                 AiProvider.OPENROUTER -> OpenRouterClient("").supportedModels
-                AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient("").supportedModels
             }
             staticBase[provider] = base
             currentModels[provider] = base
-            enabledModels[provider] = base.map { it.id }.toMutableSet()
+            enabledModels[provider] = base.filter { it.id in seedDefaultModelIds }.map { it.id }.toMutableSet()
             previousRemoteIds.remove(provider)
         }
     }
 
-    fun attachStore(store: com.borasarang.promptjournaljupjup.data.preferences.ModelEnabledStore) {
+    fun attachStore(store: ModelEnabledStore) {
         synchronized(this) {
             enabledStore = store
         }
@@ -135,10 +141,7 @@ object ModelCatalog {
             return RefreshResult(provider, RefreshStatus.SKIPPED, errorMessage = "API 키 미설정")
         }
         return try {
-            val remote = when (provider) {
-                AiProvider.OPENROUTER -> fetchOpenRouter(apiKey)
-                AiProvider.GOOGLE_AI_STUDIO -> fetchGoogle(apiKey)
-            }
+            val remote = fetchOpenRouter(apiKey)
             merge(provider, remote, protectedIds)
         } catch (e: Exception) {
             RefreshResult(provider, RefreshStatus.FAILED, errorMessage = e.message ?: "오류")
@@ -168,33 +171,11 @@ object ModelCatalog {
         }
     }
 
-
-
-    private suspend fun fetchGoogle(apiKey: String): List<AiClient.ModelInfo> = withContext(Dispatchers.IO) {
-        val req = Request.Builder()
-            .url("${AiProvider.GOOGLE_AI_STUDIO.baseUrl}/models?key=$apiKey&pageSize=1000")
-            .build()
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw Exception("HTTP ${resp.code}")
-            val body = resp.body?.string() ?: ""
-            val root = json.parseToJsonElement(body).jsonObject
-            root["models"]?.jsonArray.orEmpty().mapNotNull { item ->
-                val obj = item.jsonObject
-                val name = obj["name"]?.jsonPrimitive?.content ?: return@mapNotNull null
-                val id = name.removePrefix("models/")
-                if (id.isBlank()) return@mapNotNull null
-                AiClient.ModelInfo(
-                    id = id,
-                    name = obj["displayName"]?.jsonPrimitive?.content ?: id,
-                )
-            }
-        }
-    }
-
     /**
-     * 전역 동기화된 병합 — 새 원격 모델 추가, 명시 해제는 보존 (AIModelTalk 스냅샷 가드 패턴).
+     * 전역 동기화된 병합 — 목록만 갱신, 활성 상태는 사용자 선택 그대로 (R21).
      * - 삭제는 "직전 원격 스냅샷에 있었는데 이번 원격에 없는 ID"에만 적용
      * - 정적 base + 프롬프트 참조 ID(protectedIds)는 어떤 경우에도 삭제 금지
+     * - 신규 원격 모델은 목록에 추가하되 자동 투입하지 않음
      * - 실패·무키 시 refresh()가 merge를 호출하지 않으므로 기존 목록 유지
      */
     internal suspend fun merge(
@@ -216,13 +197,9 @@ object ModelCatalog {
             val merged = (base + remote + kept).distinctBy { it.id }.sortedBy { it.name }
             currentModels[provider] = merged
 
-            // 미등록 ID의 투입 의도도 메모리에서 유지 (enabledModelsFor는 현 목록 기준 필터라 무해,
-            // persist가 DataStore를 침식하지 않음 — AIModelTalk overrides 불변 패턴)
-            val newEnabled = mutableSetOf<String>().apply {
-                addAll(prevEnabled)
-                addAll(remote.filter { it.id !in baseIds }.map { it.id })
-            }
-            enabledModels[provider] = newEnabled
+            // 활성 상태 불변 — 미등록 ID의 투입 의도도 메모리에서 유지
+            // (enabledModelsFor는 현 목록 기준 필터라 무해, persist가 DataStore를 침식하지 않음)
+            enabledModels[provider] = prevEnabled.toMutableSet()
 
             RefreshResult(
                 provider = provider,

@@ -4,13 +4,21 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.borasarang.common.ai.AiClientFactory
+import com.borasarang.common.ai.AiProvider
+import com.borasarang.common.search.ExaSearchClient
+import com.borasarang.common.search.GroundingFormatter
+import com.borasarang.common.search.SearchResult
 import com.borasarang.promptjournaljupjup.Constants
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
-import com.borasarang.promptjournaljupjup.ai.AiClientFactory
-import com.borasarang.promptjournaljupjup.ai.AiProvider
+import com.borasarang.promptjournaljupjup.data.db.entity.Prompt
 import com.borasarang.promptjournaljupjup.data.db.entity.PromptExecution
 import com.borasarang.promptjournaljupjup.server.HttpServerService
 import com.borasarang.promptjournaljupjup.util.DebugLogger
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import com.borasarang.common.ai.AiClient
 
 class PromptJournalWorker(
     context: Context,
@@ -50,20 +58,19 @@ class PromptJournalWorker(
             return Result.failure()
         }
 
-        // 이전 결과 주입 (usePreviousResult ON → 직전 SUCCESS 원문을 [어제까지 기록]에)
-        val finalPrompt = if (prompt.usePreviousResult) {
-            withPreviousResult(prompt.id, prompt.content, app)
-        } else {
-            prompt.content
-        }
+        // 취재 데이터 주입: 이전 결과 + 웹 검색(Exa) 근거
+        val finalPrompt = buildPrompt(prompt, app)
 
         val client = AiClientFactory.create(provider, apiKey)
         val startMs = System.currentTimeMillis()
 
         DebugLogger.i("워커", "AI 호출 시작 id=${prompt.id} title=${prompt.title} model=${prompt.modelId}")
 
-        val result = client.complete(finalPrompt, prompt.modelId)
+        var aiRetries = 0
+        val result = completeWithTransientRetry(client, prompt.modelId, finalPrompt) { aiRetries = it }
         val durationMs = System.currentTimeMillis() - startMs
+        val errorMessage = result.exceptionOrNull()?.message
+            ?.let { if (aiRetries > 0) "$it (${aiRetries}회 재시도 후 실패)" else it }
 
         val execution = PromptExecution(
             promptId = prompt.id,
@@ -74,7 +81,7 @@ class PromptJournalWorker(
             executedAt = startMs,
             durationMs = durationMs,
             status = if (result.isSuccess) "SUCCESS" else "FAILED",
-            errorMessage = result.exceptionOrNull()?.message
+            errorMessage = errorMessage
         )
 
         val id = app.promptExecutionRepository.save(execution)
@@ -85,19 +92,74 @@ class PromptJournalWorker(
         return if (result.isSuccess) Result.success() else Result.failure()
     }
 
-    private suspend fun withPreviousResult(
-        promptId: Long,
-        content: String,
-        app: PromptJournalRuntime,
-    ): String {
-        val prev = app.promptExecutionRepository.getLastSuccess(promptId) ?: return content
-        if (prev.response.isBlank()) return content
-        val injected = "[어제까지 기록 — 이전 실행 결과]\n" +
-            "${prev.executedAt} 실행 결과:\n${prev.response}"
-        return content.replace("[어제까지 기록 — 없으면 이 줄과 아래 내용 삭제]", injected)
-            .let {
-                if (it == content) "$content\n\n$injected" else it
+    private suspend fun buildPrompt(prompt: Prompt, app: PromptJournalRuntime): String {
+        var text = prompt.content
+
+        // 1) 지난 호 결과 주입 (usePreviousResult ON → 직전 SUCCESS 원문을 [어제까지 기록]에)
+        if (prompt.usePreviousResult) {
+            val prev = app.promptExecutionRepository.getLastSuccess(prompt.id)
+            if (prev != null && prev.response.isNotBlank()) {
+                val injected = "[어제까지 기록 — 이전 실행 결과]\n" +
+                    "${prev.executedAt} 실행 결과:\n${prev.response}"
+                text = replaceMarker(text, PREV_RESULT_MARKER, injected)
             }
+        }
+
+        // 2) 웹 검색(Exa) 근거 주입 — 키 미설정/실패 시 [사용 불가] 폴백, 개별 쿼리 실패는 격리.
+        //    마커가 없으면(수동 프롬프트) 실제 근거 수집 성공 시에만 끝에 첨부.
+        val webBlock = collectSearchGrounding(app)
+        text = if (GroundingFormatter.MARKER in text) {
+            text.replace(GroundingFormatter.MARKER, webBlock)
+        } else if (webBlock != GroundingFormatter.UNAVAILABLE_BLOCK) {
+            text.trimEnd() + "\n\n" + webBlock
+        } else {
+            text
+        }
+        return text
+    }
+
+    private fun replaceMarker(text: String, marker: String, block: String): String {
+        return if (marker in text) text.replace(marker, block) else text
+    }
+
+    /**
+     * R21: Exa 6쿼리 병렬 수집 → URL 중복 제거 → 마크다운 근거 블록.
+     * 키 미설정이거나 전부 실패면 GroundingFormatter.UNAVAILABLE_BLOCK 반환 (리포트는 계속 생성).
+     */
+    private suspend fun collectSearchGrounding(app: PromptJournalRuntime): String {
+        val exaKey = app.preferences.getExaApiKey()
+        if (exaKey.isBlank()) {
+            DebugLogger.w("검색", "Exa 키 미설정 — [웹 검색 결과] 미주입")
+            return GroundingFormatter.UNAVAILABLE_BLOCK
+        }
+        val client = ExaSearchClient(exaKey)
+        val collected: List<Pair<String, List<SearchResult>>> = coroutineScope {
+            SEARCH_QUERIES.map { spec ->
+                async {
+                    val results = try {
+                        client.search(spec.query, spec.numResults, spec.maxCharacters)
+                            .getOrElse { emptyList() }
+                    } catch (e: Exception) {
+                        DebugLogger.w("검색", "쿼리 실패 격리: ${spec.query} — ${e.message}")
+                        emptyList()
+                    }
+                    spec.query to results
+                }
+            }.map { it.await() }
+        }
+
+        val seen = mutableSetOf<String>()
+        val deduped = collected.mapNotNull { (query, results) ->
+            val kept = results.filter { seen.add(it.url) }
+            if (kept.isEmpty()) null else query to kept
+        }
+        val block = GroundingFormatter.format(deduped)
+        DebugLogger.i(
+            "검색",
+            "웹 근거 수집: 쿼리 ${collected.count { it.second.isNotEmpty() }}/${SEARCH_QUERIES.size}, " +
+                "문서 ${deduped.sumOf { it.second.size }}건, ${block.length}자"
+        )
+        return block
     }
 
     private fun sendNotification(title: String, execution: PromptExecution, id: Long) {
@@ -128,5 +190,58 @@ class PromptJournalWorker(
 
     companion object {
         private const val NOTIFICATION_ID_BASE = 3200
+        private const val PREV_RESULT_MARKER = "[어제까지 기록 — 없으면 이 줄과 아래 내용 삭제]"
+
+        private data class SearchSpec(val query: String, val numResults: Int, val maxCharacters: Int)
+
+        /** R21: 워커 6쿼리 — maxCharacters=0 → highlights(뉴스), >0 → text(카탈로그 본문) */
+        private val SEARCH_QUERIES = listOf(
+            SearchSpec("OpenRouter 무료 모델 :free 전환 및 제거 최근 변경", 6, 0),
+            SearchSpec("OpenCode Zen 무료 AI 코딩 크레딧 최신", 5, 0),
+            SearchSpec("NVIDIA NIM build.nvidia.com 무료 API 크레딧 2026", 5, 0),
+            SearchSpec("Groq Cerebras SambaNova Together AI 무료 티어 LLM API", 6, 0),
+            SearchSpec("신규 무료 LLM API 공개 최근 7일", 6, 0),
+            SearchSpec("OpenRouter 무료 모델 공식 카탈로그 max_price=0", 3, 3000),
+        )
     }
+}
+
+private const val MAX_AI_RETRIES = 2
+private const val RETRY_DELAY_MS = 5_000L
+
+/** 일시 오류 재시도 판정 힌트 (소문자 매칭) */
+private val TRANSIENT_HINTS = listOf(
+    "timeout", "socket", "429", "503",
+    "overloaded", "temporarily", "rate limit", "too many requests",
+)
+
+internal fun isTransientError(e: Throwable?): Boolean {
+    val msg = e?.message?.lowercase() ?: return false
+    return TRANSIENT_HINTS.any { msg.contains(it) }
+}
+
+/** 일시적 provider 오류(timeout/429/503/과부하)면 최대 [maxRetries]회 재시도. 성공 여부와 무관하게 시도 횟수를 [onRetry]로 통지. */
+internal suspend fun completeWithTransientRetry(
+    client: AiClient,
+    modelId: String,
+    finalPrompt: String,
+    maxRetries: Int = MAX_AI_RETRIES,
+    retryDelayMs: Long = RETRY_DELAY_MS,
+    onRetry: (Int) -> Unit = {},
+): Result<String> {
+    var result = client.complete(finalPrompt, modelId)
+    var retries = 0
+    while (result.isFailure && retries < maxRetries) {
+        val err = result.exceptionOrNull()
+        if (!isTransientError(err)) {
+            DebugLogger.w("워커", "AI 호출 실패(비일시 오류, 재시도 안 함): ${err?.message}")
+            break
+        }
+        retries++
+        onRetry(retries)
+        DebugLogger.w("워커", "AI 호출 일시 오류 — $retries/$maxRetries 재시도: ${err?.message}")
+        delay(retryDelayMs)
+        result = client.complete(finalPrompt, modelId)
+    }
+    return result
 }

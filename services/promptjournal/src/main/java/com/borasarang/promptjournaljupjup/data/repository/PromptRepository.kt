@@ -29,6 +29,9 @@ class PromptRepository(private val db: PromptJournalDatabase) {
         return promptDao.deleteById(id) > 0
     }
 
+    /** 폐기 공급자 데이터 마이그레이션용 — 해당 프롬프트 삭제 (실행기록은 별도) */
+    suspend fun deleteByProvider(provider: String): Int = promptDao.deleteByProvider(provider)
+
     suspend fun count(): Int = promptDao.count()
 
     suspend fun getRecentExecutions(promptId: Long, limit: Int = 100): List<PromptExecution> =

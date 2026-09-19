@@ -3,7 +3,7 @@ package com.borasarang.promptjournaljupjup.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
-import com.borasarang.promptjournaljupjup.ai.AiProvider
+import com.borasarang.common.ai.AiProvider
 import com.borasarang.promptjournaljupjup.util.DebugLogger
 import com.borasarang.common.util.NetUtils
 import kotlinx.coroutines.Dispatchers
