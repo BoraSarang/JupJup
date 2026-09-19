@@ -31,6 +31,9 @@ object ModelCatalog {
     /** 공급자별 활성(사용) 모델 ID */
     private val enabledModels: MutableMap<AiProvider, MutableSet<String>> = mutableMapOf()
 
+    /** 투입 상태 영속 저장소 (미부착 시 메모리 전용 — JVM 테스트용) */
+    private var enabledStore: com.borasarang.promptfactoryjupjup.data.preferences.ModelEnabledStore? = null
+
     fun init() {
         for (provider in AiProvider.entries) {
             val base = when (provider) {
@@ -40,6 +43,37 @@ object ModelCatalog {
             }
             currentModels[provider] = base
             enabledModels[provider] = base.map { it.id }.toMutableSet()
+        }
+    }
+
+    fun attachStore(store: com.borasarang.promptfactoryjupjup.data.preferences.ModelEnabledStore) {
+        synchronized(this) {
+            enabledStore = store
+        }
+    }
+
+    /** 저장된 투입 상태를 복원 — 저장값이 있는 공급자만 적용, 없으면 기본 유지 */
+    suspend fun restoreEnabled() {
+        val store = synchronized(this) { enabledStore } ?: return
+        val saved = mutableMapOf<AiProvider, Set<String>>()
+        for (provider in AiProvider.entries) {
+            store.getEnabled(provider.name)?.let { saved[provider] = it }
+        }
+        synchronized(this) {
+            for ((provider, ids) in saved) {
+                val known = currentModels[provider].orEmpty().map { it.id }.toSet()
+                enabledModels[provider] = ids.filter { it in known }.toMutableSet()
+            }
+        }
+    }
+
+    private suspend fun persist(provider: AiProvider) {
+        val store = synchronized(this) { enabledStore } ?: return
+        val snapshot = synchronized(this) { enabledModels[provider].orEmpty().toSet() }
+        try {
+            store.saveEnabled(provider.name, snapshot)
+        } catch (e: Exception) {
+            android.util.Log.w("ModelCatalog", "투입 상태 저장 실패: ${provider.name}")
         }
     }
 
@@ -58,15 +92,16 @@ object ModelCatalog {
         }
     }
 
-    fun setModelEnabled(provider: AiProvider, modelId: String, enabled: Boolean) {
+    suspend fun setModelEnabled(provider: AiProvider, modelId: String, enabled: Boolean) {
         synchronized(this) {
             val set = enabledModels.getOrPut(provider) { mutableSetOf() }
             if (enabled) set.add(modelId) else set.remove(modelId)
         }
+        persist(provider)
     }
 
     /** 공급자 전체 모델 일괄 토글 — 관리 탭 모두 사용/해제용 */
-    fun setAllEnabled(provider: AiProvider, enabled: Boolean) {
+    suspend fun setAllEnabled(provider: AiProvider, enabled: Boolean) {
         synchronized(this) {
             enabledModels[provider] = if (enabled) {
                 currentModels[provider].orEmpty().map { it.id }.toMutableSet()
@@ -74,6 +109,7 @@ object ModelCatalog {
                 mutableSetOf()
             }
         }
+        persist(provider)
     }
 
     /** 주요 공급자 목록 (관리 화면용) */
@@ -161,9 +197,9 @@ object ModelCatalog {
         }
     }
 
-    /** 전역 동기화된 병합 — 새 원격 모델 추가, 활성 상태 보존 */
-    private fun merge(provider: AiProvider, remote: List<AiClient.ModelInfo>): RefreshResult {
-        synchronized(this) {
+    /** 전역 동기화된 병합 — 새 원격 모델 추가, 명시 해제는 보존 */
+    internal suspend fun merge(provider: AiProvider, remote: List<AiClient.ModelInfo>): RefreshResult {
+        val result = synchronized(this) {
             val base = currentModels[provider].orEmpty()
             val baseIds = base.map { it.id }.toSet()
             val prevEnabled = enabledModels[provider].orEmpty()
@@ -174,17 +210,19 @@ object ModelCatalog {
             val mergedIds = merged.map { it.id }.toSet()
             val newEnabled = mutableSetOf<String>().apply {
                 addAll(prevEnabled.filter { it in mergedIds })
-                addAll(remote.filter { it.id !in prevEnabled }.map { it.id })
+                addAll(remote.filter { it.id !in baseIds }.map { it.id })
             }
             enabledModels[provider] = newEnabled
 
-            return RefreshResult(
+            RefreshResult(
                 provider = provider,
                 status = RefreshStatus.OK,
                 count = merged.size,
                 added = remote.count { it.id !in baseIds },
             )
         }
+        persist(provider)
+        return result
     }
 
     enum class RefreshStatus { OK, FAILED, SKIPPED }

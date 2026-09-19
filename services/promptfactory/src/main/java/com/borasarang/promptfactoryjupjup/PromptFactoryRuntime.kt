@@ -4,6 +4,7 @@ import android.content.Context
 import com.borasarang.promptfactoryjupjup.data.db.PromptFactoryDatabase
 import com.borasarang.promptfactoryjupjup.data.db.entity.Prompt
 import com.borasarang.promptfactoryjupjup.data.preferences.PreferencesManager
+import com.borasarang.promptfactoryjupjup.data.preferences.ModelEnabledStore
 import com.borasarang.promptfactoryjupjup.data.preferences.ProviderKeyStore
 import com.borasarang.promptfactoryjupjup.data.repository.PromptExecutionRepository
 import com.borasarang.promptfactoryjupjup.data.repository.PromptRepository
@@ -71,8 +72,10 @@ object PromptFactoryRuntime {
         scheduler = PromptFactoryScheduler(appContext)
 
         ModelCatalog.init()
+        ModelCatalog.attachStore(ModelEnabledStore.getInstance(appContext))
 
         appScope.launch(Dispatchers.IO) {
+            ModelCatalog.restoreEnabled()
             seedIfEmpty()
 
             val settings = preferences.getSettings()
@@ -194,7 +197,9 @@ object PromptFactoryRuntime {
 [어제까지 기록 — 없으면 이 줄과 아래 내용 삭제]
 
 [출력 형식 — 모바일 화면 렌더링 기준, 반드시 준수]
-1. 오늘의 뉴스 + 인사이트 (최상단, 불릿 목록)
+0. 맨 첫 줄은 35자 이내의 헤드라인 1줄만 출력 (마크다운 기호 없이 평문).
+   예: 신규 무료 모델 없음
+1. 오늘의 뉴스 + 인사이트 (헤드라인 다음 줄부터, 불릿 목록)
 2. 변경사항 요약 (없으면 "어제와 동일, 변경 없음" 명시,
    짧은 요약에만 마크다운 표 사용 가능 — 4행 이하, 셀당 20자 이하)
 3. 서비스별 현재 무료 모델 목록 (표 사용 금지)
