@@ -404,10 +404,14 @@
         $('pfProvider').addEventListener('change', function () { populateModelSelect($('pfProvider').value); });
         var tc = $('tabChannel');
         var ts = $('tabSources');
+        var tr = $('tabRuns');
         if (tc && ts) {
             tc.addEventListener('click', function () { switchDrawerTab('channel'); });
             ts.addEventListener('click', function () { switchDrawerTab('sources'); });
         }
+        if (tr) tr.addEventListener('click', function () { switchDrawerTab('runs'); });
+        var runRefresh = $('btnRunRefresh');
+        if (runRefresh) runRefresh.addEventListener('click', loadRuns);
         updateMasthead();
         loadAll();
     }
@@ -455,7 +459,7 @@
     }
 
     /* ---------- 마스터-디테일 ---------- */
-    function selectPrompt(id) {
+    function selectPrompt(id, focusExecId) {
         state.selPrompt = id;
         state.selExec = null;
         state.showDetailMobile = false;
@@ -467,7 +471,8 @@
             state.execs = exs || [];
             renderDates();
             if (state.execs.length) {
-                selectExec(state.execs[0].id);
+                var target = focusExecId ? state.execs.find(function (e) { return e.id === focusExecId; }) : null;
+                selectExec((target || state.execs[0]).id);
                 var last = state.execs[0];
                 $('lastRun').textContent = editionLabel(last);
             } else {
@@ -671,15 +676,96 @@
         $('drawerBackdrop').hidden = false;
     }
     function closeDrawer() {
+        stopRunPolling();
         $('drawer').hidden = true;
         $('drawerBackdrop').hidden = true;
     }
     function switchDrawerTab(which) {
         var ch = which === 'channel';
+        var runs = which === 'runs';
         $('tabChannel').classList.toggle('active', ch);
-        $('tabSources').classList.toggle('active', !ch);
+        $('tabSources').classList.toggle('active', which === 'sources');
+        $('tabRuns').classList.toggle('active', runs);
         $('panelChannel').hidden = !ch;
-        $('panelSources').hidden = ch;
+        $('panelSources').hidden = which !== 'sources';
+        $('panelRuns').hidden = !runs;
+        if (runs) {
+            loadRuns();
+            startRunPolling();
+        } else {
+            stopRunPolling();
+        }
+    }
+
+    /* ---------- 실행기록 (모든 채널 실행 내역) ---------- */
+    var runPollTimer = null;
+    function startRunPolling() {
+        stopRunPolling();
+        runPollTimer = setInterval(loadRuns, 10000);
+    }
+    function stopRunPolling() {
+        if (runPollTimer) { clearInterval(runPollTimer); runPollTimer = null; }
+    }
+    function loadRuns() {
+        api('/api/executions?limit=80').then(function (exs) {
+            if ($('panelRuns').hidden) return;
+            state.runs = exs || [];
+            renderRuns();
+        }).catch(function () {
+            if ($('panelRuns').hidden) return;
+            $('runList').innerHTML = '<p class="empty-state">실행 기록을 불러올 수 없습니다</p>';
+        });
+    }
+    function runDateLabel(ms) {
+        var d = new Date(ms);
+        return d.toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    function renderRuns() {
+        var list = $('runList');
+        if (!state.runs.length) {
+            list.innerHTML = '<p class="empty-state">아직 실행 기록이 없습니다. 채널을 만들어 발행해 보세요.</p>';
+            return;
+        }
+        list.innerHTML = state.runs.map(function (ex) {
+            var ok = ex.status === 'SUCCESS';
+            var err = ex.errorMessage || '';
+            var canView = state.prompts.some(function (x) { return x.id === ex.promptId; });
+            var p = state.prompts.find(function (x) { return x.id === ex.promptId; });
+            return '<div class="run-item' + (ok ? '' : ' failed') + '">' +
+                '<div class="run-head">' +
+                '<span class="run-status ' + (ok ? 'ok' : 'fail') + '">' + (ok ? '✓ 성공' : '✕ 실패') + '</span>' +
+                '<span class="run-title">' + esc(p ? p.title : ('채널 #' + ex.promptId)) + '</span>' +
+                '</div>' +
+                '<div class="run-model">' + esc(ex.modelId || '') + ' · ' + runDateLabel(ex.executedAt) +
+                ' · ' + esc(formatDuration(ex.durationMs)) + '</div>' +
+                (err ? '<div class="run-error">' + esc(err) + '</div>' : '') +
+                '<div class="run-actions">' +
+                (canView ? '<button class="btn btn-sm" data-run="view" data-id="' + ex.id + '" data-prompt="' + ex.promptId + '" type="button">보기</button>' : '') +
+                (!ok ? '<button class="btn btn-sm" data-run="retry" data-id="' + ex.promptId + '" type="button">재발행</button>' : '') +
+                '<button class="btn btn-sm btn-danger" data-run="del" data-id="' + ex.id + '" type="button">폐기</button>' +
+                '</div></div>';
+        }).join('');
+        list.querySelectorAll('[data-run]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var act = btn.dataset.run;
+                if (act === 'view') {
+                    stopRunPolling();
+                    closeDrawer();
+                    selectPrompt(Number(btn.dataset.prompt), Number(btn.dataset.id));
+                } else if (act === 'retry') {
+                    api('/api/prompts/' + btn.dataset.id + '/execute', { method: 'POST' }).then(function (d) {
+                        toast(d.ok ? '재발행이 예약되었습니다' : '재발행 실패: ' + (d.error || '오류'));
+                        if (d.ok) setTimeout(loadRuns, 5000);
+                    }).catch(function () { toast('재발행 예약에 실패했습니다'); });
+                } else if (act === 'del') {
+                    if (!confirm('이 실행 기록을 폐기할까요?')) return;
+                    fetch(API_BASE + '/api/executions/' + btn.dataset.id, { method: 'DELETE' }).then(function () {
+                        toast('실행 기록을 폐기했습니다');
+                        loadRuns();
+                    }).catch(function () { toast('폐기에 실패했습니다'); });
+                }
+            });
+        });
     }
     function newPrompt() {
         openDrawer();
