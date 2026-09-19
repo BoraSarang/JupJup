@@ -6,7 +6,7 @@
 - [x] versionName 1.12.0 (versionCode 14) bump
 - [x] release.yml setup-android 제거 (ci.yml과 동일 수정)
 - [x] CHANGELOG Unreleased → 1.12.0 확정
-- [ ] PR 머지 → v1.12.0 태그 + GitHub Release (release.yml)
+- [x] PR 머지 → v1.12.0 태그 + GitHub Release (release.yml)
 
 ## R24 출처 필터 실측화 (PLAN_v11)
 - [x] PLAN_v11 초안
