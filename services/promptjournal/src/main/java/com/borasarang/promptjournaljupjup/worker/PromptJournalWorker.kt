@@ -100,8 +100,16 @@ class PromptJournalWorker(
             }
         }
 
-        // 2) 웹 검색(Exa) 근거 주입 — 키 미설정/실패 시 [사용 불가] 폴백, 개별 쿼리 실패는 격리
-        text = replaceMarker(text, GroundingFormatter.MARKER, collectSearchGrounding(app))
+        // 2) 웹 검색(Exa) 근거 주입 — 키 미설정/실패 시 [사용 불가] 폴백, 개별 쿼리 실패는 격리.
+        //    마커가 없으면(수동 프롬프트) 실제 근거 수집 성공 시에만 끝에 첨부.
+        val webBlock = collectSearchGrounding(app)
+        text = if (GroundingFormatter.MARKER in text) {
+            text.replace(GroundingFormatter.MARKER, webBlock)
+        } else if (webBlock != GroundingFormatter.UNAVAILABLE_BLOCK) {
+            text.trimEnd() + "\n\n" + webBlock
+        } else {
+            text
+        }
         return text
     }
 

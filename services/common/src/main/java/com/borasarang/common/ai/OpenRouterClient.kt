@@ -3,6 +3,9 @@ package com.borasarang.common.ai
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -19,7 +22,7 @@ class OpenRouterClient(private val apiKey: String) : AiClient {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -37,6 +40,13 @@ class OpenRouterClient(private val apiKey: String) : AiClient {
         try {
             val requestBody = buildJsonObject {
                 put("model", JsonPrimitive(modelId))
+                put("max_tokens", JsonPrimitive(8192))
+                put("reasoning", buildJsonObject {
+                    put("effort", JsonPrimitive("none"))
+                })
+                put("thinking", buildJsonObject {
+                    put("type", JsonPrimitive("disabled"))
+                })
                 put("messages", buildJsonArray {
                     add(buildJsonObject {
                         put("role", JsonPrimitive("user"))
@@ -61,16 +71,43 @@ class OpenRouterClient(private val apiKey: String) : AiClient {
             }
 
             val jsonResponse = json.parseToJsonElement(body).jsonObject
-            val content = jsonResponse["choices"]
+            val message = jsonResponse["choices"]
                 ?.jsonArray?.get(0)
                 ?.jsonObject?.get("message")
-                ?.jsonObject?.get("content")
-                ?.jsonPrimitive?.content
-                ?: return@withContext Result.failure(Exception("응답 파싱 실패"))
+                ?.jsonObject
+            val content = extractContentText(message)
+            if (content.isBlank()) {
+                val reason = message?.get("reasoning")?.jsonPrimitive?.content
+                    ?.take(200)?.replace("\n", " ")
+                    ?.let { " — 사고 내용만 반환: $it…" }
+                    .orEmpty()
+                return@withContext Result.failure(Exception("응답 파싱 실패 — 최종 답변(content) 없음${reason}본문: ${body.take(200)}"))
+            }
 
             Result.success(content)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /** OpenRouter message.content은 문자열(기본)·reasoning 파트 배열(추론형)·null일 수 있음.
+     *  최종 답변(= content)만 보고 본문으로 사용하며, 추론 흔적(reasoning)은 길이 0으로 처리해 실패 유도. */
+    private fun extractContentText(message: JsonObject?): String {
+        if (message == null) return ""
+        val content = message["content"] ?: return ""
+        return when (content) {
+            is JsonNull -> ""
+            is JsonPrimitive -> content.content
+            is JsonObject -> (content["text"] ?: content["content"])?.jsonPrimitive?.content.orEmpty()
+            is JsonArray -> content.joinToString("\n") { part ->
+                val obj = part as? JsonObject ?: return@joinToString ""
+                when (val text = obj["text"]) {
+                    is JsonPrimitive -> text.content
+                    is JsonArray -> text.mapNotNull { (it as? JsonPrimitive)?.content }.joinToString(" ")
+                    else -> ""
+                }
+            }
+            else -> ""
         }
     }
 }

@@ -192,6 +192,9 @@ body {
 .model-id { font-weight: 500; word-break: break-all; }
 .model-ctx { font-size: 11px; color: var(--secondary); }
 .exa-note { margin: 0; font-size: 12px; text-align: left; color: var(--secondary); line-height: 1.5; }
+.exa-status { margin-top: 8px; font-size: 12px; font-weight: 600; text-align: left; min-height: 16px; }
+.exa-status.ok { color: var(--success); }
+.exa-status.fail { color: var(--error); }
 
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; border-radius: 8px; padding: 10px 18px; font-size: 13px; z-index: 60; max-width: calc(100vw - 32px); }
 .toast[hidden] { display: none; }

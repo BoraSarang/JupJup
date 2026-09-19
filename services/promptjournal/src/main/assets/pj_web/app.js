@@ -888,6 +888,7 @@
                 '<div class="provider-key-status' + (hasKey ? ' has' : '') + '">' +
                 (hasKey ? '✓ 검색엔진 연결됨' : '검색엔진 미연결 — 아래에서 입력') +
                 ' <button class="btn" data-action="search-key" type="button">' + (hasKey ? '키 교체' : '키 등록') + '</button></div>' +
+                '<div class="exa-status" data-role="exa-status"></div>' +
                 '<div class="provider-models"><p class="empty-state exa-note">' +
                 '리포트 생성 시 사실·최신 자료를 Exa 검색으로 실측 수집해 [웹 검색 결과]로 주입합니다. ' +
                 '무료 1,000건/월 (neural 검색 단가 $0.007/건).</p></div>' +
@@ -918,20 +919,29 @@
         var original = btn.textContent;
         btn.disabled = true;
         btn.textContent = '확인 중…';
+        var statusEl = btn.closest('.provider-card').querySelector('[data-role="exa-status"]');
         api('/api/search/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({})
         }).then(function (data) {
-            if (data.ok) {
-                toast('검색 정상 — ' + data.count + '건 · ' + (data.sample ? data.sample.title : ''));
-            } else {
-                toast('검색 실패: ' + (data.error || '오류'));
-            }
-        }).catch(function () { toast('검색 요청 실패'); }).then(function () {
+            toast(data.ok ? '검색 정상 — ' + data.count + '건' : '검색 실패: ' + (data.error || '오류'));
+            renderExaStatus(statusEl, data);
+        }).catch(function () {
+            toast('검색 요청 실패');
+            renderExaStatus(statusEl, { ok: false, error: '검색 요청 실패' });
+        }).then(function () {
             btn.disabled = false;
             btn.textContent = original;
         });
+    }
+
+    function renderExaStatus(el, data) {
+        if (!el) return;
+        el.className = 'exa-status ' + (data.ok ? 'ok' : 'fail');
+        el.textContent = data.ok
+            ? '✓ 검색 정상 · ' + data.count + '건' + (data.sample ? ' — ' + data.sample.title : '')
+            : '⚠ 검색 비정상 — ' + (data.error || '오류');
     }
 
     function refreshProviderModels(name, btn) {
