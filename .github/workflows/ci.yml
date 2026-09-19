@@ -25,7 +25,10 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           # 'tools' 패키지는 upstream에서 삭제됨 — 명시 지정으로 회피
-          packages: platform-tools "build-tools;36.0.0" "platforms;android-36"
+          packages: |
+            platform-tools
+            build-tools;36.0.0
+            platforms;android-36
 
       - name: Gradle 캐시
         uses: gradle/actions/setup-gradle@v4
