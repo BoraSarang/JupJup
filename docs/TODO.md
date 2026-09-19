@@ -2,6 +2,14 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R23 모델 관리 수정 + Zen 추가 + NIM 삭제 (PLAN_v10)
+- [x] PLAN_v10 초안
+- [x] stale 내성 (편집폼 placeholder + 정적 nemotron + merge 가드 + restore 유지)
+- [x] OpenCode Zen 공급자 (enum·ZenClient·factory·catalog·refresh·웹)
+- [x] NIM 삭제 (NimClient·enum·분기·웹·테스트)
+- [x] ModelCatalogTest 7/7 + 빌드 + lint + 실기 검증
+- [x] 문서 갱신 (CHANGELOG·세션 로그)
+
 ## R22 프롬프트팩토리 → 프롬프트 저널 개명
 - [x] 인벤토리 (표시 40건·코드 60파일·DB/DataStore/Work 파일명)
 - [x] 표시 이름 교체 (한글·영문 `Prompt Journal`)

@@ -267,7 +267,12 @@ private fun Route.providersRoute() {
             val provider = AiProvider.entries.find { it.name.equals(name, ignoreCase = true) }
                 ?: return@post call.respondError("지원하지 않는 공급자: $name")
             val key = PromptJournalRuntime.providerKeys.getKey(provider.name)
-            val result = ModelCatalog.refresh(provider, key)
+            // 프롬프트가 참조 중인 모델은 병합 삭제 가드 (편집폼 stale 방지)
+            val protectedIds = PromptJournalRuntime.promptRepository.getAll()
+                .filter { it.provider == provider.name }
+                .map { it.modelId }
+                .toSet()
+            val result = ModelCatalog.refresh(provider, key, protectedIds)
             buildJsonObject {
                 put("ok", JsonPrimitive(result.status != ModelCatalog.RefreshStatus.FAILED))
                 put("provider", JsonPrimitive(provider.name))

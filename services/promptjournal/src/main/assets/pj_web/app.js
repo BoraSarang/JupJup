@@ -5,8 +5,8 @@
     var API_BASE = '';
     var providerDisplay = {
         'OPENROUTER': 'OpenRouter',
-        'NIM': 'NVIDIA NIM',
-        'GOOGLE_AI_STUDIO': 'Google AI Studio'
+        'GOOGLE_AI_STUDIO': 'Google AI Studio',
+        'OPENCODE_ZEN': 'OpenCode Zen'
     };
 
     var state = { prompts: [], selPrompt: null, execs: [], selExec: null, showDetailMobile: false };
@@ -791,9 +791,14 @@
             if (!p) return;
             var enabled = p.models.filter(function (m) { return m.enabled; });
             var list = enabled.length > 0 ? enabled : p.models;
-            sel.innerHTML = list.length === 0
+            // 저장된 모델이 목록에 없어도 첫 항목으로 둔갑시키지 않고 그대로 표시 (stale 내성)
+            var stale = selectedId && !list.some(function (m) { return m.id === selectedId; });
+            var staleOpt = stale
+                ? '<option value="' + escapeAttr(selectedId) + '" selected>' + esc(selectedId) + ' (목록에 없음)</option>'
+                : '';
+            sel.innerHTML = (list.length === 0 && !stale)
                 ? '<option value="">모델 없음 (취재원 동기화 필요)</option>'
-                : list.map(function (m) {
+                : staleOpt + list.map(function (m) {
                     return '<option value="' + escapeAttr(m.id) + '"' + (m.id === selectedId ? ' selected' : '') + '>' +
                         esc(m.id) + (m.contextWindow ? ' (' + m.contextWindow + ')' : '') + '</option>';
                 }).join('');

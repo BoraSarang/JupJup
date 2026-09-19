@@ -4,8 +4,8 @@ object AiClientFactory {
     fun create(provider: AiProvider, apiKey: String): AiClient {
         return when (provider) {
             AiProvider.OPENROUTER -> OpenRouterClient(apiKey)
-            AiProvider.NIM -> NimClient(apiKey)
             AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient(apiKey)
+            AiProvider.OPENCODE_ZEN -> ZenClient(apiKey)
         }
     }
 
@@ -17,8 +17,8 @@ object AiClientFactory {
     fun getModels(provider: AiProvider): List<AiClient.ModelInfo> {
         return when (provider) {
             AiProvider.OPENROUTER -> OpenRouterClient("").supportedModels
-            AiProvider.NIM -> NimClient("").supportedModels
             AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient("").supportedModels
+            AiProvider.OPENCODE_ZEN -> ZenClient("").supportedModels
         }
     }
 

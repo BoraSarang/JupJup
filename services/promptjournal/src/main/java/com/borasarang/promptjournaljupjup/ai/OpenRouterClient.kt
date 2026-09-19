@@ -30,6 +30,8 @@ class OpenRouterClient(private val apiKey: String) : AiClient {
         AiClient.ModelInfo("meta-llama/llama-4-maverick:free", "Llama 4 Maverick (Free)", 1048576, 8192),
         AiClient.ModelInfo("qwen/qwen3-235b-a22b:free", "Qwen3 235B (Free)", 40960, 8192),
         AiClient.ModelInfo("microsoft/mai-ds-r1:free", "MAI DS R1 (Free)", 131072, 8192),
+        // 시드 기본값 — 정적 보호 대상 (갱신 병합에서 삭제 금지, 편집폼 항상 선택 가능)
+        AiClient.ModelInfo("nvidia/nemotron-3-super-120b-a12b:free", "Nemotron 3 Super 120B (Free)"),
     )
 
     override suspend fun complete(prompt: String, modelId: String): Result<String> = withContext(Dispatchers.IO) {

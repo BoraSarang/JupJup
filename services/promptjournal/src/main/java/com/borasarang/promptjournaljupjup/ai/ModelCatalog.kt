@@ -28,8 +28,14 @@ object ModelCatalog {
     /** 공급자별 현재 모델 목록 (정적 기본 + 갱신 병합) */
     private val currentModels: MutableMap<AiProvider, List<AiClient.ModelInfo>> = mutableMapOf()
 
+    /** 공급자별 정적 기본 목록 — 병합이 currentModels를 덮어써도 삭제 가드 기준으로 불변 유지 */
+    private val staticBase: MutableMap<AiProvider, List<AiClient.ModelInfo>> = mutableMapOf()
+
     /** 공급자별 활성(사용) 모델 ID */
     private val enabledModels: MutableMap<AiProvider, MutableSet<String>> = mutableMapOf()
+
+    /** 공급자별 직전 원격 스냅샷 (병합 삭제 가드용 — AIModelTalk refreshedIDs 패턴) */
+    private val previousRemoteIds: MutableMap<AiProvider, List<AiClient.ModelInfo>> = mutableMapOf()
 
     /** 투입 상태 영속 저장소 (미부착 시 메모리 전용 — JVM 테스트용) */
     private var enabledStore: com.borasarang.promptjournaljupjup.data.preferences.ModelEnabledStore? = null
@@ -38,11 +44,13 @@ object ModelCatalog {
         for (provider in AiProvider.entries) {
             val base = when (provider) {
                 AiProvider.OPENROUTER -> OpenRouterClient("").supportedModels
-                AiProvider.NIM -> NimClient("").supportedModels
                 AiProvider.GOOGLE_AI_STUDIO -> GoogleAiStudioClient("").supportedModels
+                AiProvider.OPENCODE_ZEN -> ZenClient("").supportedModels
             }
+            staticBase[provider] = base
             currentModels[provider] = base
             enabledModels[provider] = base.map { it.id }.toMutableSet()
+            previousRemoteIds.remove(provider)
         }
     }
 
@@ -52,7 +60,11 @@ object ModelCatalog {
         }
     }
 
-    /** 저장된 투입 상태를 복원 — 저장값이 있는 공급자만 적용, 없으면 기본 유지 */
+    /**
+     * 저장된 투입 상태를 복원 — 저장값이 있는 공급자만 적용, 없으면 기본 유지.
+     * 카탈로그에 없는 ID도 유지한다 (편집폼 stale 표시용 + persist 침식 방지).
+     * enabledModelsFor()는 어차피 현 목록 기준으로 필터하므로 무해하다.
+     */
     suspend fun restoreEnabled() {
         val store = synchronized(this) { enabledStore } ?: return
         val saved = mutableMapOf<AiProvider, Set<String>>()
@@ -61,8 +73,7 @@ object ModelCatalog {
         }
         synchronized(this) {
             for ((provider, ids) in saved) {
-                val known = currentModels[provider].orEmpty().map { it.id }.toSet()
-                enabledModels[provider] = ids.filter { it in known }.toMutableSet()
+                enabledModels[provider] = ids.toMutableSet()
             }
         }
     }
@@ -116,17 +127,21 @@ object ModelCatalog {
     val providers: List<AiProvider> = AiProvider.entries
 
     /** 공급자 모델 목록 런타임 갱신 — Status.OK/FAILED/SKIPPED */
-    suspend fun refresh(provider: AiProvider, apiKey: String): RefreshResult {
+    suspend fun refresh(
+        provider: AiProvider,
+        apiKey: String,
+        protectedIds: Set<String> = emptySet(),
+    ): RefreshResult {
         if (apiKey.isBlank()) {
             return RefreshResult(provider, RefreshStatus.SKIPPED, errorMessage = "API 키 미설정")
         }
         return try {
             val remote = when (provider) {
                 AiProvider.OPENROUTER -> fetchOpenRouter(apiKey)
-                AiProvider.NIM -> fetchNim(apiKey)
                 AiProvider.GOOGLE_AI_STUDIO -> fetchGoogle(apiKey)
+                AiProvider.OPENCODE_ZEN -> fetchZen(apiKey)
             }
-            merge(provider, remote)
+            merge(provider, remote, protectedIds)
         } catch (e: Exception) {
             RefreshResult(provider, RefreshStatus.FAILED, errorMessage = e.message ?: "오류")
         }
@@ -155,9 +170,10 @@ object ModelCatalog {
         }
     }
 
-    private suspend fun fetchNim(apiKey: String): List<AiClient.ModelInfo> = withContext(Dispatchers.IO) {
+    /** OpenCode Zen 모델 목록 — OpenAI식 {data:[{id}]}, 무료(-free)만 편입 (유료 오폭 방지) */
+    private suspend fun fetchZen(apiKey: String): List<AiClient.ModelInfo> = withContext(Dispatchers.IO) {
         val req = Request.Builder()
-            .url("${AiProvider.NIM.baseUrl}/models")
+            .url("${AiProvider.OPENCODE_ZEN.baseUrl}/models")
             .addHeader("Authorization", "Bearer $apiKey")
             .build()
         http.newCall(req).execute().use { resp ->
@@ -167,11 +183,8 @@ object ModelCatalog {
             root["data"]?.jsonArray.orEmpty().mapNotNull { item ->
                 val obj = item.jsonObject
                 val id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null
-                AiClient.ModelInfo(
-                    id = id,
-                    name = obj["id"]?.jsonPrimitive?.content ?: id,
-                    contextWindow = obj["context_length"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
-                )
+                if (!id.endsWith("-free")) return@mapNotNull null
+                AiClient.ModelInfo(id = id, name = id)
             }
         }
     }
@@ -197,19 +210,35 @@ object ModelCatalog {
         }
     }
 
-    /** 전역 동기화된 병합 — 새 원격 모델 추가, 명시 해제는 보존 */
-    internal suspend fun merge(provider: AiProvider, remote: List<AiClient.ModelInfo>): RefreshResult {
+    /**
+     * 전역 동기화된 병합 — 새 원격 모델 추가, 명시 해제는 보존 (AIModelTalk 스냅샷 가드 패턴).
+     * - 삭제는 "직전 원격 스냅샷에 있었는데 이번 원격에 없는 ID"에만 적용
+     * - 정적 base + 프롬프트 참조 ID(protectedIds)는 어떤 경우에도 삭제 금지
+     * - 실패·무키 시 refresh()가 merge를 호출하지 않으므로 기존 목록 유지
+     */
+    internal suspend fun merge(
+        provider: AiProvider,
+        remote: List<AiClient.ModelInfo>,
+        protectedIds: Set<String> = emptySet(),
+    ): RefreshResult {
         val result = synchronized(this) {
-            val base = currentModels[provider].orEmpty()
+            val base = staticBase[provider].orEmpty().ifEmpty { currentModels[provider].orEmpty() }
             val baseIds = base.map { it.id }.toSet()
             val prevEnabled = enabledModels[provider].orEmpty()
 
-            val merged = (base + remote).distinctBy { it.id }.sortedBy { it.name }
+            val remoteIds = remote.map { it.id }.toSet()
+            val prevRemote = previousRemoteIds[provider].orEmpty()
+            // 직전 스냅샷에만 있던 ID 중 보호 대상은 ModelInfo를 되살려 유지
+            val kept = prevRemote.filter { it.id !in remoteIds && it.id in protectedIds }
+            previousRemoteIds[provider] = remote
+
+            val merged = (base + remote + kept).distinctBy { it.id }.sortedBy { it.name }
             currentModels[provider] = merged
 
-            val mergedIds = merged.map { it.id }.toSet()
+            // 미등록 ID의 투입 의도도 메모리에서 유지 (enabledModelsFor는 현 목록 기준 필터라 무해,
+            // persist가 DataStore를 침식하지 않음 — AIModelTalk overrides 불변 패턴)
             val newEnabled = mutableSetOf<String>().apply {
-                addAll(prevEnabled.filter { it in mergedIds })
+                addAll(prevEnabled)
                 addAll(remote.filter { it.id !in baseIds }.map { it.id })
             }
             enabledModels[provider] = newEnabled

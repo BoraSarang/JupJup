@@ -15,19 +15,29 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
-class NimClient(private val apiKey: String) : AiClient {
+/**
+ * OpenCode Zen 클라이언트 — OpenAI 호환 /chat/completions.
+ * 키는 opencode.ai 로그인 후 /connect 흐름이 아닌, 웹 취재원 관리에서 직접 등록한 Zen API 키 사용.
+ */
+class ZenClient(private val apiKey: String) : AiClient {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(90, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    /** Zen 무료 모델 (https://opencode.ai/zen/v1/models 실측, -free) */
     override val supportedModels: List<AiClient.ModelInfo> = listOf(
-        AiClient.ModelInfo("nvidia/nemotron-3-ultra-495b-v1", "Nemotron 3 Ultra", 4096, 4096),
-        AiClient.ModelInfo("nvidia/nemotron-3-lightning-8b-v1", "Nemotron 3 Lightning", 4096, 4096),
-        AiClient.ModelInfo("nvidia/llama-3.1-nemotron-70b-instruct", "Nemotron 70B", 4096, 4096),
+        AiClient.ModelInfo("big-pickle", "Big Pickle (Free)"),
+        AiClient.ModelInfo("deepseek-v4-flash-free", "DeepSeek V4 Flash (Free)"),
+        AiClient.ModelInfo("mimo-v2.5-free", "MiMo V2.5 (Free)"),
+        AiClient.ModelInfo("ling-3.0-flash-fin-free", "Ling 3.0 Flash Fin (Free)"),
+        AiClient.ModelInfo("nemotron-3-ultra-free", "Nemotron 3 Ultra (Free)"),
+        AiClient.ModelInfo("nemotron-3.5-lightning-free", "Nemotron 3.5 Lightning (Free)"),
+        AiClient.ModelInfo("muse-spark-1.3-contributor-free", "Muse Spark 1.3 Contributor (Free)"),
+        AiClient.ModelInfo("muse-spark-1.2-contributor-free", "Muse Spark 1.2 Contributor (Free)"),
     )
 
     override suspend fun complete(prompt: String, modelId: String): Result<String> = withContext(Dispatchers.IO) {
@@ -40,12 +50,10 @@ class NimClient(private val apiKey: String) : AiClient {
                         put("content", JsonPrimitive(prompt))
                     })
                 })
-                put("temperature", JsonPrimitive(0.7))
-                put("max_tokens", JsonPrimitive(4096))
             }
 
             val request = Request.Builder()
-                .url("${AiProvider.NIM.baseUrl}/chat/completions")
+                .url("${AiProvider.OPENCODE_ZEN.baseUrl}/chat/completions")
                 .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
                 .build()
