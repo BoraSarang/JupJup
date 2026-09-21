@@ -34,7 +34,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="http://IP:3002"
+                    android:text="http://IP:3030"
                     android:textAppearance="?attr/textAppearanceBodyMedium" />
 
             </LinearLayout>

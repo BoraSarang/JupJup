@@ -376,6 +376,9 @@ private fun Route.settingsRoute() {
             autoStart = body["autoStart"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: current.autoStart,
         )
         PromptJournalRuntime.preferences.saveSettings(updated)
+        if (updated.port != current.port) {
+            HttpServerService.restart(PromptJournalRuntime.context)
+        }
         DebugLogger.i("설정", "설정 저장 완료 port=${updated.port}")
         call.respondText("""{"ok":true}""", ContentType.Application.Json)
     }

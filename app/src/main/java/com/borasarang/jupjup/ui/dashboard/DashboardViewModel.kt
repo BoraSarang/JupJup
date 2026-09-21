@@ -33,11 +33,13 @@ data class DashboardUiState(
     val mac: DashboardServiceUi = DashboardServiceUi(),
     val plan: DashboardServiceUi = DashboardServiceUi(),
     val pj: DashboardServiceUi = DashboardServiceUi(),
+    val cm: DashboardServiceUi = DashboardServiceUi(),
 ) {
     fun forService(service: Service): DashboardServiceUi = when (service) {
         Service.MAC -> mac
         Service.PLAN -> plan
         Service.PROMPTJOURNAL -> pj
+        Service.COMMUNITY -> cm
     }
 }
 
@@ -69,21 +71,21 @@ class DashboardViewModel(
                     NetUtils.getLocalIp(getApplication()) ?: ""
                 }
                 val fresh = withContext(ioDispatcher) {
-                    Triple(
+                    listOf(
                         adapters.getValue(Service.MAC).loadState(ip),
                         adapters.getValue(Service.PLAN).loadState(ip),
                         adapters.getValue(Service.PROMPTJOURNAL).loadState(ip),
+                        adapters.getValue(Service.COMMUNITY).loadState(ip),
                     )
                 }
                 _uiState.value = DashboardUiState(
                     isChecking = false,
-                    mac = fresh.first,
-                    plan = fresh.second,
-                    pj = fresh.third,
+                    mac = fresh[0],
+                    plan = fresh[1],
+                    pj = fresh[2],
+                    cm = fresh[3],
                 )
-                val anyStopped = !fresh.first.isServerRunning ||
-                    !fresh.second.isServerRunning ||
-                    !fresh.third.isServerRunning
+                val anyStopped = fresh.any { !it.isServerRunning }
                 if (retry && anyStopped) {
                     MacDebugLogger.i("대시보드", "서버 미기동 감지 — ${SERVER_SETTLE_MS}ms 뒤 1회 재조회")
                     delay(SERVER_SETTLE_MS)
@@ -133,6 +135,7 @@ class DashboardViewModel(
             Service.MAC -> _uiState.value.copy(mac = _uiState.value.mac.copy(isCrawling = crawling))
             Service.PLAN -> _uiState.value.copy(plan = _uiState.value.plan.copy(isCrawling = crawling))
             Service.PROMPTJOURNAL -> _uiState.value.copy(pj = _uiState.value.pj.copy(isCrawling = crawling))
+            Service.COMMUNITY -> _uiState.value.copy(cm = _uiState.value.cm.copy(isCrawling = crawling))
         }
     }
 

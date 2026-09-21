@@ -5,6 +5,8 @@
     <string name="nav_mac">맥줍줍</string>
     <string name="nav_plan">요금줍줍</string>
     <string name="nav_pj">프롬프트 저널</string>
+    <string name="nav_community">커뮤니티줍줍</string>
+    <string name="seg_community">커뮤니티</string>
 
     <string name="tab_dashboard">대시보드</string>
     <string name="tab_home">홈</string>
@@ -34,6 +36,7 @@
     <string name="dashboard_mac_title">맥줍줍</string>
     <string name="dashboard_plan_title">요금줍줍</string>
     <string name="dashboard_pj_title">프롬프트 저널</string>
+    <string name="dashboard_cm_title">커뮤니티줍줍</string>
     <string name="dashboard_active_badge">현재</string>
     <string name="dashboard_stat_zero">0</string>
     <string name="dashboard_stat_apps">수집 앱</string>
@@ -42,11 +45,12 @@
     <string name="dashboard_stat_last">마지막 수집</string>
     <string name="dashboard_stat_last_never">수집 이력 없음</string>
     <string name="dashboard_stat_runs">실행 횟수</string>
+    <string name="dashboard_stat_posts">게시글</string>
     <string name="dashboard_stat_state">상태</string>
     <string name="dashboard_pj_btn_run_now">지금 실행</string>
     <string name="dashboard_pj_btn_running">실행 중…</string>
     <string name="dashboard_pj_btn_enable">실행 켜기</string>
     <string name="dashboard_pj_btn_disable">실행 끄기</string>
-    <string name="dashboard_pj_btn_start_server">서버 시작 (3002)</string>
+    <string name="dashboard_pj_btn_start_server">서버 시작 (3030)</string>
     <string name="dashboard_pj_btn_stop_server">서버 중지</string>
 </resources>

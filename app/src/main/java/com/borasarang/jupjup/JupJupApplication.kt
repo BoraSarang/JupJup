@@ -1,6 +1,7 @@
 package com.borasarang.jupjup
 
 import android.app.Application
+import com.borasarang.communityjupjup.CommunityJupJupRuntime
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
@@ -17,5 +18,6 @@ class JupJupApplication : Application() {
         MacJupJupRuntime.initialize(this)
         PlanJupJupRuntime.initialize(this)
         PromptJournalRuntime.initialize(this)
+        CommunityJupJupRuntime.initialize(this)
     }
 }

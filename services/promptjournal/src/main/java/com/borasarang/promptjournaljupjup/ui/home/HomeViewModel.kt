@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val isServerRunning: Boolean = false,
     val localIp: String? = null,
-    val port: Int = 3002,
+    val port: Int = 3030,
     val lastExecutionLabel: String? = null,
     val executionCount: Int = 0,
     val promptCount: Int = 0,

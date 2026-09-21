@@ -56,12 +56,14 @@ class DashboardViewModelTest {
     private lateinit var mac: FakeAdapter
     private lateinit var plan: FakeAdapter
     private lateinit var pj: FakeAdapter
+    private lateinit var cm: FakeAdapter
 
     @Before
     fun setUp() {
         mac = FakeAdapter(Service.MAC)
         plan = FakeAdapter(Service.PLAN)
         pj = FakeAdapter(Service.PROMPTJOURNAL)
+        cm = FakeAdapter(Service.COMMUNITY, DashboardServiceUi(isServerRunning = true))
     }
 
     @After
@@ -79,7 +81,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj, Service.COMMUNITY to cm),
             main,
         )
         viewModel.refresh()
@@ -112,7 +114,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj, Service.COMMUNITY to cm),
             main,
         )
         viewModel.refresh()
@@ -137,7 +139,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj, Service.COMMUNITY to cm),
             main,
         )
         viewModel.refresh()
@@ -158,7 +160,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj, Service.COMMUNITY to cm),
             main,
         )
         // 먼저 상태 병합 후 토글 (초기 crawlEnabled/isServerRunning 반영)
@@ -179,7 +181,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj, Service.COMMUNITY to cm),
             main,
         )
         viewModel.refresh()
@@ -199,7 +201,7 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(
             Application(),
-            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj),
+            mapOf(Service.MAC to mac, Service.PLAN to plan, Service.PROMPTJOURNAL to pj, Service.COMMUNITY to cm),
             main,
         )
         viewModel.refresh()

@@ -25,7 +25,7 @@ class ProviderManageFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         DebugLogger.i("공급자", "공급자 관리 화면 진입 — 웹에서 관리(현황만)")
-        // 앱은 현황만. 공급자·API키·모델 관리는 웹 포털(http://IP:3002)에서
+        // 앱은 현황만. 공급자·API키·모델 관리는 웹 포털(http://IP:3030)에서
     }
 
     override fun onDestroyView() {

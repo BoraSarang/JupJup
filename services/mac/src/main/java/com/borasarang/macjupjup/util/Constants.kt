@@ -2,7 +2,7 @@ package com.borasarang.macjupjup.util
 
 /** 앱 전역 상수 */
 object Constants {
-    const val DEFAULT_PORT = 3000
+    const val DEFAULT_PORT = 3010
     const val DEFAULT_RETENTION_DAYS = 30
     const val DEFAULT_AUTO_START = true
     const val DEFAULT_WATCHDOG_INTERVAL_SEC = 60

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- R6: 권한 9종은 :app 단일 소유 (머지). SystemForegroundService는 라이브러리 lint 대응상 유지 -->
+
+    <!-- 통합 JupJup 앱: 서비스 컴포넌트만 선언 (Application/MainActivity는 app 모듈 소유) -->
+    <application>
+        <service
+            android:name=".server.HttpServerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- WorkManager setForegroundAsync용 (라이브러리 lint SpecifyForegroundServiceType 대응, app 병합본과 동일) -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:ignore="MissingClass"
+            tools:node="merge" />
+
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

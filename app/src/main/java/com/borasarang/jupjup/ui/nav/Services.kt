@@ -14,9 +14,13 @@ import com.borasarang.promptjournaljupjup.ui.home.HomeFragment as PjHomeFragment
 import com.borasarang.promptjournaljupjup.ui.notif.NotificationFragment as PjNotificationFragment
 import com.borasarang.promptjournaljupjup.ui.settings.SettingsFragment as PjSettingsFragment
 import com.borasarang.promptjournaljupjup.ui.provider.ProviderManageFragment as PjProviderManageFragment
+import com.borasarang.communityjupjup.ui.home.HomeFragment as CmHomeFragment
+import com.borasarang.communityjupjup.ui.notif.NotificationFragment as CmNotificationFragment
+import com.borasarang.communityjupjup.ui.settings.SettingsFragment as CmSettingsFragment
+import com.borasarang.communityjupjup.ui.source.SourceManageFragment as CmSourceManageFragment
 
 /** 줍줍 시리즈 서비스. 문자열("MAC"/"PLAN") 대신 이 enum을 전달한다 (R3) */
-enum class Service { MAC, PLAN, PROMPTJOURNAL }
+enum class Service { MAC, PLAN, PROMPTJOURNAL, COMMUNITY }
 
 /** 하단 기능 탭 */
 enum class ServiceTab { DASHBOARD, HOME, SOURCE, NOTIF, SETTINGS }
@@ -32,6 +36,7 @@ object ServiceRegistry {
             Service.MAC to com.borasarang.jupjup.ui.dashboard.MacServiceAdapter,
             Service.PLAN to com.borasarang.jupjup.ui.dashboard.PlanServiceAdapter,
             Service.PROMPTJOURNAL to com.borasarang.jupjup.ui.dashboard.PjServiceAdapter,
+            Service.COMMUNITY to com.borasarang.jupjup.ui.dashboard.CmServiceAdapter,
         )
 
     fun fragment(service: Service, tab: ServiceTab): Fragment = when (tab) {
@@ -40,21 +45,25 @@ object ServiceRegistry {
             Service.MAC -> MacHomeFragment()
             Service.PLAN -> PlanHomeFragment()
             Service.PROMPTJOURNAL -> PjHomeFragment()
+            Service.COMMUNITY -> CmHomeFragment()
         }
         ServiceTab.SOURCE -> when (service) {
             Service.MAC -> MacSourceManageFragment()
             Service.PLAN -> PlanSourceManageFragment()
             Service.PROMPTJOURNAL -> PjProviderManageFragment()
+            Service.COMMUNITY -> CmSourceManageFragment()
         }
         ServiceTab.NOTIF -> when (service) {
             Service.MAC -> MacNotificationFragment()
             Service.PLAN -> PlanNotificationFragment()
             Service.PROMPTJOURNAL -> PjNotificationFragment()
+            Service.COMMUNITY -> CmNotificationFragment()
         }
         ServiceTab.SETTINGS -> when (service) {
             Service.MAC -> MacSettingsFragment()
             Service.PLAN -> PlanSettingsFragment()
             Service.PROMPTJOURNAL -> PjSettingsFragment()
+            Service.COMMUNITY -> CmSettingsFragment()
         }
     }
 
