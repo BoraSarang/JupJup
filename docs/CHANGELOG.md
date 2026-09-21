@@ -2,6 +2,91 @@
 
 ## [Unreleased]
 
+### R31 크롤링 성능·퍼포먼스 (PLAN_v16)
+- **앱·공통**: 대시보드 4개 카드 순차 → `async` 병렬 (소켓 500ms 합산 해소),
+  `getLocalIp` 30초 캐시, PJ 어댑터 `getAll()` → `getEnabled()` (본문 전건 로딩 제거),
+  `StatsCache.invalidatePrefix` 부분 무효화
+- **DB**: community `savePosts` 트랜잭션화, 알림 조회 N+1 → IN 배치 (mac·community),
+  mac `overview()` 전건 MAX → `MAX(lastRunAt)` 쿼리, plan `API_MAX_PAGE_SIZE` 1000 → 100
+- **크롤러**: 타임아웃 30s → 20s (3서비스, delay 1s 예의 유지),
+  정규식 precompile (BoardCrawler·TimeParser·Plan parseDataGb·CrawlHttp charset),
+  mac/community 주기 워커 backoff EXPONENTIAL 30분 (plan과 통일)
+- **서버**: community 통계 4종 5분 캐시 + 저장·정리 시 키별 무효화,
+  thumb 메모리 캐시 20항목·TTL 10분 (갤러리 중복 fetch 제거)
+- **검증**: assembleDebug 성공, unit 6모듈 성공, lint 성공, node --check 2종 통과
+- **유예**: 상세 30건 순차·보드 직렬·LIKE 전방와일드·전건 스캔 — 구조 변경이라 다음 라운드
+
+### R30 전체 리팩토링 + 버그·동작연결 (PLAN_v15)
+- **1단계 전체**: `build_and_run.sh test` community 누락 추가, PJ 시작 버튼 "(3030)" 제거,
+  홈 placeholder·주석 포트 하드코딩 제거, KDoc "두 서비스"→"네 서비스", Factory dispatcher 전달, 매직 포트 상수화
+- **2단계 버그**: 앱정보 pj 행 추가(4서비스 표시), PJ 알림 탭 최근 20건 렌더, Plan `cancelAll()` 태그 일괄 취소 + 네임스페이스
+- **웹 무음실패**: plan 5곳·community 2곳 catch에 `console.error` 추가
+- **문서**: ENDPOINTS·AGENTS.local 기본포트 3010/3020/3030/3040 현행화
+- **검증**: assembleDebug + 설치 성공, unit(6모듈) 성공, lint 성공, node --check 2종 통과
+- **제외(정상 확인)**: 설정 POST 재시작 조건부·Registry 4×5·에셋-라우트·JS 포트·DataStore/채널 — 손대지 않음
+
+### R29 포트 설정 실동작 + 기본 포트 변경 (전 서비스)
+- **기본 포트 변경**: 맥줍 3010 · 요금 3020 · 프롬 저널 3030 · 커뮤니티 3040.
+  하드코딩 잔여 전수 — 대시보드 "서버 시작 (3002)" 문구, 프롬 홈 레이아웃 `http://IP:3002`, Provider/연결 주석
+- **포트 변경 즉시 적용 (근본 수정)**: mac/plan/community `SettingsViewModel.savePort`가
+  `HttpServerService.start`를 호출해 이미 실행 중인 서버를 재시작하지 않던 버그를
+  `restart`(ACTION_RESTART)로 교체. 각 `HttpServerService`에 `restart(context)` companion 추가.
+- **프롬 저널 설정 화면 구축**: 포트·자동시작·배터리 예외·Exa 키·앱정보 (기존 스텁 교체, `SettingsViewModel` 신설)
+- **프롬 저널 웹 설정 재시작 보완**: `POST /api/settings` 포트 변경 시 서버 재시작 누락 수정
+- **실증**: S22 실기 — pj 3002→38602→3030, 커뮤니티 3003→38603→3040 실제 바인드 전환 확인.
+  `/api/settings` 포트 변경 후 구 포트 닫힘·신 포트 응답 검증.
+  참고: localhost:3000은 타 앱(외부 HTML 서버)이 점유 중 — 줍줍 서버 아님(미기동 시 대시보드 오인 소지)
+
+## [1.13.0] - 2026-09-21
+> 플랫폼: AND · 커뮤니티 뉴스 크롤러 신규 서비스 (R26~R28, PLAN_v12~v14)
+
+### 신규
+- **`:services:community` 모듈** 추가 (네임스페이스 `com.borasarang.communityjupjup`, 포트 3003)
+- **Room DB v1**: `CommunityPost`(요약 500자만, 본문 저장 금지) + `SiteBoard`(보드-카테고리 매핑) + `CrawlSource`(selector_config) + `CrawlLog` + `NotificationLog`
+- **통합 카테고리 10종** 정적 시드 (속보/유머/IT/신제품/게임/스포츠·차/핫딜/중고/생활/경제)
+- **BoardCrawler** (V2 GenericSpider 로컬 구현): selector_config 기반 목록 수집 + `TimeParser` + `PriceParser`(핫딜·중고)
+- **MVP 5소스 시드**: 클리앙 모공/알뜰, 에펨코 포텐/유머, 루리웹 베스트 (뽐뿌·인스티즈·오유·디시는 차단으로 제외)
+- **Ktor 서버** (포트 3003): `/api/posts`(필터·검색·페이지네이션) `/api/posts/{id}` `/api/categories` `/api/sources` `/api/ranking` `/api/crawl/test`(셀렉터 미리보기) `/api/logs` + 통계 4종
+- **웹 포털** (`community_web/`): 10탭 헤더 + 언론사 필터 + 피드(핫딜·중고 뱃지) + 랭킹/수집현황 + 설정 서랍
+- **앱 통합**: 세그먼트 4열 + 대시보드 4카드 + 앱정보 커뮤니티 행
+- TTL: 핫딜 3일·중고 7일·그 외 90일 (기동 시 + 수동 정리)
+- **상세 요약**: 신규 게시글 상세 진입으로 500자 요약 저장 + 미요약 백필 (R26b)
+- **중복 제거**: `canonicalUrl` UNIQUE + 휘발 파라미터 정규화 + DB v2 마이그레이션 (기존 중복 정리)
+- **8소스 확장**: 뽐뿌·디시베스트·보배·더쿠·오유 추가 (전원 첫 수집 SUCCESS, 총 329건).
+  수집 불가: 에펨코/인스티즈(JS 보안)·MLBPARK(JS 렌더)·SLR·판 — 사유 기록 후 비활성/제외
+- 수집 주기 전체 30분 통일
+- **언론사 필터修正**: 서버 측 복수 source_id 필터 (체크 1개여도 정확한 건수·피드)
+- **게시판 관리**: 언론사별 보드 목록·on/off·카테고리·추가·삭제 + 일괄 적용 API (DB v3)
+- **인코딩**: EUC-KR(뽐뿌) charset 감지 + 깨진 행 비우기 API + 요약 줄바꿈 보존 + 서로게이트 안전 절단
+- **이미지 글**: 본문 대표 이미지 추출·표시 (짤 글 대응) + 단건 새로고침 API
+- **썸네일 프록시**: CDN 핫링크 차단(403) 우회용 `/api/thumb`
+- **R27 카테고리 중심 + 2단계 관리**: 왼쪽 카테고리 목록(상단 탭 삭제),
+  사이트 관리(1차) → 게시판 관리(2차: on/off·카테고리·주기·추가·삭제),
+  보드별 주기(15/30/60/120) + 보드 단위 스케줄 (DB v4),
+  사이트 API + 추천 게시판 카탈로그
+
+### 테스트
+- 단위: community 9종 (파서·셀렉터·매퍼) + app 6종 SUCCESS · lint 오류 0
+- 실기 (S22, 2026-09-21): 3003 health ok, 클리앙 모공/알뜰 각 30건·루리웹 32건 수집 확인,
+  ranking/overview/웹 에셋 200, 3000/3002 회귀 ok
+- 실측 반영: 클리앙 셀렉터 교정+공지 제외+조회수 단위, UA 봇월 회피
+  (`CommunityJupJup/1.0 (contact ...)`), 에펨코 2종은 JS 보안월로 비활성 보관
+
+### R28 상세 이미지·링크 + 보관기간 (PLAN_v14)
+- **상세 이미지 목록**: `posts.imageUrls` (DB v5) — 본문 이미지 최대 5장을 메타로 저장.
+  단건 새로고침·백필에서 짤·인증 글 갤러리로 활용.
+- **링크 보존**: 요약 내 `🔗 텍스트: URL` 블록(최대 3개, http(s)만)·상세 모달 클릭 링크.
+  이미지를 감싼 앵커/빈 텍스트는 제외(짤 슬라이드 링크 오염 방지).
+- **웹 상세 모달**: 카드 `🖼N` 뱃지 + 다중 이미지 갤러리(`/api/thumb` 프록시, 52vh contain) +
+  `modal-box` max-height+오버플로 스크롤 + `.actions sticky`(버튼 잘림 수정).
+- **보관기간 옵션 확장**: 30/90 → **3/7/14/30/90**, 기본값 **3일**.
+- 스크랩 기능: 사용자 보류 (후순위)
+
+### 테스트
+- 단위: community 13종 (파서·링크·이미지 한도·JSON 왕복) + app 6종 SUCCESS · lint 오류 0
+- 실기 (S22, 2026-09-21): G마켓 글 refresh → 이미지 2장 저장·갤러리 렌더,
+  디시 글 링크 3개 클릭 렌더, 스티키 버튼·스크롤·520자 이하 summary 확인
+
 ## [1.12.0] - 2026-09-19
 > 플랫폼: MAC · 출처 필터 실측화 (R24, PLAN_v11)
 - **실측 수집처**: 사이드바 출처를 실제 5종 + 실측 카운트로 교체 (하드코딩 placeholder 제거)

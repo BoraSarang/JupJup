@@ -11,6 +11,9 @@ import com.borasarang.jupjup.ui.nav.ServiceRegistry
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,16 +36,18 @@ data class DashboardUiState(
     val mac: DashboardServiceUi = DashboardServiceUi(),
     val plan: DashboardServiceUi = DashboardServiceUi(),
     val pj: DashboardServiceUi = DashboardServiceUi(),
+    val cm: DashboardServiceUi = DashboardServiceUi(),
 ) {
     fun forService(service: Service): DashboardServiceUi = when (service) {
         Service.MAC -> mac
         Service.PLAN -> plan
         Service.PROMPTJOURNAL -> pj
+        Service.COMMUNITY -> cm
     }
 }
 
 /**
- * 줍줍 시리즈 대시보드 — 맥줍줍·요금줍줍 두 서비스 상태를 한 화면에서 병렬 조회.
+ * 줍줍 시리즈 대시보드 — 네 서비스 상태를 한 화면에서 병렬 조회.
  * R3: 서비스별 분기는 ServiceAdapter가 소유, 여기서는 Service 키로만 다룬다.
  * 테스트용 어댑터 주입을 위해 팩토리 경유 생성 ([Factory]).
  */
@@ -69,21 +74,24 @@ class DashboardViewModel(
                     NetUtils.getLocalIp(getApplication()) ?: ""
                 }
                 val fresh = withContext(ioDispatcher) {
-                    Triple(
-                        adapters.getValue(Service.MAC).loadState(ip),
-                        adapters.getValue(Service.PLAN).loadState(ip),
-                        adapters.getValue(Service.PROMPTJOURNAL).loadState(ip),
-                    )
+                    // 4개 서비스 순차 조회는 소켓 타임아웃(500ms)이 합산돼 p95를 초과한다 → 병렬 조회
+                    coroutineScope {
+                        listOf(
+                            async { adapters.getValue(Service.MAC).loadState(ip) },
+                            async { adapters.getValue(Service.PLAN).loadState(ip) },
+                            async { adapters.getValue(Service.PROMPTJOURNAL).loadState(ip) },
+                            async { adapters.getValue(Service.COMMUNITY).loadState(ip) },
+                        ).awaitAll()
+                    }
                 }
                 _uiState.value = DashboardUiState(
                     isChecking = false,
-                    mac = fresh.first,
-                    plan = fresh.second,
-                    pj = fresh.third,
+                    mac = fresh[0],
+                    plan = fresh[1],
+                    pj = fresh[2],
+                    cm = fresh[3],
                 )
-                val anyStopped = !fresh.first.isServerRunning ||
-                    !fresh.second.isServerRunning ||
-                    !fresh.third.isServerRunning
+                val anyStopped = fresh.any { !it.isServerRunning }
                 if (retry && anyStopped) {
                     MacDebugLogger.i("대시보드", "서버 미기동 감지 — ${SERVER_SETTLE_MS}ms 뒤 1회 재조회")
                     delay(SERVER_SETTLE_MS)
@@ -133,16 +141,18 @@ class DashboardViewModel(
             Service.MAC -> _uiState.value.copy(mac = _uiState.value.mac.copy(isCrawling = crawling))
             Service.PLAN -> _uiState.value.copy(plan = _uiState.value.plan.copy(isCrawling = crawling))
             Service.PROMPTJOURNAL -> _uiState.value.copy(pj = _uiState.value.pj.copy(isCrawling = crawling))
+            Service.COMMUNITY -> _uiState.value.copy(cm = _uiState.value.cm.copy(isCrawling = crawling))
         }
     }
 
     class Factory(
         private val app: Application,
         private val adapters: Map<Service, ServiceAdapter> = ServiceRegistry.adapters,
+        private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DashboardViewModel(app, adapters) as T
+            return DashboardViewModel(app, adapters, ioDispatcher) as T
         }
     }
 

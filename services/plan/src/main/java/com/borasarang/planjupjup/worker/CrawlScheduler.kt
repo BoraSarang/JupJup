@@ -12,7 +12,6 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.data.db.entity.CrawlSource
-import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
 import com.borasarang.planjupjup.util.TimeUtils
 import java.util.concurrent.TimeUnit
@@ -65,6 +64,7 @@ class CrawlScheduler(private val context: Context) {
             .setConstraints(constraints)
             .setInputData(workDataOf(CrawlWorker.KEY_SOURCE_ID to source.id))
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+            .addTag(TAG_CRAWL)
             .addTag(TAG_PREFIX + source.type)
             .build()
         workManager.enqueueUniquePeriodicWork(
@@ -79,11 +79,12 @@ class CrawlScheduler(private val context: Context) {
     }
 
     fun cancelAll() {
-        workManager.cancelUniqueWork(UNIQUE_PREFIX + Constants.SOURCE_MVNOHUB)
-        workManager.cancelUniqueWork(UNIQUE_PREFIX + Constants.SOURCE_MOYO)
-        workManager.cancelUniqueWork(UNIQUE_PREFIX + Constants.SOURCE_KTMMOBILE)
-        workManager.cancelUniqueWork(UNIQUE_PREFIX + Constants.SOURCE_LIIVM)
-        workManager.cancelUniqueWork(UNIQUE_PREFIX + Constants.SOURCE_BRAND_LIST)
+        // 하드코딩 5종 취소는 신규 소스·수동 태그를 놓친다 → 태그 기반 일괄 취소
+        workManager.cancelAllWorkByTag(TAG_CRAWL)
+        workManager.cancelAllWorkByTag(TAG_MANUAL)
+        // 구 태그 잔재 1회 정리 (crawl_*·manual_crawl)
+        workManager.cancelAllWorkByTag(LEGACY_TAG_MANUAL)
+        DebugLogger.i("스케줄", "수집 예약 일괄 취소")
     }
 
     /** 수동 즉시 수집. sourceId=null이면 전체 활성 소스.
@@ -104,6 +105,7 @@ class CrawlScheduler(private val context: Context) {
                         .build(),
                 )
                 .setInitialDelay((index * 20).toLong(), TimeUnit.SECONDS)
+                .addTag(TAG_CRAWL)
                 .addTag(TAG_MANUAL)
                 .build()
             workManager.enqueueUniqueWork(
@@ -117,8 +119,10 @@ class CrawlScheduler(private val context: Context) {
 
     companion object {
         private const val UNIQUE_PREFIX = "crawl_"
-        private const val TAG_PREFIX = "crawl_"
-        private const val TAG_MANUAL = "manual_crawl"
+        private const val TAG_CRAWL = "planjupjup_crawl"
+        private const val TAG_PREFIX = "planjupjup_crawl_"
+        private const val TAG_MANUAL = "planjupjup_manual_crawl"
+        private const val LEGACY_TAG_MANUAL = "manual_crawl"
         private const val SUMMARY_UNIQUE_NAME = "daily_summary"
         private const val SUMMARY_HOUR = 9
 

@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.borasarang.common.prefs.SettingsStores
+import com.borasarang.promptjournaljupjup.Constants
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -15,7 +16,7 @@ private val Context.settingsStore: DataStore<Preferences>
     get() = SettingsStores.get(this, "pj_settings")
 
 data class PjSettings(
-    val port: Int = 3002,
+    val port: Int = Constants.DEFAULT_PORT,
     val autoStart: Boolean = false
 )
 
@@ -30,7 +31,7 @@ class PreferencesManager(private val context: Context) {
     suspend fun getSettings(): PjSettings {
         return context.settingsStore.data.map { prefs ->
             PjSettings(
-                port = prefs[Keys.PORT] ?: 3002,
+                port = prefs[Keys.PORT] ?: Constants.DEFAULT_PORT,
                 autoStart = prefs[Keys.AUTO_START] ?: false
             )
         }.first()

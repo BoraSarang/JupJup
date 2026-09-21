@@ -57,7 +57,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             if (port == current.port) return@launch
             DebugLogger.i("설정", "포트 변경 ${current.port} → $port (서버 재시작)")
             app.preferences.saveSettings(current.copy(port = port))
-            com.borasarang.macjupjup.server.HttpServerService.start(getApplication())
+            com.borasarang.macjupjup.server.HttpServerService.restart(getApplication())
             refresh()
         }
     }

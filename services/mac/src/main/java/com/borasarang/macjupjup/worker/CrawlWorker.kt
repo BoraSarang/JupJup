@@ -96,11 +96,11 @@ class CrawlWorker(
                         "워커 완료 source=${source.name} found=${drafts.size} " +
                             "new=${saved.created} updated=${saved.updated}",
                     )
-                    // 알림 생성 — 저장된 id 기준 실제 조회 (상위 50건만, 대량 신규 시 N+1 방지)
+                    // 알림 생성 — 저장된 id 기준 실제 조회 (상위 50건만, IN 배치 1회)
                     val newApps = if (saved.createdIds.isEmpty()) {
                         emptyList()
                     } else {
-                        saved.createdIds.take(50).mapNotNull { app.database.appDao().getById(it) }
+                        app.database.appDao().getByIds(saved.createdIds.take(50))
                     }
                     if (newApps.isNotEmpty()) {
                         app.notificationService.createNewAppsNotification(newApps)

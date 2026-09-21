@@ -48,6 +48,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/nav_pj" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/seg_community"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/seg_community" />
     </com.google.android.material.button.MaterialButtonToggleGroup>
 
     <FrameLayout

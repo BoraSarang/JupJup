@@ -129,11 +129,13 @@ class PlanRepository(
     }
 
     companion object {
+        private val DATA_GB_RE = Regex("""(\d+(?:\.\d+)?)\s*GB""")
+
         /** "15GB", "15.5GB", "무제한+5Mbps" 등에서 GB 숫자 추출. 무제한 단독 표기는 Int.MAX_VALUE */
         fun parseDataGb(text: String): Int {
             val t = text.replace(" ", "").uppercase()
             if (t.startsWith("무제한") && !t.contains("GB")) return Int.MAX_VALUE
-            val match = Regex("""(\d+(?:\.\d+)?)\s*GB""").find(t) ?: return 0
+            val match = DATA_GB_RE.find(t) ?: return 0
             return match.groupValues[1].toDoubleOrNull()?.toInt() ?: 0
         }
     }

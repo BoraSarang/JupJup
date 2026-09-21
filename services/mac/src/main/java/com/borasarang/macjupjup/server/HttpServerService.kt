@@ -311,6 +311,24 @@ class HttpServerService : Service() {
             }
         }
 
+        /** 이미 실행 중인 서버를 새 포트로 재시작 (포트 변경 적용) */
+        fun restart(context: Context) {
+            try {
+                context.startService(
+                    Intent(context, HttpServerService::class.java).setAction(ACTION_RESTART),
+                )
+            } catch (e: IllegalStateException) {
+                DebugLogger.w("서버", "restartService 거부 — FGS 재시도: ${e.message}")
+                runCatching {
+                    context.startForegroundService(
+                        Intent(context, HttpServerService::class.java).setAction(ACTION_RESTART),
+                    )
+                }.onFailure {
+                    DebugLogger.e("서버", "E-AND-SRV-0102", "FGS 재시작 실패: ${it.message}")
+                }
+            }
+        }
+
         fun stop(context: Context) {
             context.stopService(Intent(context, HttpServerService::class.java))
         }

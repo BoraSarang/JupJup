@@ -9,8 +9,8 @@ android {
     defaultConfig {
         applicationId = "com.borasarang.jupjup"
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.12.0"
+        versionCode = 15
+        versionName = "1.13.0"
     }
 
     signingConfigs {
@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":services:mac"))
     implementation(project(":services:plan"))
     implementation(project(":services:promptjournal"))
+    implementation(project(":services:community"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

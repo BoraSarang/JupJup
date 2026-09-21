@@ -1,7 +1,9 @@
 package com.borasarang.promptjournaljupjup
 
 object Constants {
-    const val DEFAULT_PORT = 3002
+    const val DEFAULT_PORT = 3030
+    const val MIN_PORT = 1024
+    const val MAX_PORT = 65535
     const val DB_NAME = "promptjournal.db"
     const val DATASTORE_NAME = "pj_settings"
 

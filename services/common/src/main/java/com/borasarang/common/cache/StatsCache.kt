@@ -30,6 +30,11 @@ class StatsCache(
         map.clear()
     }
 
+    /** 키 접두사 부분 무효화 — 핫 키 동반 미스(썬더링허드) 방지 */
+    fun invalidatePrefix(prefix: String) {
+        map.keys.removeIf { it == prefix || it.startsWith("$prefix:") }
+    }
+
     companion object {
         const val CACHE_TTL_MS = 5 * 60 * 1000L
     }

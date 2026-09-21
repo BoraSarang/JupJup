@@ -2,6 +2,65 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R31 크롤링 성능·퍼포먼스 (PLAN_v16)
+- [x] PLAN_v16 초안 (예산 p95 300ms·250MB·캐시 70%)
+- [x] 앱: 대시보드 4-way 병렬·IP 30s 캐시·PJ getEnabled·StatsCache 부분무효화
+- [x] DB: community 트랜잭션·알림 IN 배치·mac MAX 쿼리·plan 페이지 100
+- [x] 크롤러: 타임아웃 20s·정규식 precompile 6곳·mac/community backoff
+- [x] 서버: community 통계 4종 캐시·thumb 메모리 캐시
+- [x] 검증: assembleDebug·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
+- [ ] 후순위(구조 변경 유예): 상세 30건 순차→병렬·보드 직렬→분할·LIKE 전방와일드·전건 스캔 리포지토리
+
+## R30 전체 리팩토링 + 버그·동작연결 (PLAN_v15)
+- [x] PLAN_v15 초안 (1단계 전체 + 2단계 버그 범위 확정)
+- [x] 1단계: build test community 추가·문자열/placeholder 하드코딩 제거·KDoc·Factory·매직포트·문서 포트 현행화
+- [x] 2단계: 앱정보 pj 행·PJ 알림 최근기록·Plan cancelAll 태그화·웹 console.error
+- [x] 검증: assembleDebug+설치·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
+- [ ] 후순위(대규모 공통화 유예): HttpServer 4벌·DebugLogger 4벌·Scheduler/Worker·Notification 3벌·TimeUtils·CrawlHttp (다음 라운드)
+
+## R29 포트 설정 실동작 + 기본 포트 변경 + 프롬 저널 설정 화면
+- [x] 기본 포트 변경: 앱(4610) 서버 시작 문구·홈 레이아웃 하드코딩 포함 3010/3020/3030/3040 전수
+- [x] `savePort` 버그 수정: mac/plan/community에서 `HttpServerService.start` → `restart`(ACTION_RESTART)로 교체 (재시작 안 되던 근본 원인)
+- [x] 각 HttpServerService companion에 `restart(context)` 추가 (mac/plan/community/pj)
+- [x] promptjournal 웹 설정 POST 재시작 누락 보완 (PjRoutes `/api/settings` → 포트 변경 시 restart)
+- [x] 프롬 저널 Android 설정 화면 구축 (포트·자동시작·배터리·Exa 키·앱정보) + `SettingsViewModel`
+- [x] 빌드·단위 테스트(4모듈)·lint 통과
+- [x] 실기 검증: pj 3002→38602→3030, cm 3003→38603→3040 포트 변경 실제 재시작 확인 / 3000은 타 앱 점유 확인
+- [x] 문서: CHANGELOG·세션 로그
+- [x] 참고: spring 포트 3000은 줍줍 아님 (다른 앱이 점유, 시리즈 서버 미기동 시 대시보드 오인 가능)
+
+## R28 상세 이미지·링크 + 보관기간 확장 (PLAN_v14, 1.13.0)
+- [x] DB v5 `posts.imageUrls` + `MIGRATION_4_5` + `CommunityPost.imageUrls`
+- [x] `DetailResult.imageUrls/links` + `BodyLink` + `encode/decodeImageUrls` + `PostDraft.imageUrls`
+- [x] `parseDetail` 링크 블록(최대 3) + 이미지 목록(최대 5, UI 조각 제외)
+- [x] `extractLinks` 이미지 전용 앵커·빈 텍스트 제외 (짤 슬라이드 링크 오염 정리)
+- [x] DAO COALESCE 보충 + refresh는 새 파싱 신뢰(빈 값 클리어)
+- [x] 서버 `imageCount`/`images[]` + 웹 카드 🖼 뱃지 + 모달 갤러리·🔗 렌더·sticky 액션·스크롤
+- [x] 보관기간 3/7/14/30/90 라디오 + 기본 3
+- [x] 테스트 4종 추가 (링크·이미지 앵커·5장 상한·JSON 왕복) + lint + 실기 브라우저 E2E
+- [x] 문서: PLAN_v14 + CHANGELOG + 세션 로그
+- [ ] 후순위(사용자 보류): 스크랩 기능 — 그닥 땡기지 않음
+
+## R26 커뮤니티 뉴스 크롤러 신규 서비스 (PLAN_v12, 1.13.0)
+- [x] `:services:community` 모듈 + settings include + app 의존성
+- [x] DB v1 (CommunityPost·SiteBoard·CrawlSource·CrawlLog·NotificationLog) + CommunityJupJupRuntime + community_settings
+- [x] 크롤러: BoardCrawler + TimeParser + PriceParser + SelectorConfig + CrawlerFactory + MVP 5소스 시드
+- [x] 스케줄러·워커 (15분 하한, TTL purge) + 서버 6라우트 (posts·ranking·crawl/test·logs 포함)
+- [x] 웹 포털 community_web 4파일 (10탭·언론사 필터·피드·랭킹·설정 서랍)
+- [x] 앱 통합 (COMMUNITY enum·CmServiceAdapter·대시보드 4카드·seg_community·about 행)
+- [x] 단위 테스트 (community 9종 + app 6종) + 빌드 + lint + node --check
+- [x] versionName 1.13.0 (versionCode 15) bump
+- [x] 문서 갱신 (PLAN_v12·CHANGELOG·DESIGN §10·ENDPOINTS·AGENTS·세션 로그)
+- [x] 실기 검증: 3003 health·clien 30+30건·ruli 32건·ranking/overview/웹 200·3000/3002 회귀
+- [x] R26b 상세 요약 (신규 30/회 + 미요약 백필 15/회, 500자 제한 유지)
+- [x] R26b 중복 제거 (canonicalUrl UNIQUE + v2 마이그레이션, 재수집 new=0 확인)
+- [x] R26b 8소스 확장 (뽐뿌26·디시50·보배30·더쿠20·오유30, 총 329건) + 주기 30분 통일
+- [x] R26c 언론사 필터 서버화 + 게시판 관리 (모달·일괄적용·DB v3) + EUC-KR/줄바꿈/서로게이트 수정
+- [x] R26d 이미지 글 썸네일 + 단건 새로고침 API
+- [x] R26e 썸네일 프록시 (CDN 403 우회)
+- [x] R27 카테고리 중심 + 2단계 관리 (PLAN_v13, DB v4, 보드 단위 스케줄)
+- [ ] 후순위: 에펨코/인스티즈/MLBPARK/SLR/판 (수집 불가, 사유 기록됨) · 상세 셀렉터 chrome 잔재 다듬기
+
 ## R25 1.12.0 릴리스
 - [x] versionName 1.12.0 (versionCode 14) bump
 - [x] release.yml setup-android 제거 (ci.yml과 동일 수정)

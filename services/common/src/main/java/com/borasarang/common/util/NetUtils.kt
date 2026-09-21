@@ -11,14 +11,26 @@ import android.text.format.Formatter
  * 시간 포맷(TimeUtils)은 주기 옵션·전용 포맷이 달라 각 모듈에 유지한다.
  */
 object NetUtils {
+    /** 로컬 IP 캐시 — NIC 전수 순회는 대시보드 폴링마다 반복되면 비싸다 (TTL 30s) */
+    @Volatile
+    private var cachedIp: String? = null
+
+    @Volatile
+    private var cachedIpAt: Long = 0L
+    private const val IP_CACHE_TTL_MS = 30_000L
+
     /**
      * 로컬 IP. 1) Wi-Fi 연결 정보 2) 네트워크 인터페이스 열거 순으로 탐색.
      * 모바일 데이터·핫스팟(AP) 상태에서도 사설 IP를 찾는다.
      */
     @Suppress("DEPRECATION")
     fun getLocalIp(context: Context): String? {
-        wifiIp(context)?.let { return it }
-        return interfaceIp()
+        val now = System.currentTimeMillis()
+        if (now - cachedIpAt < IP_CACHE_TTL_MS && cachedIp != null) return cachedIp
+        val ip = wifiIp(context) ?: interfaceIp()
+        cachedIp = ip
+        cachedIpAt = now
+        return ip
     }
 
     private fun wifiIp(context: Context): String? {

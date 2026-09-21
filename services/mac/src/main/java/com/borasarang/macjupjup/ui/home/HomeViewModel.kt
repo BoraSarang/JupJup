@@ -20,7 +20,7 @@ data class HomeUiState(
     val isCrawling: Boolean = false,
     val crawlEnabled: Boolean = true,
     val localIp: String? = null,
-    val port: Int = 3000,
+    val port: Int = 3010,
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {

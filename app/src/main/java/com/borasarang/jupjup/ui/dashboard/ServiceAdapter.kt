@@ -14,6 +14,10 @@ import com.borasarang.planjupjup.util.TimeUtils as PlanTimeUtils
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.promptjournaljupjup.server.HttpServerService as PjHttpServerService
 import com.borasarang.promptjournaljupjup.util.DebugLogger as PjDebugLogger
+import com.borasarang.communityjupjup.CommunityJupJupRuntime
+import com.borasarang.communityjupjup.server.HttpServerService as CmHttpServerService
+import com.borasarang.communityjupjup.util.DebugLogger as CmDebugLogger
+import com.borasarang.communityjupjup.util.TimeUtils as CmTimeUtils
 
 /**
  * 서비스 어댑터 (R3). DashboardViewModel이 양쪽 Runtime을 직접 import하던 결합을 흡수한다.
@@ -167,8 +171,9 @@ object PjServiceAdapter : ServiceAdapter {
         }
         val settings = app.preferences.getSettings()
         val count = app.promptExecutionRepository.count()
-        val prompts = app.promptRepository.getAll()
-        val activeCount = prompts.count { it.enabled }
+        // getAll()은 프롬프트 본문(대형 마크다운)까지 전건 로딩한다 → 활성 목록만 조회
+        val enabled = app.promptRepository.getEnabled()
+        val activeCount = enabled.size
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
             address = "http://$ip:${settings.port}",
@@ -219,6 +224,63 @@ object PjServiceAdapter : ServiceAdapter {
         } else {
             PjDebugLogger.i("서버", "대시보드 서버 시작")
             PjHttpServerService.start(context)
+        }
+    }
+}
+
+object CmServiceAdapter : ServiceAdapter {
+    override val service = Service.COMMUNITY
+
+    override suspend fun loadState(ip: String?): DashboardServiceUi {
+        val app = CommunityJupJupRuntime
+        val settings = app.preferences.getSettings()
+        val stats = app.communityRepository.stats()
+        return DashboardServiceUi(
+            isServerRunning = NetUtils.isPortOpen(settings.port),
+            address = "http://$ip:${settings.port}",
+            statValue1 = stats.totalPosts,
+            statValue2 = stats.activeSources,
+            lastCollectedLabel = CmTimeUtils.formatRelative(stats.lastCollectedAt),
+            crawlEnabled = settings.crawlEnabled,
+        )
+    }
+
+    override suspend fun triggerCrawlIfEnabled(enabled: Boolean) {
+        if (!enabled) {
+            CmDebugLogger.w("수동수집", "수집 일시정지 상태 — 대시보드 수동 수집 스킵(community)")
+            return
+        }
+        CmDebugLogger.i("수동수집", "대시보드 수동 수집 클릭(community)")
+        try {
+            CommunityJupJupRuntime.crawlScheduler.triggerImmediate(null)
+        } catch (e: Exception) {
+            CmDebugLogger.e("수동수집", "E-AND-CRAWL-0201", "대시보드 수동 수집 예약 실패(community): ${e.message}", e)
+        }
+    }
+
+    override suspend fun setCrawlEnabled(enabled: Boolean) {
+        val app = CommunityJupJupRuntime
+        try {
+            app.preferences.setCrawlEnabled(enabled)
+            if (enabled) {
+                app.crawlScheduler.scheduleAll()
+                CmDebugLogger.i("수동수집", "대시보드 수집 재개 — 주기 스케줄 재예약(community)")
+            } else {
+                app.crawlScheduler.cancelAll()
+                CmDebugLogger.i("수동수집", "대시보드 수집 일시정지 — 실행/예약 수집 취소(community)")
+            }
+        } catch (e: Exception) {
+            CmDebugLogger.e("수동수집", "E-AND-CRAWL-0221", "대시보드 수집 중지/재개 저장 실패(community): ${e.message}", e)
+        }
+    }
+
+    override fun setServerRunning(context: Context, running: Boolean) {
+        if (running) {
+            CmDebugLogger.i("서버", "대시보드 서버 중지(community)")
+            CmHttpServerService.stop(context)
+        } else {
+            CmDebugLogger.i("서버", "대시보드 서버 시작(community)")
+            CmHttpServerService.start(context)
         }
     }
 }
