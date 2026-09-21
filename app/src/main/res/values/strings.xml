@@ -51,6 +51,6 @@
     <string name="dashboard_pj_btn_running">실행 중…</string>
     <string name="dashboard_pj_btn_enable">실행 켜기</string>
     <string name="dashboard_pj_btn_disable">실행 끄기</string>
-    <string name="dashboard_pj_btn_start_server">서버 시작 (3030)</string>
+    <string name="dashboard_pj_btn_start_server">서버 시작</string>
     <string name="dashboard_pj_btn_stop_server">서버 중지</string>
 </resources>

@@ -11,6 +11,9 @@ import com.borasarang.jupjup.ui.nav.ServiceRegistry
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +47,7 @@ data class DashboardUiState(
 }
 
 /**
- * 줍줍 시리즈 대시보드 — 맥줍줍·요금줍줍 두 서비스 상태를 한 화면에서 병렬 조회.
+ * 줍줍 시리즈 대시보드 — 네 서비스 상태를 한 화면에서 병렬 조회.
  * R3: 서비스별 분기는 ServiceAdapter가 소유, 여기서는 Service 키로만 다룬다.
  * 테스트용 어댑터 주입을 위해 팩토리 경유 생성 ([Factory]).
  */
@@ -71,12 +74,15 @@ class DashboardViewModel(
                     NetUtils.getLocalIp(getApplication()) ?: ""
                 }
                 val fresh = withContext(ioDispatcher) {
-                    listOf(
-                        adapters.getValue(Service.MAC).loadState(ip),
-                        adapters.getValue(Service.PLAN).loadState(ip),
-                        adapters.getValue(Service.PROMPTJOURNAL).loadState(ip),
-                        adapters.getValue(Service.COMMUNITY).loadState(ip),
-                    )
+                    // 4개 서비스 순차 조회는 소켓 타임아웃(500ms)이 합산돼 p95를 초과한다 → 병렬 조회
+                    coroutineScope {
+                        listOf(
+                            async { adapters.getValue(Service.MAC).loadState(ip) },
+                            async { adapters.getValue(Service.PLAN).loadState(ip) },
+                            async { adapters.getValue(Service.PROMPTJOURNAL).loadState(ip) },
+                            async { adapters.getValue(Service.COMMUNITY).loadState(ip) },
+                        ).awaitAll()
+                    }
                 }
                 _uiState.value = DashboardUiState(
                     isChecking = false,
@@ -142,10 +148,11 @@ class DashboardViewModel(
     class Factory(
         private val app: Application,
         private val adapters: Map<Service, ServiceAdapter> = ServiceRegistry.adapters,
+        private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DashboardViewModel(app, adapters) as T
+            return DashboardViewModel(app, adapters, ioDispatcher) as T
         }
     }
 

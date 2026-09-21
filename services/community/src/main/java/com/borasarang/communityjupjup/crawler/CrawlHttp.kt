@@ -9,6 +9,12 @@ import java.util.zip.GZIPInputStream
 
 /** JDK HttpURLConnection 기반 얇은 HTTP 계층. 브라우저 UA + gzip + 선택 헤더 */
 object CrawlHttp {
+    private val CHARSET_RE = Regex("charset=([^;\\s\"']+)", RegexOption.IGNORE_CASE)
+    private val META_CHARSET_RE = Regex(
+        "<meta[^>]+charset\\s*=\\s*[\"']?([^\"'\\s/>;]+)",
+        RegexOption.IGNORE_CASE,
+    )
+
     fun get(url: String, timeoutSec: Long = Constants.CRAWL_TIMEOUT_SEC): HttpResult =
         getWithHeaders(url, emptyMap(), timeoutSec)
 
@@ -119,17 +125,14 @@ object CrawlHttp {
     }
 
     internal fun detectCharset(contentType: String?, bytes: ByteArray): java.nio.charset.Charset {        contentType?.let { ct ->
-            Regex("charset=([^;\\s\"']+)", RegexOption.IGNORE_CASE).find(ct)
+            CHARSET_RE.find(ct)
                 ?.groupValues?.get(1)?.let { name ->
                     runCatching { charset(name) }.getOrNull()?.let { return it }
                 }
         }
         // meta 태그는 ASCII 구간이라 바이트 그대로 판독 가능
         val head = bytes.take(4096).toByteArray().toString(Charsets.US_ASCII)
-        Regex(
-            "<meta[^>]+charset\\s*=\\s*[\"']?([^\"'\\s/>;]+)",
-            RegexOption.IGNORE_CASE,
-        ).find(head)?.groupValues?.get(1)?.let { name ->
+        META_CHARSET_RE.find(head)?.groupValues?.get(1)?.let { name ->
             // EUC-KR 별칭 (euc_kr, korean 등)
             val normalized = if (name.equals("euc_kr", ignoreCase = true)) "EUC-KR" else name
             runCatching { charset(normalized) }.getOrNull()?.let { return it }

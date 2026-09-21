@@ -393,7 +393,7 @@
                 badge.textContent = n;
                 badge.hidden = n === 0;
             })
-            .catch(function () {});
+            .catch(function (e) { console.error('[알림] 요청 실패', e); });
     }
 
     function openNotifPanel() {
@@ -492,7 +492,7 @@
     function markRead(id) {
         fetch('/api/notifications/' + id + '/read', { method: 'POST' })
             .then(function () { loadUnreadCount(); })
-            .catch(function () {});
+            .catch(function (e) { console.error('[알림] 요청 실패', e); });
     }
 
     function deleteNotif(id) {
@@ -501,7 +501,7 @@
                 loadNotifications();
                 loadUnreadCount();
             })
-            .catch(function () {});
+            .catch(function (e) { console.error('[알림] 요청 실패', e); });
     }
 
     function markAllRead() {
@@ -510,7 +510,7 @@
                 loadNotifications();
                 loadUnreadCount();
             })
-            .catch(function () {});
+            .catch(function (e) { console.error('[알림] 요청 실패', e); });
     }
 
     function cleanupNotifs() {
@@ -523,7 +523,7 @@
                 loadNotifications();
                 loadUnreadCount();
             })
-            .catch(function () {});
+            .catch(function (e) { console.error('[알림] 요청 실패', e); });
     }
 
     function showNotifDetail(id) {

@@ -2,6 +2,22 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R31 크롤링 성능·퍼포먼스 (PLAN_v16)
+- [x] PLAN_v16 초안 (예산 p95 300ms·250MB·캐시 70%)
+- [x] 앱: 대시보드 4-way 병렬·IP 30s 캐시·PJ getEnabled·StatsCache 부분무효화
+- [x] DB: community 트랜잭션·알림 IN 배치·mac MAX 쿼리·plan 페이지 100
+- [x] 크롤러: 타임아웃 20s·정규식 precompile 6곳·mac/community backoff
+- [x] 서버: community 통계 4종 캐시·thumb 메모리 캐시
+- [x] 검증: assembleDebug·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
+- [ ] 후순위(구조 변경 유예): 상세 30건 순차→병렬·보드 직렬→분할·LIKE 전방와일드·전건 스캔 리포지토리
+
+## R30 전체 리팩토링 + 버그·동작연결 (PLAN_v15)
+- [x] PLAN_v15 초안 (1단계 전체 + 2단계 버그 범위 확정)
+- [x] 1단계: build test community 추가·문자열/placeholder 하드코딩 제거·KDoc·Factory·매직포트·문서 포트 현행화
+- [x] 2단계: 앱정보 pj 행·PJ 알림 최근기록·Plan cancelAll 태그화·웹 console.error
+- [x] 검증: assembleDebug+설치·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
+- [ ] 후순위(대규모 공통화 유예): HttpServer 4벌·DebugLogger 4벌·Scheduler/Worker·Notification 3벌·TimeUtils·CrawlHttp (다음 라운드)
+
 ## R29 포트 설정 실동작 + 기본 포트 변경 + 프롬 저널 설정 화면
 - [x] 기본 포트 변경: 앱(4610) 서버 시작 문구·홈 레이아웃 하드코딩 포함 3010/3020/3030/3040 전수
 - [x] `savePort` 버그 수정: mac/plan/community에서 `HttpServerService.start` → `restart`(ACTION_RESTART)로 교체 (재시작 안 되던 근본 원인)

@@ -22,7 +22,8 @@ object Constants {
     const val MAX_BODY_LEN = 2000
 
     const val CRAWL_REQUEST_DELAY_MS = 1000L
-    const val CRAWL_TIMEOUT_SEC = 30L
+    // 느린 서버 1건이 워커를 최대 ~60s 점유하던 것을 단축 (수집 예의 delay 1s는 유지)
+    const val CRAWL_TIMEOUT_SEC = 20L
     const val USER_AGENT = "MacJupJup/0.1 (Linux; Android) Mac-App-Trend-Portal; contact leeborasarang@gmail.com"
 
     const val NOTIFICATION_ID_SERVER = 1001

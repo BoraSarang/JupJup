@@ -159,7 +159,7 @@ async function openSites() {
   wrap.innerHTML = "";
   let sites = state.sites;
   if (sites.length === 0) {
-    try { sites = (await api("/api/sites")).sites || []; state.sites = sites; } catch (e) { /* 무시 */ }
+    try { sites = (await api("/api/sites")).sites || []; state.sites = sites; } catch (e) { console.error('[사이트] 조회 실패', e); }
   }
   if (sites.length === 0) { wrap.innerHTML = '<p class="msg">사이트 조회 실패</p>'; }
   sites.forEach((s) => {
@@ -186,7 +186,7 @@ async function openBoardsSite(domain, name) {
   const site = state.sites.find((s) => s.domain === domain);
   boardsState.sourceIds = site ? (site.sourceIds || []) : [];
   if (state.categories.length === 0) {
-    try { state.categories = (await api("/api/categories")).categories || []; } catch (e) { /* 무시 */ }
+    try { state.categories = (await api("/api/categories")).categories || []; } catch (e) { console.error('[카테고리] 조회 실패', e); }
   }
   boardsState.categories = state.categories;
   try {

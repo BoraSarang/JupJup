@@ -25,7 +25,8 @@ object Constants {
     const val RETENTION_USED_DAYS = 7
 
     const val CRAWL_REQUEST_DELAY_MS = 1000L
-    const val CRAWL_TIMEOUT_SEC = 30L
+    // 느린 서버 1건이 워커를 최대 ~60s 점유하던 것을 단축 (수집 예의 delay 1s는 유지)
+    const val CRAWL_TIMEOUT_SEC = 20L
     // 실측: 클리앙이 (Linux; Android)/Mozilla 포함 UA에 302 봇월 → 짧은 식별 UA 사용 (200 확인)
     const val USER_AGENT = "CommunityJupJup/1.0 (contact leeborasarang@gmail.com)"
 

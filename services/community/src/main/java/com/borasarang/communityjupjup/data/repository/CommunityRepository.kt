@@ -1,5 +1,7 @@
 package com.borasarang.communityjupjup.data.repository
 
+import androidx.room.withTransaction
+import com.borasarang.common.cache.StatsCache
 import com.borasarang.communityjupjup.data.db.CommunityDatabase
 import com.borasarang.communityjupjup.data.db.entity.CommunityPost
 import com.borasarang.communityjupjup.util.CommunityCategories
@@ -8,6 +10,9 @@ import java.util.concurrent.TimeUnit
 
 /** 게시글 저장·조회·TTL 정리 */
 class CommunityRepository(private val db: CommunityDatabase) {
+
+    /** 통계 캐시 (서버 폴링용, TTL 5분) — 저장·정리 시 키별 무효화 */
+    val statsCache = StatsCache()
 
     data class SaveResult(
         val created: Int,
@@ -18,26 +23,31 @@ class CommunityRepository(private val db: CommunityDatabase) {
     /** canonicalUrl UNIQUE insert — 중복은 무시하고 카운트만 갱신 (피드 중복 방지) */
     suspend fun savePosts(posts: List<CommunityPost>): SaveResult {
         if (posts.isEmpty()) return SaveResult(0, 0, emptyList())
-        val rowIds = db.postDao().insertIgnore(posts)
-        val createdIds = rowIds.filter { it != -1L }
-        // IGNORE된 기존 행은 조회수·추천·댓글·수집시각만 갱신
-        val now = System.currentTimeMillis()
-        var updated = 0
-        val canonicals = posts.map { it.canonicalUrl }.distinct()
-        val existing = db.postDao().getByCanonicalUrls(canonicals).associateBy { it.canonicalUrl }
-        val byCanonical = posts.groupBy { it.canonicalUrl }
-        for ((canonical, group) in byCanonical) {
-            if (canonical !in existing) continue
-            val latest = group.maxBy { it.collectedAt }
-            updated += db.postDao().updateCountsByCanonical(
-                canonical, latest.viewCount, latest.likeCount, latest.commentCount, now,
+        return db.withTransaction {
+            val rowIds = db.postDao().insertIgnore(posts)
+            val createdIds = rowIds.filter { it != -1L }
+            // IGNORE된 기존 행은 조회수·추천·댓글·수집시각만 갱신
+            val now = System.currentTimeMillis()
+            var updated = 0
+            val canonicals = posts.map { it.canonicalUrl }.distinct()
+            val existing = db.postDao().getByCanonicalUrls(canonicals).associateBy { it.canonicalUrl }
+            val byCanonical = posts.groupBy { it.canonicalUrl }
+            for ((canonical, group) in byCanonical) {
+                if (canonical !in existing) continue
+                val latest = group.maxBy { it.collectedAt }
+                updated += db.postDao().updateCountsByCanonical(
+                    canonical, latest.viewCount, latest.likeCount, latest.commentCount, now,
+                )
+            }
+            SaveResult(
+                created = createdIds.size,
+                updated = updated,
+                createdIds = createdIds,
             )
+        }.also {
+            // 신규·갱신 반영 — 전체 clear 대신 통계 키만 무효화
+            invalidateStats()
         }
-        return SaveResult(
-            created = createdIds.size,
-            updated = updated,
-            createdIds = createdIds,
-        )
     }
 
     suspend fun list(filter: PostFilter): PagedPosts {
@@ -126,6 +136,7 @@ class CommunityRepository(private val db: CommunityDatabase) {
             now - TimeUnit.DAYS.toMillis(retentionDays.coerceAtLeast(1).toLong()),
             listOf(CommunityCategories.HOTDEAL, CommunityCategories.USED),
         )
+        if (deleted > 0) invalidateStats()
         return deleted
     }
 
@@ -133,11 +144,22 @@ class CommunityRepository(private val db: CommunityDatabase) {
     suspend fun purgeSource(sourceId: String): Int {
         db.siteBoardDao().deleteBySource(sourceId)
         db.crawlLogDao().deleteBySource(sourceId)
-        return db.postDao().deleteBySource(sourceId)
+        return db.postDao().deleteBySource(sourceId).also {
+            if (it > 0) invalidateStats()
+        }
     }
 
     /** 게시글만 비우기 (보드·소스 설정 유지, 재생성용) */
     suspend fun purgePosts(sourceId: String): Int {
-        return db.postDao().deleteBySource(sourceId)
+        return db.postDao().deleteBySource(sourceId).also {
+            if (it > 0) invalidateStats()
+        }
+    }
+
+    private fun invalidateStats() {
+        statsCache.invalidatePrefix("stats")
+        statsCache.invalidatePrefix("overview")
+        statsCache.invalidatePrefix("collect")
+        statsCache.invalidatePrefix("trends")
     }
 }

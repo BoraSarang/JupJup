@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+### R31 크롤링 성능·퍼포먼스 (PLAN_v16)
+- **앱·공통**: 대시보드 4개 카드 순차 → `async` 병렬 (소켓 500ms 합산 해소),
+  `getLocalIp` 30초 캐시, PJ 어댑터 `getAll()` → `getEnabled()` (본문 전건 로딩 제거),
+  `StatsCache.invalidatePrefix` 부분 무효화
+- **DB**: community `savePosts` 트랜잭션화, 알림 조회 N+1 → IN 배치 (mac·community),
+  mac `overview()` 전건 MAX → `MAX(lastRunAt)` 쿼리, plan `API_MAX_PAGE_SIZE` 1000 → 100
+- **크롤러**: 타임아웃 30s → 20s (3서비스, delay 1s 예의 유지),
+  정규식 precompile (BoardCrawler·TimeParser·Plan parseDataGb·CrawlHttp charset),
+  mac/community 주기 워커 backoff EXPONENTIAL 30분 (plan과 통일)
+- **서버**: community 통계 4종 5분 캐시 + 저장·정리 시 키별 무효화,
+  thumb 메모리 캐시 20항목·TTL 10분 (갤러리 중복 fetch 제거)
+- **검증**: assembleDebug 성공, unit 6모듈 성공, lint 성공, node --check 2종 통과
+- **유예**: 상세 30건 순차·보드 직렬·LIKE 전방와일드·전건 스캔 — 구조 변경이라 다음 라운드
+
+### R30 전체 리팩토링 + 버그·동작연결 (PLAN_v15)
+- **1단계 전체**: `build_and_run.sh test` community 누락 추가, PJ 시작 버튼 "(3030)" 제거,
+  홈 placeholder·주석 포트 하드코딩 제거, KDoc "두 서비스"→"네 서비스", Factory dispatcher 전달, 매직 포트 상수화
+- **2단계 버그**: 앱정보 pj 행 추가(4서비스 표시), PJ 알림 탭 최근 20건 렌더, Plan `cancelAll()` 태그 일괄 취소 + 네임스페이스
+- **웹 무음실패**: plan 5곳·community 2곳 catch에 `console.error` 추가
+- **문서**: ENDPOINTS·AGENTS.local 기본포트 3010/3020/3030/3040 현행화
+- **검증**: assembleDebug + 설치 성공, unit(6모듈) 성공, lint 성공, node --check 2종 통과
+- **제외(정상 확인)**: 설정 POST 재시작 조건부·Registry 4×5·에셋-라우트·JS 포트·DataStore/채널 — 손대지 않음
+
 ### R29 포트 설정 실동작 + 기본 포트 변경 (전 서비스)
 - **기본 포트 변경**: 맥줍 3010 · 요금 3020 · 프롬 저널 3030 · 커뮤니티 3040.
   하드코딩 잔여 전수 — 대시보드 "서버 시작 (3002)" 문구, 프롬 홈 레이아웃 `http://IP:3002`, Provider/연결 주석

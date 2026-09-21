@@ -12,26 +12,27 @@ import java.util.concurrent.TimeUnit
 
 /**
  * 통계 라우트: overview·collect·trends·insights.
+ * 캐시는 repository 소유 — 저장·정리 시 부분 무효화된다.
  */
 internal fun HttpServerService.cmStatsRoutes(route: Route) {
     val application = app()
     route.get("/api/stats") {
-        val stats = application.communityRepository.stats()
-        call.respondText(
+        val payload = application.communityRepository.statsCache.cached("stats") {
+            val stats = application.communityRepository.stats()
             buildJsonObject {
                 put("totalPosts", stats.totalPosts)
                 put("activeSources", stats.activeSources)
                 stats.lastCollectedAt?.let { put("lastCollectedAt", it) }
-            }.toString(),
-            ContentType.Application.Json,
-        )
+            }.toString()
+        }
+        call.respondText(payload, ContentType.Application.Json)
     }
     // 카테고리·소스별 게시글 수 (V2 GET /admin/stats 대응)
     route.get("/api/stats/overview") {
-        val byCategory = application.database.postDao().countByCategory()
-        val bySource = application.database.postDao().countBySource()
-        val sources = application.database.crawlSourceDao().getAll().associateBy { it.id }
-        call.respondText(
+        val payload = application.communityRepository.statsCache.cached("overview") {
+            val byCategory = application.database.postDao().countByCategory()
+            val bySource = application.database.postDao().countBySource()
+            val sources = application.database.crawlSourceDao().getAll().associateBy { it.id }
             buildJsonObject {
                 put("byCategory", buildJsonArray {
                     byCategory.forEach { c ->
@@ -51,16 +52,16 @@ internal fun HttpServerService.cmStatsRoutes(route: Route) {
                         })
                     }
                 })
-            }.toString(),
-            ContentType.Application.Json,
-        )
+            }.toString()
+        }
+        call.respondText(payload, ContentType.Application.Json)
     }
     // 일별 수집량 (days, 기본 14)
     route.get("/api/stats/collect") {
         val days = call.queryParameters["days"]?.toIntOrNull()?.coerceIn(1, 90) ?: 14
-        val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days.toLong())
-        val rows = application.database.crawlLogDao().collectByDay(since)
-        call.respondText(
+        val payload = application.communityRepository.statsCache.cached("collect:$days") {
+            val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days.toLong())
+            val rows = application.database.crawlLogDao().collectByDay(since)
             buildJsonObject {
                 put("trends", buildJsonArray {
                     rows.groupBy { it.day }.toSortedMap().forEach { (day, dayRows) ->
@@ -83,14 +84,14 @@ internal fun HttpServerService.cmStatsRoutes(route: Route) {
                         })
                     }
                 })
-            }.toString(),
-            ContentType.Application.Json,
-        )
+            }.toString()
+        }
+        call.respondText(payload, ContentType.Application.Json)
     }
     // 수집 현황: 소스별 상태 + 3회 연속 실패 빨간 뱃지 근거 (V2 어드민 대시보드)
     route.get("/api/stats/trends") {
-        val statuses = application.sourceRepository.list()
-        call.respondText(
+        val payload = application.communityRepository.statsCache.cached("trends") {
+            val statuses = application.sourceRepository.list()
             buildJsonObject {
                 put("sources", buildJsonArray {
                     statuses.forEach { s ->
@@ -104,8 +105,8 @@ internal fun HttpServerService.cmStatsRoutes(route: Route) {
                         })
                     }
                 })
-            }.toString(),
-            ContentType.Application.Json,
-        )
+            }.toString()
+        }
+        call.respondText(payload, ContentType.Application.Json)
     }
 }

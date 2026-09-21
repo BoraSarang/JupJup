@@ -1,6 +1,6 @@
 # ENDPOINTS — JupJup HTTP API
 
-> 각 서비스는 독립 포트로 동작: **mac=3000 / plan=3001 / promptjournal=3002 / community=3003** (설정 변경 가능).
+> 각 서비스는 독립 포트로 동작: **mac=3010 / plan=3020 / promptjournal=3030 / community=3040** (설정 변경 가능).
 > 웹 포털 정적 에셋: `mac_web/` · `plan_web/` · `pj_web/` · `community_web/` (루트 `/`).
 
 ## 공통 (서비스별 서버)
@@ -10,7 +10,7 @@
 | GET | `/style.css` / `/app.js` | 정적 에셋 |
 | GET | `/api/health` | 헬스체크 |
 
-## Mac 서버 (`:3000`) — com.borasarang.macjupjup
+## Mac 서버 (`:3010`) — com.borasarang.macjupjup
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `/api/apps` | 앱 목록/검색/필터/페이지네이션 |
@@ -25,7 +25,7 @@
 | GET | `/api/notifications...` | 알림 조회/읽음/삭제/정리 |
 | GET·POST | `/api/settings` | 설정 조회·저장 (포트 등) |
 
-## Plan 서버 (`:3001`) — com.borasarang.planjupjup
+## Plan 서버 (`:3020`) — com.borasarang.planjupjup
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `/api/plans` / `/api/plans/{id}` | 요금제 목록·상세 |
@@ -39,7 +39,7 @@
 
 > 상세 JSON 스키마는 각 서버 코드(`HttpServerService`) 주석 기준.
 
-## Community 서버 (`:3003`) — com.borasarang.communityjupjup
+## Community 서버 (`:3040`) — com.borasarang.communityjupjup
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | GET | `/api/categories` | 통합 카테고리 10종 |

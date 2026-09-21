@@ -182,7 +182,7 @@ class BoardCrawler(
             block.append("\n")
         }
         val lines = target.wholeText()
-            .replace("[ \\t\\u00a0\\r]+".toRegex(), " ")
+            .replace(BLANK_RUN_RE, " ")
             .split("\n")
             .map { it.trim() }
             .filter { it.isNotBlank() }
@@ -214,7 +214,7 @@ class BoardCrawler(
             if (!href.startsWith("http://") && !href.startsWith("https://")) continue
             if (!seen.add(href)) continue
             // 이미지·내부 미리보기 썸네일만 감싼 앵커는 실제 링크가 아님
-            val text = a.text().replace("\\s+".toRegex(), " ").trim().take(40)
+            val text = a.text().replace(WS_RE, " ").trim().take(40)
             if (text.isBlank()) continue
             if (text == href) continue
             if (a.select("img[src]").isNotEmpty()) continue
@@ -354,6 +354,9 @@ class BoardCrawler(
         private const val MAX_IMAGES = 5
         /** 본문 링크 보존 상한 */
         private const val MAX_LINKS = 3
+        /** 상세마다 재컴파일되던 정규식 — 상세 30건 × 행 단위 호출 절감 */
+        private val BLANK_RUN_RE = Regex("[ \\t\\u00a0\\r]+")
+        private val WS_RE = Regex("\\s+")
     }
     private fun org.jsoup.nodes.Element.firstText(selector: String): String? {
         if (selector.isBlank()) return null

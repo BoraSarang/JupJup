@@ -14,12 +14,13 @@ object Constants {
     const val MIN_RETENTION_DAYS = 1
     const val MAX_RETENTION_DAYS = 365
 
-    const val API_MAX_PAGE_SIZE = 1000
+    const val API_MAX_PAGE_SIZE = 100
     const val API_DEFAULT_PAGE_SIZE = 50
     const val PORTAL_PRELOAD_SIZE = 500
 
     const val CRAWL_REQUEST_DELAY_MS = 1000L
-    const val CRAWL_TIMEOUT_SEC = 30L
+    // 느린 서버 1건이 워커를 최대 ~60s 점유하던 것을 단축 (수집 예의 delay 1s는 유지)
+    const val CRAWL_TIMEOUT_SEC = 20L
     const val USER_AGENT = "PlanJupJup/1.0 (Linux; Android) MVNO-Plan-Portal; contact leeborasarang@gmail.com"
 
     const val NOTIFICATION_ID_SERVER = 2001

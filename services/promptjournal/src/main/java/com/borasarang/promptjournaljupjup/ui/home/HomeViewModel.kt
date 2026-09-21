@@ -2,6 +2,7 @@ package com.borasarang.promptjournaljupjup.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.borasarang.promptjournaljupjup.Constants
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.common.ai.AiProvider
 import com.borasarang.promptjournaljupjup.util.DebugLogger
@@ -15,7 +16,7 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val isServerRunning: Boolean = false,
     val localIp: String? = null,
-    val port: Int = 3030,
+    val port: Int = Constants.DEFAULT_PORT,
     val lastExecutionLabel: String? = null,
     val executionCount: Int = 0,
     val promptCount: Int = 0,

@@ -15,6 +15,10 @@ interface CommunityPostDao {
     @Query("SELECT * FROM posts WHERE id = :id")
     suspend fun getById(id: Long): CommunityPost?
 
+    /** 알림용 일괄 조회 (N+1 제거) */
+    @Query("SELECT * FROM posts WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<CommunityPost>
+
     @Query("SELECT * FROM posts WHERE originalUrl IN (:urls)")
     suspend fun getByUrls(urls: List<String>): List<CommunityPost>
 

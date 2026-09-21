@@ -16,6 +16,9 @@ object TimeParser {
     private val relativeMin = "(\\d+)\\s*분\\s*전".toRegex()
     private val relativeHour = "(\\d+)\\s*시간\\s*전".toRegex()
     private val relativeDay = "(\\d+)\\s*일\\s*전".toRegex()
+    /** 행마다 재컴파일되던 split 정규식 */
+    private val WS_SPLIT_RE = "\\s+".toRegex()
+    private val DATE_SEP_RE = "[./-]".toRegex()
 
     fun parse(raw: String?): Long? {
         if (raw.isNullOrBlank()) return null
@@ -59,8 +62,8 @@ object TimeParser {
 
     private fun parseDateTime(text: String): Long? {
         return try {
-            val parts = text.split("\\s+".toRegex())
-            val d = parts[0].split("[./-]".toRegex()).map { it.toInt() }
+            val parts = text.split(WS_SPLIT_RE)
+            val d = parts[0].split(DATE_SEP_RE).map { it.toInt() }
             val t = parts.getOrNull(1)?.split(":")?.map { it.toInt() } ?: listOf(0, 0)
             val cal = Calendar.getInstance()
             if (d.size == 3) {
@@ -81,7 +84,7 @@ object TimeParser {
 
     private fun parseDate(text: String): Long? {
         return try {
-            val d = text.split("[./-]".toRegex()).map { it.toInt() }
+            val d = text.split(DATE_SEP_RE).map { it.toInt() }
             val cal = Calendar.getInstance()
             cal.set(d[0], d[1] - 1, d[2], 0, 0, 0)
             cal.set(Calendar.MILLISECOND, 0)

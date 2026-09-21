@@ -163,7 +163,7 @@ class AppRepository(
     suspend fun overview(): AppStats = cache.cached("overview") {
         val total = db.appDao().count()
         val active = db.crawlSourceDao().getEnabled().size
-        val lastRun = db.crawlSourceDao().getAll().mapNotNull { it.lastRunAt }.maxOrNull()
+        val lastRun = db.crawlSourceDao().maxLastRunAt()
         AppStats(total, active, lastRun)
     }
 

@@ -132,7 +132,8 @@ class CrawlWorker(
                     val newPosts = if (saved.createdIds.isEmpty()) {
                         emptyList()
                     } else {
-                        saved.createdIds.take(50).mapNotNull { app.database.postDao().getById(it) }
+                        // 단건 N회 → IN 배치 1회 (최대 50건)
+                        app.database.postDao().getByIds(saved.createdIds.take(50))
                     }
                     if (newPosts.isNotEmpty()) {
                         app.notificationService.createNewPostsNotification(newPosts, displayName)

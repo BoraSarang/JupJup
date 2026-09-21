@@ -17,6 +17,10 @@ interface CrawlSourceDao {
     @Query("SELECT * FROM sources WHERE id = :id")
     suspend fun getById(id: String): CrawlSource?
 
+    /** 대시보드 overview용 — 전건 로딩 후 MAX 대신 SQL 집계 */
+    @Query("SELECT MAX(lastRunAt) FROM sources")
+    suspend fun maxLastRunAt(): Long?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(sources: List<CrawlSource>)
 

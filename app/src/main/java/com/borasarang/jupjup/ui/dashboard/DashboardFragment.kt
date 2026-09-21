@@ -17,7 +17,7 @@ import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
 import kotlinx.coroutines.launch
 
 /**
- * 줍줍 시리즈 대시보드 — 맥줍줍·요금줍줍 두 서비스를 카드로 병렬 표시.
+ * 줍줍 시리즈 대시보드 — 네 서비스를 카드로 병렬 표시.
  *
  * 각 카드: 실행 상태(도트)·접속 주소·통계 3개·[지금 수집][수집 중지/재개][서버 시작/중지].
  */

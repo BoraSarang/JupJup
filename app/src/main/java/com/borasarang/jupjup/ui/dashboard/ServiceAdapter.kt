@@ -171,8 +171,9 @@ object PjServiceAdapter : ServiceAdapter {
         }
         val settings = app.preferences.getSettings()
         val count = app.promptExecutionRepository.count()
-        val prompts = app.promptRepository.getAll()
-        val activeCount = prompts.count { it.enabled }
+        // getAll()은 프롬프트 본문(대형 마크다운)까지 전건 로딩한다 → 활성 목록만 조회
+        val enabled = app.promptRepository.getEnabled()
+        val activeCount = enabled.size
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
             address = "http://$ip:${settings.port}",

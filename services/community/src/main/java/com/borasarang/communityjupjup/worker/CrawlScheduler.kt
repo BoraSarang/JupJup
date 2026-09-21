@@ -1,6 +1,7 @@
 package com.borasarang.communityjupjup.worker
 
 import android.content.Context
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -86,6 +87,7 @@ class CrawlScheduler(private val context: Context) {
         return PeriodicWorkRequestBuilder<CrawlWorker>(minutes, TimeUnit.MINUTES)
             .setConstraints(constraints())
             .setInputData(workDataOf(CrawlWorker.KEY_BOARD_ID to boardId))
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .addTag(TAG_CRAWL)
             .build()
     }
