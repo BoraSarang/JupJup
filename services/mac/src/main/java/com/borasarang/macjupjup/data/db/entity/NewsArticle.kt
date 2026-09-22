@@ -40,4 +40,6 @@ data class NewsArticle(
     /** 원문 게시 시각 (epoch ms, 없으면 수집 시각) */
     val publishedAt: Long,
     val collectedAt: Long,
+    /** 인기 태그 (R50, 쉼표 구분 상위 10개. 수집 시 추출, 없으면 null) */
+    val tags: String? = null,
 )

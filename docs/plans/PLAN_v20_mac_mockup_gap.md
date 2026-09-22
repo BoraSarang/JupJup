@@ -64,3 +64,9 @@
 - unit·build+설치·lint·node --check 전부 통과
 - 실기 E2E: A/B(A:block/B:none, ls=A|B)·relmini 2·railApps "Agent"·MAS trackId 우선·SPONSORED 1·브랜드 맥줍줍 MACJUBJUB BETA
 - relatedApps 목록 22건/50, 상세 hidden+TURN 확인, 백필은 무매칭 기사에서 empty 유지(정상)
+
+## 실적 — R50 잔여 (2026-09-22)
+
+- tags 컬럼·마이그레이션·수집/백필·API·포털 폴백·matchAppIds 경계 강화 구현 완료
+- unit(신규 2건 포함)·build+설치·lint·node --check 전부 통과
+- 브랜치 `feat/android-r50-tags-match`

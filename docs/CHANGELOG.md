@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### R50 잔여: 뉴스 서브태그 DB + 관련앱 매칭 강화
+- **DB**: `news_articles.tags` 컬럼 + Migration v7→v8 (수집 시 제목·요약 추출 상위 10개, 상세 접근 시 백필)
+- **API**: `/api/news`·`/api/main`·상세에 `tags` 노출 (쉼표 구분)
+- **포털**: 인기 태그 사이드바 — 서버 `tags` 우선, 없으면 기존 제목 키워드 추출 폴백
+- **매칭**: `matchAppIds` 한글·혼합 이름 한글/영숫자 경계 적용 ("앱스토어"에 "앱스토" 오탐 방지), 2자 이름 스킵 유지
+- 검증: unit·build+설치·lint + node --check
+
 ### R49~R51 목업 격차 해소 (PLAN_v20)
 - **R49 포털**: 뉴스 A/B 레이아웃 토글(혼합/분리, localStorage) + 기사별 관련앱 미니카드·상세 레일
 - **R49 서버**: `relatedByNews` 일괄조회 + `/api/news`·`/api/main` `relatedApps` 노출 + 상세 관계 없으면 `matchAppIds` 라이브 백필 + `getRelationsByNewsIds`(N+1 제거)

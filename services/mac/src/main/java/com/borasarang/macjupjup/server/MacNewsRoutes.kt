@@ -145,6 +145,7 @@ internal fun newsElement(
     put("originalUrl", a.originalUrl)
     put("publishedAt", a.publishedAt)
     put("collectedAt", a.collectedAt)
+    a.tags?.takeIf { it.isNotBlank() }?.let { put("tags", it) }
     put("relatedApps", relatedAppArray(related))
 }
 

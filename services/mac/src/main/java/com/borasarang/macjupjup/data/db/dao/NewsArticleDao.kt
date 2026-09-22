@@ -38,6 +38,10 @@ interface NewsArticleDao {
     )
     suspend fun updateKo(id: String, titleKo: String?, summaryKo: String?)
 
+    /** 태그 백필 (R50: 기존 행 tags NULL → 상세 접근 시 1회 갱신) */
+    @Query("UPDATE news_articles SET tags = :tags WHERE id = :id AND tags IS NULL")
+    suspend fun updateTagsIfNull(id: String, tags: String)
+
     /** 원문 fetch 전 기존 저장분 제외용 (IN 배치 1회) */
     @Query("SELECT id FROM news_articles WHERE id IN (:ids)")
     suspend fun getExistingIds(ids: List<String>): List<String>

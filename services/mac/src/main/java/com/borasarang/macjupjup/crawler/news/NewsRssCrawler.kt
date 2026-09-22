@@ -119,6 +119,7 @@ class NewsRssCrawler(
             thumbnailUrl = thumb,
             publishedAt = d.publishedAt ?: now,
             collectedAt = now,
+            tags = extractTags("${d.title} ${summary.orEmpty()}"),
         )
     }
 
@@ -196,21 +197,76 @@ class NewsRssCrawler(
 
         /**
          * 제목 내 앱 이름 매칭 (순수 함수).
-         * ASCII 이름은 단어 경계 매칭("Starting"에 "start" 오탐 방지),
-         * 그 외(한글 등)는 부분 문자열 매칭. 순수 JVM (단위테스트 가능).
+         * ASCII 이름은 단어 경계("Starting"에 "start" 오탐 방지),
+         * 한글 등 비ASCII는 한글/영숫자 경계("앱스토어"에 "앱스" 오탐 방지).
+         * 3자 미만 이름 스킵. 순수 JVM (단위테스트 가능).
          */
         internal fun matchAppIds(title: String, names: List<Pair<String, String>>): List<String> {
             val out = mutableListOf<String>()
             for ((id, name) in names) {
                 if (name.length < 3) continue
                 val matched = if (name.all { it.isLetterOrDigit() && it.code < 128 }) {
-                    Regex("(?i)(?<![A-Za-z0-9])" + Regex.escape(name) + "(?![A-Za-z0-9])").containsMatchIn(title)
+                    Regex("(?i)(?<![A-Za-z0-9])" + Regex.escape(name) + "(?![A-Za-z0-9])")
+                        .containsMatchIn(title)
                 } else {
-                    name.lowercase() in title.lowercase()
+                    // 한글·혼합: 양쪽에 한글/영숫자가 바로 붙으면 부분문자열 오탐으로 간주
+                    Regex(
+                        "(?<![가-힣A-Za-z0-9])" + Regex.escape(name) + "(?![가-힣A-Za-z0-9])",
+                        RegexOption.IGNORE_CASE,
+                    ).containsMatchIn(title)
                 }
                 if (matched) out += id
             }
             return out.distinct()
+        }
+
+        /** 영문 토큰 / 한글 2자+ (앱.js extractTags와 동일 규칙) */
+        private val TAG_WORD_REGEX = Regex("[A-Za-z][A-Za-z0-9+_.-]{1,}|[가-힣]{2,}")
+
+        /** 인기 태그 제외어 (R50, app.js TAG_STOP과 동기화) */
+        private val TAG_STOP = setOf(
+            "THE", "AND", "FOR", "WITH", "FROM", "NEW", "APP", "MAC", "PRO", "YOU", "YOUR",
+            "WILL", "NEXT", "COME", "USING", "MAKE", "SHOULD", "GUIDE", "BUYER", "UPGRADE", "RELEASE",
+            "UPDATE", "MONDAY", "STARTING", "BREAKOUT", "STARTUP", "ACCOUNTANT", "BLOCKED", "SAYS", "SAY", "GET",
+            "BETTER", "AFTER", "ABOUT", "INTO", "OVER", "UNDER", "BETWEEN", "BEFORE", "WHILE", "THIS", "THAT",
+            "HAVE", "HAS", "HOW", "WHAT", "WHY", "WHO", "WHEN", "WHERE", "CAN", "NOT", "ARE", "WAS", "WERE",
+            "OUR", "THEIR", "THEM", "THESE", "THOSE", "ITS",
+            "애플", "사용자", "지원", "가능", "공개", "발표", "출시", "업데이트", "새로", "통해", "위해",
+            "그리고", "하지만", "이번", "최근", "관련", "대한", "위한", "있는", "없는", "있다",
+        )
+
+        /** 짧아도 유지하는 브랜드 토큰 (app.js TAG_KEEP_SHORT와 동기화) */
+        private val TAG_KEEP_SHORT = setOf("Arc", "M3", "M4", "M5", "iOS", "macOS", "Safari", "Xcode", "Swift")
+        private val TAG_KEEP_SHORT_LOWER = TAG_KEEP_SHORT.map { it.lowercase() }.toSet()
+
+        /**
+         * 본문·제목에서 인기 태그 추출 (R50, 순수 함수).
+         * 한/영 병합 가중치 후 상위 N개를 쉼표 구분 반환. 없으면 null.
+         */
+        internal fun extractTags(text: String, topN: Int = 10): String? {
+            val freq = linkedMapOf<String, Int>()
+            val seen = mutableSetOf<String>()
+            for (w in TAG_WORD_REGEX.findAll(text).map { it.value }) {
+                if (w.any { it.code in 0xAC00..0xD7A3 }) {
+                    if (w.length < 3 || !seen.add(w) || w in TAG_STOP) continue
+                    freq[w] = (freq[w] ?: 0) + 1
+                } else {
+                    val up = w.uppercase()
+                    if (up in TAG_STOP || !seen.add(w)) continue
+                    if (w.none { it in 'A'..'Z' || it in '0'..'9' }) continue
+                    val shortOk = w.length >= 4 || w.any { it in '0'..'9' } ||
+                        w in TAG_KEEP_SHORT || w.lowercase() in TAG_KEEP_SHORT_LOWER
+                    if (!shortOk) continue
+                    val brandish = w.zipWithNext().any { (a, b) -> a in 'a'..'z' && b in 'A'..'Z' } ||
+                        w.any { it in '0'..'9' } || w in TAG_KEEP_SHORT
+                    freq[w] = (freq[w] ?: 0) + (if (brandish) 2 else 1)
+                }
+            }
+            if (freq.isEmpty()) return null
+            return freq.entries
+                .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+                .take(topN)
+                .joinToString(",") { it.key }
         }
 
         /** 원문 URL SHA-256 hex (중복 제거 기준) */
