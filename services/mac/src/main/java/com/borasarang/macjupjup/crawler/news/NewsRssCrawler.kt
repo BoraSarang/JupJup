@@ -9,11 +9,19 @@ import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
 import com.borasarang.macjupjup.util.NewsCategories
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
 import org.jsoup.safety.Safelist
+import java.net.URI
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -27,6 +35,66 @@ data class NewsFeed(
     val url: String,
     val main: String,
 )
+
+/**
+ * 호스트별 최소 요청 간격 강제 (수집 예의 1초, 병렬 시에도 동일 호스트 연타 금지).
+ * community HostThrottler와 동일 설계 — R30 공통화 시 common으로 승격 예정. 순수 JVM.
+ */
+class HostThrottler(private val minGapMs: Long = 1000L) {
+    private val mutex = Mutex()
+    private val lastHit = mutableMapOf<String, Long>()
+
+    suspend fun waitFor(url: String) {
+        val host = hostOf(url)
+        while (true) {
+            val wait = mutex.withLock {
+                val now = System.currentTimeMillis()
+                val prev = lastHit[host]
+                if (prev == null || now - prev >= minGapMs) {
+                    lastHit[host] = now
+                    0L
+                } else {
+                    minGapMs - (now - prev)
+                }
+            }
+            if (wait <= 0) return
+            delay(wait)
+        }
+    }
+
+    companion object {
+        fun hostOf(url: String): String {
+            return try {
+                URI(url).host?.lowercase() ?: url
+            } catch (_: Exception) {
+                url
+            }
+        }
+    }
+}
+
+/**
+ * 항목 일괄 병렬 수집 헬퍼 (R36).
+ * [concurrency] 상한 세마포어 + [throttler] 호스트 예의 강제.
+ * 반환 순서는 items와 동일. 순수 코루틴 (단위테스트 가능).
+ */
+internal suspend fun <T, R> parallelNews(
+    items: List<T>,
+    throttler: HostThrottler,
+    concurrency: Int,
+    urlOf: (T) -> String,
+    fetch: suspend (T) -> R,
+): List<R> = coroutineScope {
+    val sem = Semaphore(concurrency.coerceAtLeast(1))
+    items.map { item ->
+        async(Dispatchers.IO) {
+            sem.withPermit {
+                throttler.waitFor(urlOf(item))
+                fetch(item)
+            }
+        }
+    }.awaitAll()
+}
 
 /** 뉴스 수집 결과 (기사 + 앱 연동) */
 data class NewsOutcome(
@@ -44,6 +112,7 @@ class NewsRssCrawler(
     private val source: CrawlSource,
     private val db: MacDatabase,
     private val feeds: List<NewsFeed> = feedsFor(source),
+    private val throttler: HostThrottler = sharedThrottler,
 ) {
 
     suspend fun crawlNews(): Result<NewsOutcome> = runCatching {
@@ -69,15 +138,12 @@ class NewsRssCrawler(
         }
         val fresh = unique.filter { it.id !in existing }
         val now = System.currentTimeMillis()
-        val articles = mutableListOf<NewsArticle>()
-        for (d in fresh) {
-            try {
-                articles += buildArticle(d, now)
-            } catch (e: Exception) {
-                DebugLogger.w("뉴스수집", "본문 스킵 ${d.link}: ${e.message}")
-            }
-            delay(Constants.CRAWL_REQUEST_DELAY_MS)
-        }
+        // R36: 상세 순차 → 최대 3병렬 (호스트 스로틀로 예의 유지, 실패 건 스킵)
+        val articles = parallelNews(fresh, throttler, MAX_NEWS_CONCURRENCY, { it.link }) { d ->
+            runCatching { buildArticle(d, now) }
+                .onFailure { e -> DebugLogger.w("뉴스수집", "본문 스킵 ${d.link}: ${e.message}") }
+                .getOrNull()
+        }.filterNotNull()
         val relations = matchApps(articles)
         NewsOutcome(articles, relations)
     }
@@ -186,6 +252,12 @@ class NewsRssCrawler(
 
         /** 피드당 최대 처리 건수 (워커 점유 방지) */
         const val MAX_ITEMS_PER_FEED = 15
+
+        /** R36: 상세 병렬 상한 (호스트 스로틀과 함께 수집 예의 유지) */
+        internal const val MAX_NEWS_CONCURRENCY = 3
+
+        /** 프로세스 전역 공유 스로틀러 (워커 간 동일 호스트 연타 방지) */
+        private val sharedThrottler = HostThrottler()
 
         /**
          * 제목 내 앱 이름 매칭 (순수 함수).

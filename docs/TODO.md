@@ -2,6 +2,12 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R36 R32 2단계 상세 병렬화 (PLAN_v17 유예분)
+- [x] `parallelNews` + `HostThrottler` (Semaphore 3, 호스트별 1초 예의, R35 패턴 이식)
+- [x] `crawlNews` 상세 순차 → 병렬 (실패 건 스킵 유지, DB 반영은 기존 트랜잭션 그대로)
+- [x] 검증: 단위 2건 신규·전 모듈 unit·assembleDebug+설치 성공, 실기 E2E 생략(사용자 공존)
+- [ ] 2단계 잔여: 10분 FGS 루프·외부 LLM 분류
+
 ## R35 R31 후순위 구조 개선 (PLAN_v16 유예분)
 - [x] 상세 30건 순차→병렬: `fetchDetails`+`parallelFetch` (Semaphore 3 + HostThrottler 호스트별 1초 예의)
 - [x] 보드 직렬→병렬: `crawl()` 보드 최대 3병렬 (실패 보드 스킵 유지, 전역 공유 스로틀러)
@@ -32,7 +38,8 @@
 - [x] 서버: `MacNewsRoutes` (`/api/news`·`/api/news/:id`·`/api/main`, `/api/apps` 유지)
 - [x] 포털: 대시보드 뷰 + 뉴스 뷰(탭 3·서브 18종·분할 상세·원문 고정·출처 배너)
 - [x] 검증: 단위 14건·assembleDebug·lint·node --check + 실기(3010) E2E 141건 수집 + CHANGELOG·세션 로그
-- [ ] 2단계 유예: 10분 FGS 루프·외부 LLM 분류·상세 병렬화
+- [x] 2단계 부분완료(R36): 상세 병렬화
+- [ ] 2단계 잔여: 10분 FGS 루프·외부 LLM 분류
 
 ## R31 크롤링 성능·퍼포먼스 (PLAN_v16)
 - [x] PLAN_v16 초안 (예산 p95 300ms·250MB·캐시 70%)
