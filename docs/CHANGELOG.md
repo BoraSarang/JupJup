@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### R40 R30 공통화 3차 (CrawlStats)
+- `CrawlStats` common 승격, 3벌 삭제 (호출부 import만 변경)
+- 검증: CrawlStatsTest 2건·전 모듈 unit·assembleDebug+설치·lint 성공
+
 ### R39 뉴스 수집 알림 (사용자 제보)
 - **문제**: 뉴스 수집 경로에 알림 호출이 전혀 없어 알림함이 비어 있었음
 - **추가**: `NEWS_FOUND` 신규 뉴스 알림(최대 50건 상세) + 수집 완료 알림 연결

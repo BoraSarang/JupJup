@@ -158,7 +158,7 @@ class CrawlWorker(
     ) {
         try {
             val statuses = app.sourceRepository.getRecentStatuses(sourceId, 5)
-            if (!com.borasarang.planjupjup.util.CrawlStats.isFailureStreak(statuses)) return
+            if (!com.borasarang.common.util.CrawlStats.isFailureStreak(statuses)) return
             DebugLogger.e("수집", "E-AND-CRAWL-0204", "연속 5회 수집 실패 source=$sourceName")
             app.notificationService.createFailureNotification(sourceName, error, 5)
             notifyFailure(sourceName)

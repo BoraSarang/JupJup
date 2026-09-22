@@ -14,7 +14,7 @@ import com.borasarang.communityjupjup.crawler.CrawlerFactory
 import com.borasarang.communityjupjup.data.db.entity.CommunityPost
 import com.borasarang.communityjupjup.data.db.entity.SiteBoard
 import com.borasarang.communityjupjup.util.Constants
-import com.borasarang.communityjupjup.util.CrawlStats
+import com.borasarang.common.util.CrawlStats
 import com.borasarang.communityjupjup.util.DebugLogger
 import com.borasarang.communityjupjup.util.takeSafe
 import com.borasarang.common.util.NetUtils
