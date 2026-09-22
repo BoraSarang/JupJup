@@ -2,6 +2,11 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R47 1.14.0 릴리스
+- [x] TODO 후속 정리 + CHANGELOG 1.14.0 확정 + 버전 bump (16)
+- [x] 검증: unit·build+설치·lint (실기 E2E 생략)
+- [ ] PR 머지 → v1.14.0 태그 + GitHub Release
+
 ## R46 설정 축소 + 웹 트래픽 표시 (PLAN_v19 완결)
 - [x] A 설정화면 4종 축소 (OS 전용만 유지)
 - [x] B 웹 트래픽 표시 4포털 (pj health 확장 포함)
@@ -18,28 +23,28 @@
 - [x] B3 community_web: 소스 토글/수집/테스트/비우기 + 새로고침 + 알림 서랍
 - [x] C2 관리 토큰 4서비스 + 4포털 fetch 패치
 - [x] 검증: node --check 4종·unit·build+설치·lint (실기 스팟체크 생략)
-- [ ] 후속: R45(B4 pj 설정탭·D 앱 슬리밍 + 토큰 표시)
+- [x] 후속: R45(B4 pj 설정탭·D 앱 슬리밍 + 토큰 표시) → R45 완료
 
 ## R43 관리웹 이관 1차: mac_web + 내부망 필터 (PLAN_v19)
 - [x] B1 mac_web: 설정 서랍 + 소스 토글/수집/주기 + 시드/번역 + 알림 쓰기
 - [x] 서버 `POST /api/sources/{id}/interval` 신설 (앱 setIntervalMinutes 대응)
 - [x] C1 `common LanGuard` + 4서비스 IP 필터 (사설대역 외 403)
 - [x] 검증: node --check·unit·build+설치·lint (실기 스팟체크 생략)
-- [ ] 후속: R44(B2/B3/C2 토큰)·R45(B4/D 앱 슬리밍)
+- [x] 후속: R44(B2/B3/C2 토큰)·R45(B4/D 앱 슬리밍) → R44·R45 완료
 
 ## R42b 네트워크 영속·집계·노출 (PLAN_v18)
 - [x] CrawlLog rx/tx 컬럼 + Migration (mac v7·community v7·plan v6)
 - [x] 3 워커 NetMeter 델타 기록 + DAO SUM + Repository 집계 + WARN
 - [x] API (`/api/stats`·collect·trends) + 앱 대시보드 4카드 netLabel
 - [x] 검증: 전 모듈 unit·assembleDebug+설치·lint (실기 E2E 생략)
-- [ ] 후속(R43 관리웹): 웹 포털 트래픽 표시 통합
+- [x] 후속(R43 관리웹): 웹 포털 트래픽 표시 통합 → R46 완료
 
 ## R42a 네트워크 트래픽 측정 기반 (PLAN_v18)
 - [x] `common/util/NetMeter` (서비스별 rx/tx 원자 카운터, snapshot/reset/format)
 - [x] 크롤 3벌 `HttpResult(rxBytes/txBytes)` + `NetMeter.record` 연결
 - [x] AI 3종 (`OpenRouter/Exa/ModelCatalog`) + mac gtx 폴백 바이트 계측
 - [x] 검증: NetMeterTest 4건 + 전 모듈 unit·assembleDebug+설치·lint 성공 (실기 E2E 생략)
-- [ ] R42b 예고: CrawlLog 컬럼+Migration+DAO SUM+API/UI+예산 WARN
+- [x] R42b 예고: CrawlLog 컬럼+Migration+DAO SUM+API/UI+예산 WARN → R42b 완료
 
 ## R41 뉴스 한글 번역 (사용자 확인 대기 해소)
 - [x] DB v6 `titleKo`·`summaryKo` + MIGRATION_5_6 (컬럼 추가만)
