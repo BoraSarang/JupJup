@@ -2,6 +2,12 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R45 관리웹 3차: pj 설정탭 + 토큰 표시 + 앱 슬리밍 (PLAN_v19)
+- [x] B4 pj_web 서랍 설정탭 (포트·자동시작)
+- [x] 앱 정보 토큰 표시 4종 + 탭 복사
+- [x] D 하단 SOURCE·NOTIF 탭 삭제 (8 프래그먼트·3 VM·14 레이아웃)
+- [x] 검증: unit·build+설치·lint + node --check (실기 E2E 생략)
+
 ## R44 관리웹 이관 2차: plan·community + 관리 토큰 (PLAN_v19)
 - [x] B2 plan_web: 설정 서랍 + 소스 토글/수집/주기
 - [x] B3 community_web: 소스 토글/수집/테스트/비우기 + 새로고침 + 알림 서랍
