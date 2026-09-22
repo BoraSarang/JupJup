@@ -153,12 +153,53 @@ class NewsRssCrawlerTest {
             emptyList<String>(),
             NewsRssCrawler.matchAppIds("Now Starting at 649 on Amazon", names),
         )
-        // 한글 부분 매칭 허용
+        // 한글 단어 경계 매칭
         assertEquals(listOf("a3"), NewsRssCrawler.matchAppIds("한글앱 새 버전 출시", names))
         assertEquals(
             listOf("a1", "a3"),
             NewsRssCrawler.matchAppIds("Raycast와 한글앱 업데이트", names),
         )
+    }
+
+    @Test
+    fun `앱매칭_한글_짧은이름_오탐방지`() {
+        val names = listOf("a1" to "앱스토", "a2" to "Mac", "a3" to "OS")
+        // "앱스토어"에 "앱스토" 부분 문자열 오탐 금지 (Mac은 정상 매칭)
+        assertEquals(
+            listOf("a2"),
+            NewsRssCrawler.matchAppIds("Mac 앱스토어 다운로드 안내", names),
+        )
+        // "macOS"에 "Mac" 단어 경계 오탐 금지, "OS"는 2자 스킵
+        assertEquals(
+            emptyList<String>(),
+            NewsRssCrawler.matchAppIds("macOS Sequoia 배포", names),
+        )
+        // 정상 단어 경계는 통과
+        assertEquals(listOf("a1"), NewsRssCrawler.matchAppIds("앱스토 신버전 배포", names))
+        assertEquals(listOf("a2"), NewsRssCrawler.matchAppIds("Mac Pro 발표", names))
+        // 2자 이름(OS)만 남기면 전부 스킵
+        assertEquals(
+            emptyList<String>(),
+            NewsRssCrawler.matchAppIds("Windows OS 소식", names.filter { it.second == "OS" }),
+        )
+    }
+
+    @Test
+    fun `태그추출_한영_병합`() {
+        val tags = NewsRssCrawler.extractTags("Raycast와 한글앱 업데이트, macOS Tahoe 출시")
+        assertNotNull(tags)
+        val list = tags!!.split(',')
+        assertTrue(list.contains("Raycast"))
+        assertTrue(list.contains("한글앱"))
+        assertTrue(list.contains("macOS"))
+        // 제외어·짧은 영문은 빠짐
+        assertTrue(!list.contains("THE"))
+        assertTrue(!list.contains("출시"))
+        // 상한 10개
+        assertTrue(list.size <= 10)
+        // 빈 텍스트 → null
+        assertNull(NewsRssCrawler.extractTags("   "))
+        assertNull(NewsRssCrawler.extractTags("the and for via"))
     }
 
     @Test

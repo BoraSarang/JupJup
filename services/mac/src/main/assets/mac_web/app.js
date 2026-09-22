@@ -332,7 +332,13 @@
   const TAG_KEEP_SHORT = new Set(['Arc', 'M3', 'M4', 'M5', 'iOS', 'macOS', 'Safari', 'Xcode', 'Swift']);
   function extractTags(items) {
     const freq = {};
+    const bump = (w, weight) => { freq[w] = (freq[w] || 0) + weight; };
     items.forEach(n => {
+      // 서버 태그 우선 (R50 news_articles.tags). 없으면 제목 키워드 추출 폴백
+      if (n.tags) {
+        String(n.tags).split(',').map(s => s.trim()).filter(Boolean).forEach(t => bump(t, 1));
+        return;
+      }
       const sources = [n.title, n.titleKo].filter(Boolean);
       const words = sources.join(' ').match(/[A-Za-z][A-Za-z0-9+_.-]{1,}|[가-힣]{2,}/g) || [];
       const seen = new Set();
@@ -341,7 +347,7 @@
           if (w.length < 3 || seen.has(w)) return;
           if (TAG_STOP.has(w)) return;
           seen.add(w);
-          freq[w] = (freq[w] || 0) + 1;
+          bump(w, 1);
           return;
         }
         const up = w.toUpperCase();
@@ -351,7 +357,7 @@
         seen.add(w);
         // 브랜드/제품형 토큰(내부 대문자·숫자 포함) 가중
         const brandish = /[a-z][A-Z]/.test(w) || /\d/.test(w) || TAG_KEEP_SHORT.has(w);
-        freq[w] = (freq[w] || 0) + (brandish ? 2 : 1);
+        bump(w, brandish ? 2 : 1);
       });
     });
     return Object.keys(freq).sort((a, b) => freq[b] - freq[a]).slice(0, 10).map(k => ({ tag: k, count: freq[k] }));

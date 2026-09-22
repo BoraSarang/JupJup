@@ -2,6 +2,13 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R50 잔여: 뉴스 서브태그 DB + 관련앱 매칭 (PLAN_v20)
+- [x] `news_articles.tags` + Migration v7→v8 + 수집 시 추출·상세 백필
+- [x] `/api/news`·`/api/main` `tags` 노출 + 포털 sideTags 서버 우선·클라이언트 폴백
+- [x] `matchAppIds` 한글/혼합 경계 강화 + 짧은 이름 오탐 방지 테스트
+- [x] 검증: unit·build+설치·lint + node --check
+- [x] 문서: PLAN_v20·CHANGELOG·TODO 갱신 + 브랜치 커밋/PR #20
+
 ## R49~R51 목업 격차 해소 (PLAN_v20)
 - [x] R49 프론트: A/B 토글(혼합/분리) + 관련앱 미니카드·SPONSORED·브랜드·배지 (index/style/app.js)
 - [x] R49 서버: relatedByNews 일괄 + list/main relatedApps + 상세 matchAppIds 백필 + N+1 쿼리

@@ -63,7 +63,7 @@ class NewsRepository(private val db: MacDatabase) {
     )
 
     suspend fun detail(id: String): NewsDetail? {
-        val article = db.newsArticleDao().getById(id) ?: return null
+        var article = db.newsArticleDao().getById(id) ?: return null
         var appIds = db.newsArticleDao().getAppIdsByNewsId(id)
         // R49: 관계 없으면 제목 기준 라이브 매칭 후 백필 (수집 시 미매칭·신규 앱 대응)
         if (appIds.isEmpty()) {
@@ -75,6 +75,17 @@ class NewsRepository(private val db: MacDatabase) {
                     matched.map { NewsAppRelation(newsId = id, appId = it) },
                 )
                 appIds = matched
+            }
+        }
+        // R50: 태그 없으면 제목·요약·한글 제목 기준 1회 백필
+        if (article.tags.isNullOrBlank()) {
+            val tags = NewsRssCrawler.extractTags(
+                listOfNotNull(article.title, article.titleKo, article.summary, article.summaryKo)
+                    .joinToString(" "),
+            )
+            if (tags != null) {
+                db.newsArticleDao().updateTagsIfNull(id, tags)
+                article = article.copy(tags = tags)
             }
         }
         val apps = if (appIds.isEmpty()) emptyList() else db.appDao().getByIds(appIds)
