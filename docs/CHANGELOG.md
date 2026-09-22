@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### 문서 정리
+- **README(한/영)**: 4서비스·기본 포트 3010/3020/3030/3040·`:services:common` 반영 (2서비스·3000/3001 오기 수정)
+- **DESIGN**: 깨진 글자 복구, 상단 세그먼트 3열→4열·대시보드 네 카드로 현행화
+- **BACKLOG/PERMISSIONS**: 오탈자·서비스 집합 표기 정정, `bd init`(이슈 트래커) 추가
+
 ### R50 잔여: 뉴스 서브태그 DB + 관련앱 매칭 강화
 - **DB**: `news_articles.tags` 컬럼 + Migration v7→v8 (수집 시 제목·요약 추출 상위 10개, 상세 접근 시 백필)
 - **API**: `/api/news`·`/api/main`·상세에 `tags` 노출 (쉼표 구분)
