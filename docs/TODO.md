@@ -2,6 +2,12 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R39 뉴스 수집 알림 (사용자 제보)
+- [x] `NEWS_FOUND` 타입 + `createNewNewsNotification` (신규 50건 상세 포함)
+- [x] `runNewsCrawl`에 신규·완료 알림 연결 (기존 무알림 해소, 실패는 기존 streak 경로)
+- [x] `notif_news` 토글 (DataStore·설정 화면·웹 API) + 포털/앱 라벨
+- [x] 검증: 전 모듈 unit·assembleDebug+설치·lint 성공 (실기 수집 E2E는 생략)
+
 ## R38 R30 공통화 2차 (DebugLogger·TimeUtils)
 - [x] `ServiceLogger`+`BaseTimeUtils` common 승격, 4벌·3벌 해소 (호출부 무변경)
 - [x] plan 전용부 유지 (formatPrice·30분 옵션·formatInterval 재정의)

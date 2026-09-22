@@ -60,6 +60,8 @@ internal fun HttpServerService.macSettingsRoutes(route: Route) {
                 ?: current.notifCrawlComplete,
             notifNewApp = obj["notifNewApp"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
                 ?: current.notifNewApp,
+            notifNews = obj["notifNews"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
+                ?: current.notifNews,
             notifFailure = obj["notifFailure"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
                 ?: current.notifFailure,
         )

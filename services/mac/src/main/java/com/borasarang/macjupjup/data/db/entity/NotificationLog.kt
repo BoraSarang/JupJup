@@ -19,7 +19,7 @@ import kotlinx.serialization.json.put
 )
 data class NotificationLog(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    /** CRAWL_COMPLETE / CRAWL_FAILED / NEW_APPS_FOUND / VERSION_BUMPED / CRAWL_SUMMARY / CRAWL_FAILED_STREAK */
+    /** CRAWL_COMPLETE / CRAWL_FAILED / NEW_APPS_FOUND / NEWS_FOUND / VERSION_BUMPED / CRAWL_SUMMARY / CRAWL_FAILED_STREAK */
     val type: String,
     /** 요약 메시지 (푸시/앱에서 표시) */
     val summary: String,
@@ -45,6 +45,7 @@ object NotificationType {
     const val CRAWL_COMPLETE = "CRAWL_COMPLETE"
     const val CRAWL_FAILED = "CRAWL_FAILED"
     const val NEW_APPS_FOUND = "NEW_APPS_FOUND"
+    const val NEWS_FOUND = "NEWS_FOUND"
     const val VERSION_BUMPED = "VERSION_BUMPED"
     const val CRAWL_SUMMARY = "CRAWL_SUMMARY"
     const val CRAWL_FAILED_STREAK = "CRAWL_FAILED_STREAK"
