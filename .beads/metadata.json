@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "JupJup",
+  "project_id": "5f0d5d77-bf0f-4a5b-9d44-0457d15e7071"
+}

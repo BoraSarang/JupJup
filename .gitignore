@@ -11,3 +11,9 @@ keystore.properties
 .DS_Store
 # Agent 로그
 .agent/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
