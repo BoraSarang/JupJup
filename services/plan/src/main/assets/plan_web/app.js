@@ -637,6 +637,16 @@
         return Math.round((r == null ? 0 : r) * 100) + '%';
     }
 
+    function fmtBytes(b) {
+        b = Number(b == null ? 0 : b);
+        if (b < 1024) return b + 'B';
+        var kb = b / 1024;
+        if (kb < 1024) return kb.toFixed(1) + 'KB';
+        var mb = kb / 1024;
+        if (mb < 1024) return mb.toFixed(1) + 'MB';
+        return (mb / 1024).toFixed(1) + 'GB';
+    }
+
     var NET_COLORS = { 'SKT': '#E53935', 'KT': '#8E24AA', 'LGU+': '#1E88E5' };
     var GRAY = '#80868B';
     var WARN = '#E65100';
@@ -796,6 +806,7 @@
             '<span>24h 실패 <b class="' + (o.crawlFail24h ? 'text-warn' : 'text-ok') + '">' + fmtNum(o.crawlFail24h) + '</b>건</span>' +
             '<span>24h 성공률 <b>' + fmtPct(health.success24h != null && (health.success24h + health.fail24h)
                 ? health.success24h / (health.success24h + health.fail24h) : 1) + '</b></span>' +
+            '<span>24h 네트워크 <b>' + fmtBytes((o.netRx24h || 0) + (o.netTx24h || 0)) + '</b></span>' +
             '</div>';
 
         // 인사이트

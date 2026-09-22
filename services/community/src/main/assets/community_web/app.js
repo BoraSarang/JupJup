@@ -412,12 +412,27 @@ async function loadRanking() {
   } catch (e) { /* 랭킹 실패는 조용히 */ }
 }
 
+function formatBytes(b) {
+  b = Number(b) || 0;
+  if (b < 1024) return b + "B";
+  const kb = b / 1024;
+  if (kb < 1024) return kb.toFixed(1) + "KB";
+  const mb = kb / 1024;
+  if (mb < 1024) return mb.toFixed(1) + "MB";
+  return (mb / 1024).toFixed(1) + "GB";
+}
+
 async function loadStats() {
   try {
-    const data = await api("/api/stats/overview");
+    const [overview, net] = await Promise.all([
+      api("/api/stats/overview"),
+      api("/api/stats").catch(() => ({})),
+    ]);
+    const data = overview;
     const byCat = (data.byCategory || []).map((c) => esc(c.categoryName) + " " + c.count).join(" · ");
     const total = (data.byCategory || []).reduce((a, c) => a + c.count, 0);
-    $("stats").innerHTML = "전체 게시글 " + total + "건<br>" + esc(byCat);
+    const netLine = (net.netRxBytes != null) ? "<br>30일 네트워크 " + formatBytes(net.netRxBytes + net.netTxBytes) : "";
+    $("stats").innerHTML = "전체 게시글 " + total + "건<br>" + esc(byCat) + netLine;
   } catch (e) { /* 통계 실패는 조용히 */ }
 }
 

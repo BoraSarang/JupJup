@@ -468,9 +468,23 @@
         populateModelSelect($('pfProvider').value);
     }
 
+    function fmtBytes(b) {
+        b = Number(b == null ? 0 : b);
+        if (b < 1024) return b + 'B';
+        var kb = b / 1024;
+        if (kb < 1024) return kb.toFixed(1) + 'KB';
+        var mb = kb / 1024;
+        if (mb < 1024) return mb.toFixed(1) + 'MB';
+        return (mb / 1024).toFixed(1) + 'GB';
+    }
+
     function loadHealth() {
-        api('/api/health').then(function () {
+        api('/api/health').then(function (h) {
             $('statusDot').className = 'status-dot running';
+            var ns = $('netStats');
+            if (ns && h && (h.netRxBytes != null || h.netTxBytes != null)) {
+                ns.textContent = 'AI·검색 ' + fmtBytes((h.netRxBytes || 0) + (h.netTxBytes || 0));
+            }
         }).catch(function () {
             $('statusDot').className = 'status-dot stopped';
             toast('서버 연결 실패');
