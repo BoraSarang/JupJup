@@ -3,27 +3,19 @@ package com.borasarang.jupjup.ui.nav
 import androidx.fragment.app.Fragment
 import com.borasarang.jupjup.ui.dashboard.DashboardFragment
 import com.borasarang.macjupjup.ui.home.HomeFragment as MacHomeFragment
-import com.borasarang.macjupjup.ui.notif.NotificationFragment as MacNotificationFragment
 import com.borasarang.macjupjup.ui.settings.SettingsFragment as MacSettingsFragment
-import com.borasarang.macjupjup.ui.source.SourceManageFragment as MacSourceManageFragment
 import com.borasarang.planjupjup.ui.home.HomeFragment as PlanHomeFragment
-import com.borasarang.planjupjup.ui.notif.NotificationFragment as PlanNotificationFragment
 import com.borasarang.planjupjup.ui.settings.SettingsFragment as PlanSettingsFragment
-import com.borasarang.planjupjup.ui.source.SourceManageFragment as PlanSourceManageFragment
 import com.borasarang.promptjournaljupjup.ui.home.HomeFragment as PjHomeFragment
-import com.borasarang.promptjournaljupjup.ui.notif.NotificationFragment as PjNotificationFragment
 import com.borasarang.promptjournaljupjup.ui.settings.SettingsFragment as PjSettingsFragment
-import com.borasarang.promptjournaljupjup.ui.provider.ProviderManageFragment as PjProviderManageFragment
 import com.borasarang.communityjupjup.ui.home.HomeFragment as CmHomeFragment
-import com.borasarang.communityjupjup.ui.notif.NotificationFragment as CmNotificationFragment
 import com.borasarang.communityjupjup.ui.settings.SettingsFragment as CmSettingsFragment
-import com.borasarang.communityjupjup.ui.source.SourceManageFragment as CmSourceManageFragment
 
 /** 줍줍 시리즈 서비스. 문자열("MAC"/"PLAN") 대신 이 enum을 전달한다 (R3) */
 enum class Service { MAC, PLAN, PROMPTJOURNAL, COMMUNITY }
 
-/** 하단 기능 탭 */
-enum class ServiceTab { DASHBOARD, HOME, SOURCE, NOTIF, SETTINGS }
+/** 하단 기능 탭 (R45: SOURCE·NOTIF는 웹 이관으로 삭제) */
+enum class ServiceTab { DASHBOARD, HOME, SETTINGS }
 
 /**
  * 서비스 등록소 (R3: AGENTS.local.md에는 있었으나 구현이 없던 것 실체화).
@@ -46,18 +38,6 @@ object ServiceRegistry {
             Service.PLAN -> PlanHomeFragment()
             Service.PROMPTJOURNAL -> PjHomeFragment()
             Service.COMMUNITY -> CmHomeFragment()
-        }
-        ServiceTab.SOURCE -> when (service) {
-            Service.MAC -> MacSourceManageFragment()
-            Service.PLAN -> PlanSourceManageFragment()
-            Service.PROMPTJOURNAL -> PjProviderManageFragment()
-            Service.COMMUNITY -> CmSourceManageFragment()
-        }
-        ServiceTab.NOTIF -> when (service) {
-            Service.MAC -> MacNotificationFragment()
-            Service.PLAN -> PlanNotificationFragment()
-            Service.PROMPTJOURNAL -> PjNotificationFragment()
-            Service.COMMUNITY -> CmNotificationFragment()
         }
         ServiceTab.SETTINGS -> when (service) {
             Service.MAC -> MacSettingsFragment()

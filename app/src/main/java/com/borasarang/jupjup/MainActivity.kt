@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
  * 줍줍 시리즈 통합 홈 (서비스-우선 내비게이션).
  *
  * - 상단 세그먼트: 서비스 선택 (맥줍줍 / 요금줍줍 / 프롬프트 저널 / 커뮤니티) — 항상 표시
- * - 하단 탭: 대시보드(통합) / 홈 / 수집 소스 / 알림 / 설정
+ * - 하단 탭: 대시보드(통합) / 홈 / 설정 (R45: 수집·알림은 웹 이관으로 삭제)
  * - 세그먼트 변경 시 대시보드로 강제 이동 (컨텍스트 모호성 제거)
  *
  * R3: 서비스·탭 enum과 Fragment 팩토리는 ui.nav 소유. 여기는 상태머신만 둔다.
@@ -75,8 +75,6 @@ class MainActivity : AppCompatActivity() {
             if (suppressNavCallbacks) return@setOnItemSelectedListener true
             currentTab = when (item.itemId) {
                 R.id.nav_tab_home -> ServiceTab.HOME
-                R.id.nav_tab_source -> ServiceTab.SOURCE
-                R.id.nav_tab_notif -> ServiceTab.NOTIF
                 R.id.nav_tab_settings -> ServiceTab.SETTINGS
                 else -> ServiceTab.DASHBOARD
             }
@@ -137,8 +135,6 @@ class MainActivity : AppCompatActivity() {
     private fun tabItemId(tab: ServiceTab): Int = when (tab) {
         ServiceTab.DASHBOARD -> R.id.nav_tab_dashboard
         ServiceTab.HOME -> R.id.nav_tab_home
-        ServiceTab.SOURCE -> R.id.nav_tab_source
-        ServiceTab.NOTIF -> R.id.nav_tab_notif
         ServiceTab.SETTINGS -> R.id.nav_tab_settings
     }
 
@@ -165,6 +161,10 @@ class MainActivity : AppCompatActivity() {
             var pjPort = com.borasarang.promptjournaljupjup.Constants.DEFAULT_PORT
             var cmPort = com.borasarang.communityjupjup.util.Constants.DEFAULT_PORT
             var ip: String? = null
+            var macToken = ""
+            var planToken = ""
+            var pjToken = ""
+            var cmToken = ""
             try {
                 withContext(Dispatchers.IO) {
                     macPort = MacJupJupRuntime.preferences.getSettings().port
@@ -172,6 +172,10 @@ class MainActivity : AppCompatActivity() {
                     pjPort = com.borasarang.promptjournaljupjup.PromptJournalRuntime.preferences.getSettings().port
                     cmPort = com.borasarang.communityjupjup.CommunityJupJupRuntime.preferences.getSettings().port
                     ip = NetUtils.getLocalIp(this@MainActivity)
+                    macToken = MacJupJupRuntime.preferences.getAdminToken()
+                    planToken = PlanJupJupRuntime.preferences.getAdminToken()
+                    pjToken = com.borasarang.promptjournaljupjup.PromptJournalRuntime.preferences.getAdminToken()
+                    cmToken = com.borasarang.communityjupjup.CommunityJupJupRuntime.preferences.getAdminToken()
                 }
             } catch (e: Exception) {
                 MacDebugLogger.e("내비", "E-AND-DB-0404", "앱 정보 포트 조회 실패: ${e.message}", e)
@@ -195,6 +199,10 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.about_service_row, getString(R.string.nav_community), cmPort)
             view.findViewById<TextView>(R.id.about_cm_address).text =
                 ip?.let { "http://$it:$cmPort" } ?: getString(R.string.about_address_unknown)
+            bindTokenRow(view, R.id.about_token_mac, getString(R.string.nav_mac), macToken)
+            bindTokenRow(view, R.id.about_token_plan, getString(R.string.nav_plan), planToken)
+            bindTokenRow(view, R.id.about_token_pj, getString(R.string.nav_pj), pjToken)
+            bindTokenRow(view, R.id.about_token_cm, getString(R.string.nav_community), cmToken)
             view.findViewById<TextView>(R.id.about_repo_link).setOnClickListener {
                 openUrl(getString(R.string.about_repo_url))
             }
@@ -205,8 +213,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun openUrl(url: String) {
-        try {
+    /** 관리 토큰 행: 표시 + 탭하여 클립보드 복사 (R45) */
+    private fun bindTokenRow(view: android.view.View, viewId: Int, label: String, token: String) {
+        val tv = view.findViewById<TextView>(viewId)
+        tv.text = getString(
+            R.string.about_token_row,
+            label,
+            token.ifBlank { getString(R.string.about_token_unknown) },
+        )
+        tv.setOnClickListener {
+            if (token.isBlank()) return@setOnClickListener
+            try {
+                val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("admin_token", token))
+                Toast.makeText(this, R.string.about_token_copied, Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                MacDebugLogger.e("내비", "E-AND-UI-0701", "토큰 복사 실패: ${e.message}", e)
+            }
+        }
+    }
+
+    private fun openUrl(url: String) {        try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         } catch (e: Exception) {
             MacDebugLogger.e("내비", "E-AND-UI-0701", "브라우저 열기 실패: ${e.message}", e)

@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** 스모크: 대시보드 + 세그먼트 서비스 전환 + 하단 5탭 (S22 connected) */
+/** 스모크: 대시보드 + 세그먼트 서비스 전환 + 하단 3탭 (S22 connected) */
 @RunWith(AndroidJUnit4::class)
 class MainActivityTest {
 
@@ -57,10 +57,10 @@ class MainActivityTest {
     }
 
     @Test
-    fun bottomNav_switchesToSourceAndBackToDashboard() {
+    fun bottomNav_switchesToSettingsAndBackToDashboard() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            onView(withId(R.id.nav_tab_source)).perform(click())
-            onView(withId(com.borasarang.macjupjup.R.id.mac_source_recycler)).check(matches(isDisplayed()))
+            onView(withId(R.id.nav_tab_settings)).perform(click())
+            onView(withId(com.borasarang.macjupjup.R.id.mac_et_port)).check(matches(isDisplayed()))
             onView(withId(R.id.nav_tab_dashboard)).perform(click())
             onView(withId(R.id.dashboard_mac_card)).check(matches(isDisplayed()))
         }

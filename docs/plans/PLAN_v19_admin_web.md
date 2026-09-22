@@ -26,6 +26,17 @@
 - 페어링: 기기 내 브라우저 `http://127.0.0.1:PORT/api/admin/token` 또는
   `adb forward tcp:PORT tcp:PORT` 후 PC localhost 조회. 앱 토큰 표시는 R45.
 
+## R44 실적
+
+- B2 plan_web + B3 community_web + C2 관리 토큰 4서비스·4포털 (PR #14)
+
+## R45 범위
+
+- B4 pj_web: 서랍 4번째 탭(서버 설정: 포트·자동시작, GET/POST /api/settings)
+- 토큰 표시: 앱 정보(About) 대화상자에 서비스별 관리 토큰 + 탭하여 복사
+- D 앱 슬리밍 1차: 하단 SOURCE·NOTIF 탭 삭제 (8 프래그먼트 + 3 VM + 14 레이아웃),
+  대시보드·홈·설정만 유지. 설정 화면 축소는 후속.
+
 ## 원칙 (R43~R44 공통)
 
 - 쓰기 API 동작 변경 없음. 웹은 기존 API 재사용 + interval 1개 신설.

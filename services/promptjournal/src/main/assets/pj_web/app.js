@@ -437,6 +437,10 @@
             ts.addEventListener('click', function () { switchDrawerTab('sources'); });
         }
         if (tr) tr.addEventListener('click', function () { switchDrawerTab('runs'); });
+        var tst = $('tabSettings');
+        if (tst) tst.addEventListener('click', function () { switchDrawerTab('settings'); });
+        var ssf = $('serverSettingsForm');
+        if (ssf) ssf.addEventListener('submit', saveServerSettings);
         var runRefresh = $('btnRunRefresh');
         if (runRefresh) runRefresh.addEventListener('click', loadRuns);
         updateMasthead();
@@ -710,18 +714,41 @@
     function switchDrawerTab(which) {
         var ch = which === 'channel';
         var runs = which === 'runs';
+        var settings = which === 'settings';
         $('tabChannel').classList.toggle('active', ch);
         $('tabSources').classList.toggle('active', which === 'sources');
         $('tabRuns').classList.toggle('active', runs);
+        $('tabSettings').classList.toggle('active', settings);
         $('panelChannel').hidden = !ch;
         $('panelSources').hidden = which !== 'sources';
         $('panelRuns').hidden = !runs;
+        $('panelSettings').hidden = !settings;
         if (runs) {
             loadRuns();
             startRunPolling();
         } else {
             stopRunPolling();
         }
+        if (settings) loadServerSettings();
+    }
+
+    /* ---------- 서버 설정 (R45: 앱 설정 화면 이관) ---------- */
+    function loadServerSettings() {
+        api('/api/settings').then(function (s) {
+            $('setPort').value = s.port;
+            $('setAutoStart').checked = !!s.autoStart;
+            $('serverSettingsMsg').textContent = '';
+        }).catch(function () { $('serverSettingsMsg').textContent = '설정 조회 실패'; });
+    }
+    function saveServerSettings(e) {
+        e.preventDefault();
+        var body = {
+            port: parseInt($('setPort').value, 10),
+            autoStart: $('setAutoStart').checked
+        };
+        api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            .then(function () { $('serverSettingsMsg').textContent = '저장됨'; })
+            .catch(function () { $('serverSettingsMsg').textContent = '저장 실패 (값 범위 확인)'; });
     }
 
     /* ---------- 실행기록 (모든 채널 실행 내역) ---------- */

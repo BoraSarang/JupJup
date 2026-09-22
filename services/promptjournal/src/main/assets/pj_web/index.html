@@ -54,6 +54,7 @@
             <button id="tabChannel" class="drawer-tab active" type="button" role="tab">브리핑 채널</button>
             <button id="tabSources" class="drawer-tab" type="button" role="tab">취재원 관리</button>
             <button id="tabRuns" class="drawer-tab" type="button" role="tab">실행기록</button>
+            <button id="tabSettings" class="drawer-tab" type="button" role="tab">서버 설정</button>
         </div>
         <div class="drawer-body">
             <section id="panelChannel">
@@ -129,6 +130,24 @@
                 <div id="runList" class="run-list">
                     <p class="empty-state">불러오는 중…</p>
                 </div>
+            </section>
+            <section id="panelSettings" hidden>
+                <h3>서버 설정</h3>
+                <form id="serverSettingsForm" class="settings-form">
+                    <div class="form-group">
+                        <label for="setPort">포트</label>
+                        <input type="number" id="setPort" min="1024" max="65535" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="setAutoStart"> 앱 실행 시 서버 자동 시작
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">저장</button>
+                    </div>
+                </form>
+                <p class="empty-state" id="serverSettingsMsg"></p>
             </section>
         </div>
     </aside>
