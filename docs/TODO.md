@@ -2,6 +2,56 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R38 R30 공통화 2차 (DebugLogger·TimeUtils)
+- [x] `ServiceLogger`+`BaseTimeUtils` common 승격, 4벌·3벌 해소 (호출부 무변경)
+- [x] plan 전용부 유지 (formatPrice·30분 옵션·formatInterval 재정의)
+- [x] 검증: BaseTimeUtilsTest 4건·전 모듈 unit·assembleDebug+설치·lint 성공
+- [ ] 잔여(유예 유지): HttpServer 4벌·Scheduler/Worker·Notification 3벌·CrawlHttp (동작 분기 있어 별도 라운드)
+
+## R37 수집예의 공용화 (R30 부분)
+- [x] `HostThrottler`+`parallelFetch` common 승격 (`common.util.Throttler`)
+- [x] community/mac 중복분 삭제, 테스트 common 통합 (ThrottlerTest 4건)
+- [x] 검증: 전 모듈 unit·assembleDebug+설치·lint 성공
+
+## R36 R32 2단계 상세 병렬화 (PLAN_v17 유예분)
+- [x] `parallelNews` + `HostThrottler` (Semaphore 3, 호스트별 1초 예의, R35 패턴 이식)
+- [x] `crawlNews` 상세 순차 → 병렬 (실패 건 스킵 유지, DB 반영은 기존 트랜잭션 그대로)
+- [x] 검증: 단위 2건 신규·전 모듈 unit·assembleDebug+설치 성공, 실기 E2E 생략(사용자 공존)
+- [x] 2단계 종결(사용자 결정): 10분 FGS·외부 LLM 모두 현행 유지 (A안)
+
+## R35 R31 후순위 구조 개선 (PLAN_v16 유예분)
+- [x] 상세 30건 순차→병렬: `fetchDetails`+`parallelFetch` (Semaphore 3 + HostThrottler 호스트별 1초 예의)
+- [x] 보드 직렬→병렬: `crawl()` 보드 최대 3병렬 (실패 보드 스킵 유지, 전역 공유 스로틀러)
+- [x] 전건 스캔 제거: `list` 매핑 getAll→getByIds, `stats` getEnabled→countEnabled
+- [x] 복합 인덱스 DB v6 (`index_posts_categoryId_sourceId`, Room 자동명 일치) + MIGRATION_5_6
+- [x] LIKE 전방와일드: FTS 보류 (수천 행 규모에 과잉 + JVM 검증 불가, 필터 인덱스로 절삭)
+- [x] 검증: 단위 4건 신규·전 모듈 unit·assembleDebug+설치·lint + 실기 E2E는 사용자 공존으로 생략
+
+## R34 뉴스 본문 단락화 (PLAN_v17 후속)
+- [x] 크롤러 `paragraphize` (단일 `<p>` → 문장 기준 다문단)
+- [x] 포털 `formatNewsBody` (플레인/단일 장문 `<p>` 문단 분리, 기존 저장분 즉시 적용)
+- [x] 검증: 단위 2건·node --check·assembleDebug+설치
+
+## R33 포털 목업 일치 재작성 (PLAN_v17)
+- [x] 목업 2종 브라우저 실측 (다크 #0a0a0b·히어로·3카드·칩·분할뷰 확인)
+- [x] `mac_web` 전면 재작성 (index·style·app.js, 다크 테마)
+- [x] 메인: 히어로 LIVE·하이라이트 3·필터칩·가로스크롤·뉴스 4+4+4·사이드바·푸터
+- [x] 뉴스: TopTab·분야탭·서브칩·티커·3열(목록/상세/레일)·북마크(localStorage)
+- [x] 앱스토어: 기존 타임라인/Watchlist/통계·10종 카테고리 유지 (다크 only)
+- [x] 수정: /api/main 확장(license·price·totalApps)·설명 이미지 썸네일·본문 폴백·태그 품질
+- [x] 검증: 라이브 스크린샷 3종 대조 + 단위 15건·lint·node --check + 실기 E2E
+
+## R32 맥줍줍 뉴스 리뉴얼 (PLAN_v17)
+- [x] PLAN_v17 초안 (A안 확정, 예산 p95 300ms·250MB·캐시 70%)
+- [x] DB: Room v4→v5 (`news_articles`·`news_app_relation` + MIGRATION_4_5)
+- [x] 크롤러: `NewsRssCrawler`(RSS 12종) + TYPE_NEWS_RSS + 시드 + 15분 스케줄
+- [x] 분류/요약 1단계: 키워드 규칙 + RSS 카테고리 매핑 (외부 LLM 없음)
+- [x] 서버: `MacNewsRoutes` (`/api/news`·`/api/news/:id`·`/api/main`, `/api/apps` 유지)
+- [x] 포털: 대시보드 뷰 + 뉴스 뷰(탭 3·서브 18종·분할 상세·원문 고정·출처 배너)
+- [x] 검증: 단위 14건·assembleDebug·lint·node --check + 실기(3010) E2E 141건 수집 + CHANGELOG·세션 로그
+- [x] 2단계 부분완료(R36): 상세 병렬화
+- [x] 2단계 종결: 10분 FGS 루프·외부 LLM 분류 모두 현행 유지 (사용자 A안 결정)
+
 ## R31 크롤링 성능·퍼포먼스 (PLAN_v16)
 - [x] PLAN_v16 초안 (예산 p95 300ms·250MB·캐시 70%)
 - [x] 앱: 대시보드 4-way 병렬·IP 30s 캐시·PJ getEnabled·StatsCache 부분무효화
@@ -9,14 +59,14 @@
 - [x] 크롤러: 타임아웃 20s·정규식 precompile 6곳·mac/community backoff
 - [x] 서버: community 통계 4종 캐시·thumb 메모리 캐시
 - [x] 검증: assembleDebug·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
-- [ ] 후순위(구조 변경 유예): 상세 30건 순차→병렬·보드 직렬→분할·LIKE 전방와일드·전건 스캔 리포지토리
+- [x] 후순위(구조 변경 유예, R35에서 완료): 상세 30건 병렬·보드 병렬·LIKE 인덱스 대응·전건 스캔 제거
 
 ## R30 전체 리팩토링 + 버그·동작연결 (PLAN_v15)
 - [x] PLAN_v15 초안 (1단계 전체 + 2단계 버그 범위 확정)
 - [x] 1단계: build test community 추가·문자열/placeholder 하드코딩 제거·KDoc·Factory·매직포트·문서 포트 현행화
 - [x] 2단계: 앱정보 pj 행·PJ 알림 최근기록·Plan cancelAll 태그화·웹 console.error
 - [x] 검증: assembleDebug+설치·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
-- [ ] 후순위(대규모 공통화 유예): HttpServer 4벌·DebugLogger 4벌·Scheduler/Worker·Notification 3벌·TimeUtils·CrawlHttp (다음 라운드)
+- [x] 부분완료(R37 수집예의·R38 로거/시간): HttpServer·Scheduler·Notification·CrawlHttp는 동작 분기로 유예
 
 ## R29 포트 설정 실동작 + 기본 포트 변경 + 프롬 저널 설정 화면
 - [x] 기본 포트 변경: 앱(4610) 서버 시작 문구·홈 레이아웃 하드코딩 포함 3010/3020/3030/3040 전수

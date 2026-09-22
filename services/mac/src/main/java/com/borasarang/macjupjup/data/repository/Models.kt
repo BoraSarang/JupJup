@@ -54,6 +54,8 @@ data class AppFilter(
     val bumped: Boolean = false,
     /** true면 실제 버전 변경 증거(prevVersion 있음)만 — Watchlist 업데이트 탭 (T-132) */
     val updatedOnly: Boolean = false,
+    /** true면 신규(firstSeen 최근, isNew=1)만 — 앱 스토어 "신규 등록" 칩 */
+    val newOnly: Boolean = false,
     /** 비어 있으면 전체 (대표 sourceId 기준) */
     val sourceIds: Set<String> = emptySet(),
 )

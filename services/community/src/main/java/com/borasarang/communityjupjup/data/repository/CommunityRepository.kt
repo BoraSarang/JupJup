@@ -87,8 +87,17 @@ class CommunityRepository(private val db: CommunityDatabase) {
                 q = q,
             )
         }
-        val sources = db.crawlSourceDao().getAll().associateBy { it.id }
-        val boards = db.siteBoardDao().getAll().associateBy { it.id }
+        val sources = if (rows.isEmpty()) {
+            emptyMap()
+        } else {
+            // R35: 매 요청 getAll 전건 스캔 → 화면에 필요한 id만 일괄 조회
+            db.crawlSourceDao().getByIds(rows.map { it.sourceId }.distinct()).associateBy { it.id }
+        }
+        val boards = if (rows.isEmpty()) {
+            emptyMap()
+        } else {
+            db.siteBoardDao().getByIds(rows.map { it.boardId }.distinct()).associateBy { it.id }
+        }
         return PagedPosts(
             posts = rows.map { p ->
                 PostListItem(
@@ -115,7 +124,7 @@ class CommunityRepository(private val db: CommunityDatabase) {
 
     suspend fun stats(): CommunityStats {
         val total = db.postDao().countFiltered(null, null, null)
-        val active = db.crawlSourceDao().getEnabled().size
+        val active = db.crawlSourceDao().countEnabled()
         val last = db.crawlLogDao().recent(1).firstOrNull()?.finishedAt
         return CommunityStats(totalPosts = total, activeSources = active, lastCollectedAt = last)
     }

@@ -18,6 +18,7 @@ import androidx.room.PrimaryKey
         Index("collectedAt"),
         Index(value = ["categoryId", "publishedAt"]),
         Index(value = ["sourceId", "publishedAt"]),
+        Index(value = ["categoryId", "sourceId"]),
         Index(value = ["canonicalUrl"], unique = true),
     ],
 )

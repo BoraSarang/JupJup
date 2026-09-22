@@ -72,6 +72,10 @@ class CrawlWorker(
         setForeground(createForegroundInfo(source.name))
         val startedAt = System.currentTimeMillis()
 
+        // R32: 뉴스 RSS는 별도 경로 (AppDraft 미사용, NewsRepository 저장)
+        if (source.type == Constants.TYPE_NEWS_RSS) {
+            return runNewsCrawl(app, source, startedAt)
+        }
         return try {
             val token = app.preferences.getSettings().githubToken
             val crawler = CrawlerFactory(app.database, token).create(source)
@@ -125,6 +129,49 @@ class CrawlWorker(
             )
         } catch (e: Exception) {
             fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName)
+            Result.retry()
+        }
+    }
+
+    /**
+     * 뉴스 수집 경로 (R32 PLAN_v17).
+     * RSS → 저장(중복 IGNORE) → 결과 기록. 앱 알림은 생략, 완료 알림만 공통으로 발송.
+     */
+    private suspend fun runNewsCrawl(
+        app: MacJupJupRuntime,
+        source: com.borasarang.macjupjup.data.db.entity.CrawlSource,
+        startedAt: Long,
+    ): Result {
+        val sourceId = source.id
+        val sourceName = source.name
+        return try {
+            val crawler = com.borasarang.macjupjup.crawler.news.NewsRssCrawler(source, app.database)
+            val outcome = crawler.crawlNews().getOrThrow()
+            val saved = app.newsRepository.saveArticles(outcome.articles, outcome.relations)
+            app.sourceRepository.logResult(
+                sourceId = sourceId,
+                sourceName = sourceName,
+                startedAt = startedAt,
+                status = Constants.STATUS_SUCCESS,
+                found = outcome.articles.size,
+                created = saved.created,
+                updated = 0,
+                error = null,
+            )
+            DebugLogger.i(
+                "뉴스수집",
+                "워커 완료 source=$sourceName found=${outcome.articles.size} new=${saved.created}",
+            )
+            // 보관기간 초과분 정리 (기사 + 연동행)
+            try {
+                val purged = app.newsRepository.purge()
+                if (purged > 0) DebugLogger.i("뉴스수집", "보관기간 정리 ${purged}건")
+            } catch (e: Exception) {
+                DebugLogger.w("뉴스수집", "정리 스킵: ${e.message}")
+            }
+            Result.success()
+        } catch (e: Exception) {
+            fail(app, sourceId, sourceName, startedAt, e.message ?: e.javaClass.simpleName)
             Result.retry()
         }
     }

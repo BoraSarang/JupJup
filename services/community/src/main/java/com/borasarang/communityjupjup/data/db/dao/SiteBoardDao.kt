@@ -23,6 +23,10 @@ interface SiteBoardDao {
     @Query("SELECT * FROM site_boards WHERE id = :id")
     suspend fun getById(id: Long): SiteBoard?
 
+    /** 목록 매핑용 일괄 조회 (R35: 매 요청 getAll 전건 스캔 제거) */
+    @Query("SELECT * FROM site_boards WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<SiteBoard>
+
     @Query("DELETE FROM site_boards WHERE id = :id")
     suspend fun deleteById(id: Long): Int
 

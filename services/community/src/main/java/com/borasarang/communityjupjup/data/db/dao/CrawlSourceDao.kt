@@ -17,6 +17,14 @@ interface CrawlSourceDao {
     @Query("SELECT * FROM sources WHERE id = :id")
     suspend fun getById(id: String): CrawlSource?
 
+    /** 목록 매핑용 일괄 조회 (R35: 매 요청 getAll 전건 스캔 제거) */
+    @Query("SELECT * FROM sources WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<CrawlSource>
+
+    /** 통계용 활성 수 (R35: getEnabled 전건 로드 제거) */
+    @Query("SELECT COUNT(*) FROM sources WHERE enabled = 1")
+    suspend fun countEnabled(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(sources: List<CrawlSource>)
 

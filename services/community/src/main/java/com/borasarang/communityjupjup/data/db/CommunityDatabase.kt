@@ -17,7 +17,7 @@ import com.borasarang.communityjupjup.data.db.entity.SiteBoard
 
 @Database(
     entities = [CommunityPost::class, SiteBoard::class, CrawlSource::class, CrawlLog::class, NotificationLog::class],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class CommunityDatabase : RoomDatabase() {
@@ -45,7 +45,7 @@ abstract class CommunityDatabase : RoomDatabase() {
                 context.applicationContext,
                 CommunityDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             if (allowDestructive) builder.fallbackToDestructiveMigration(true)
             return builder.build()
         }

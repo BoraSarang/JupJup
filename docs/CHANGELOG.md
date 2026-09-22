@@ -2,6 +2,55 @@
 
 ## [Unreleased]
 
+### R38 R30 공통화 2차 (DebugLogger·TimeUtils)
+- `ServiceLogger`·`BaseTimeUtils` common 승격, 4벌·3벌 해소 (호출부 무변경, plan 전용부 유지)
+- 검증: BaseTimeUtilsTest 4건·전 모듈 unit·assembleDebug+설치·lint 성공
+- 잔여 유예: HttpServer·Scheduler/Worker·Notification·CrawlHttp (동작 분기)
+
+### R37 수집예의 공용화 (R30 부분)
+- `HostThrottler`+`parallelFetch`를 `:services:common`으로 승격, community/mac 중복분 삭제
+- 테스트 common 통합 (ThrottlerTest 4건), 전 모듈 unit·빌드·lint 성공
+
+### R36 R32 2단계 상세 병렬화 (PLAN_v17 유예분)
+- **상세 병렬**: `crawlNews` 순차+1s delay → `parallelNews` (Semaphore 3 + `HostThrottler` 호스트별 1초 예의, R35 패턴 이식)
+- **검증**: 단위 2건 신규·전 모듈 unit·assembleDebug+설치 성공, 실기 E2E 생략(사용자 공존)
+- **2단계 종결**: 10분 FGS·외부 LLM은 현행 유지로 확정 (사용자 결정)
+
+### R35 R31 후순위 구조 개선 (PLAN_v16 유예분)
+- **상세 병렬**: `ensureSummaries`·`backfill` 순차+1s delay → `parallelFetch` (Semaphore 3 + `HostThrottler` 호스트별 1초 예의 유지, DB 반영은 순차)
+- **보드 병렬**: `crawl()` 보드 직렬 → 최대 3병렬 (프로세스 전역 공유 스로틀러, 실패 보드 스킵 유지)
+- **전건 스캔 제거**: `list` 매핑 `getAll` → `getByIds`, `stats` `getEnabled` → `countEnabled`
+- **DB v6**: `index_posts_categoryId_sourceId` 복합 인덱스 + `MIGRATION_5_6` (Room 자동명 일치, LIKE 전방와일드는 유지 — 수천 행 규모에 FTS는 과잉)
+- **검증**: 단위 4건 신규(ThrottlerTest)·전 모듈 unit·assembleDebug+설치·lint 성공, 실기 E2E 생략(사용자 공존)
+
+### R34 뉴스 본문 단락화 (PLAN_v17 후속)
+- **문제**: 뉴스 상세 본문이 한 줄로 표시 (RSS 텍스트 `Jsoup.text()` 합침 + 폴백 단일 `<p>` + 프론트 그대로 출력)
+- **크롤러**: 폴백 단일 `<p>` → `paragraphize` (문장 경계 2~3문장씩 `<p>` 분할, 이스케이프)
+- **포털**: `formatNewsBody` — 구조화 HTML은 유지(img 속성 강제), 플레인/단일 장문 `<p>`는 문단 분리
+- **검증**: 단위 2건 추가·`node --check`·assembleDebug+설치 성공
+- **기존 저장분**: 마이그레이션 없이 프론트에서 즉시 단락 표시
+
+### R33 포털 목업 일치 재작성 (PLAN_v17)
+- **배경**: 1차 구현이 라이트 테마로 목업과 불일치 → 목업 2종 브라우저 실측 후 전면 재작성
+- **테마**: 다크 #0a0a0b·zinc 보더·lime/mono 포인트·Inter/JetBrains 폰트
+- **메인**: 히어로 LIVE·하이라이트 3·필터칩·앱 가로스크롤·뉴스 4+4+4·사이드바 4종·푸터
+- **뉴스**: TopTab(앱/뉴스/북마크)·분야탭·서브 18종·LIVE 티커·3열 분할·원문/북마크 버튼·정책 박스
+- **앱스토어**: 기존 기능 전부 유지 (타임라인·Watchlist·통계·10종 카테고리·모달·알림)
+- **API**: `/api/main` 확장 (license·price·totalApps)
+- **크롤러**: 설명 HTML 이미지 썸네일·본문 텍스트 폴백 (상세 빈 화면 해소)
+- **검증**: 라이브 스크린샷 3종(메인·뉴스·앱스토어) 대조 + 단위 15건·lint·node --check
+
+### R32 맥줍줍 뉴스 리뉴얼 (PLAN_v17)
+- **범위**: A안 확정 — `services:mac` 내 확장 (분리 신규 아님)
+- **DB**: Room v4→v5 (`news_articles`·`news_app_relation` + MIGRATION_4_5)
+- **크롤러**: `NewsRssCrawler`(RSS 12종: 맥 4·AI 4·보안 4) + 15분 스케줄, hash 중복 제거
+- **서버**: `MacNewsRoutes` (`/api/news`·`/api/news/:id`·`/api/main`)
+- **포털**: 대시보드 뷰 + 뉴스 뷰(탭 3·서브 18종·분할 상세·원문 고정·출처 배너)
+- **버그 수정 3건**: Room DAO 닫힘 누락·RFC822 요일 오기·숫자 오프셋 패턴·앱매칭 단어경계
+- **검증**: 단위 14건 성공·assembleDebug + 실기 설치 성공·lint 성공·node --check 통과
+- **실기(3010)**: 마이그레이션 성공(앱 4813건 보존) + 뉴스 141건 수집(맥 60·AI 36·보안 45) + 상세·필터·포털 200 확인
+- **유예(2단계)**: 10분 FGS 루프·외부 LLM 분류·상세 병렬화
+
 ### R31 크롤링 성능·퍼포먼스 (PLAN_v16)
 - **앱·공통**: 대시보드 4개 카드 순차 → `async` 병렬 (소켓 500ms 합산 해소),
   `getLocalIp` 30초 캐시, PJ 어댑터 `getAll()` → `getEnabled()` (본문 전건 로딩 제거),

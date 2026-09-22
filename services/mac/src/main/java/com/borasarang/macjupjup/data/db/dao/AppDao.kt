@@ -34,11 +34,13 @@ interface AppDao {
           AND (:q IS NULL OR name LIKE '%' || :q || '%' OR developer LIKE '%' || :q || '%')
           AND (:bumped = 0 OR (isNew = 0 AND version IS NOT NULL))
           AND (:updatedOnly = 0 OR prevVersion IS NOT NULL)
+          AND (:newOnly = 0 OR isNew = 1)
           AND (:filterBySource = 0 OR sourceId IN (:sourceIds))
         ORDER BY
           CASE WHEN :sort = 'stars' THEN stars END DESC,
           CASE WHEN :sort = 'rating' THEN averageRating END DESC,
           CASE WHEN :sort = 'updated' THEN lastUpdatedAt END DESC,
+          CASE WHEN :sort = 'priceAsc' THEN price END ASC,
           lastUpdatedAt DESC
         LIMIT :limit OFFSET :offset"""
     )
@@ -52,6 +54,7 @@ interface AppDao {
         offset: Int,
         bumped: Boolean = false,
         updatedOnly: Boolean = false,
+        newOnly: Boolean = false,
         filterBySource: Boolean = false,
         sourceIds: List<String> = emptyList(),
     ): List<App>
@@ -64,6 +67,7 @@ interface AppDao {
           AND (:q IS NULL OR name LIKE '%' || :q || '%' OR developer LIKE '%' || :q || '%')
           AND (:bumped = 0 OR (isNew = 0 AND version IS NOT NULL))
           AND (:updatedOnly = 0 OR prevVersion IS NOT NULL)
+          AND (:newOnly = 0 OR isNew = 1)
           AND (:filterBySource = 0 OR sourceId IN (:sourceIds))"""
     )
     suspend fun countFiltered(
@@ -73,6 +77,7 @@ interface AppDao {
         q: String?,
         bumped: Boolean = false,
         updatedOnly: Boolean = false,
+        newOnly: Boolean = false,
         filterBySource: Boolean = false,
         sourceIds: List<String> = emptyList(),
     ): Int
@@ -177,6 +182,10 @@ interface AppDao {
     @Query("DELETE FROM apps WHERE lastUpdatedAt < :before")
     suspend fun deleteOlderThan(before: Long): Int
 
+    /** 뉴스-앱 연동용 전체 이름 조회 (id + name만, R32) */
+    @Query("SELECT id, name FROM apps")
+    suspend fun getAllNames(): List<AppName>
+
     @Transaction
     @Query("SELECT * FROM apps WHERE id = :id")
     suspend fun getWithSources(id: String): AppWithSources?
@@ -186,6 +195,12 @@ interface AppDao {
 data class NameCount(
     val name: String,
     val cnt: Int,
+)
+
+/** 뉴스-앱 연동용 이름 묶음 (R32) */
+data class AppName(
+    val id: String,
+    val name: String,
 )
 
 /** 앱 + 출처 묶음 (상세 API 응답용) */

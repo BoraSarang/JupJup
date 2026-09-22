@@ -7,8 +7,14 @@ import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.communityjupjup.util.DebugLogger
 import com.borasarang.communityjupjup.util.UrlCanonical
 import com.borasarang.communityjupjup.util.takeSafe
+import com.borasarang.common.util.HostThrottler
+import com.borasarang.common.util.parallelFetch
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 
@@ -16,10 +22,12 @@ import org.jsoup.Jsoup
  * selector_config 기반 범용 보드 크롤러 (V2 GenericSpider의 로컬 구현).
  * 보드 목록 페이지만 수집 — 상세 페이지 진입 없음 (예의·속도).
  * 본문 저장 금지: snippet 500자 절단만.
+ * 수집 예의(HostThrottler·parallelFetch)는 common 모듈 공용 (R37 승격).
  */
 class BoardCrawler(
     private val source: CrawlSource,
     private val db: CommunityDatabase,
+    private val throttler: HostThrottler = sharedThrottler,
 ) : CommunityCrawler {
 
     override val sourceName: String get() = source.name
@@ -28,14 +36,21 @@ class BoardCrawler(
         val config = SelectorConfig.parse(source.selectorConfigJson)
         val boards = db.siteBoardDao().getEnabledBySource(source.id)
         if (boards.isEmpty()) throw IllegalStateException("활성 보드 없음 source=${source.id} (E-AND-CRAWL-0201)")
-        val drafts = mutableListOf<PostDraft>()
-        for (board in boards) {
-            try {
-                drafts += crawlBoard(board.boardUrl, board.id, board.categoryId, config)
-            } catch (e: Exception) {
-                DebugLogger.w("수집", "보드 스킵 ${board.boardName}: ${e.message}")
-            }
-            delay(Constants.CRAWL_REQUEST_DELAY_MS)
+        // R35: 보드 직렬 → 최대 3병렬 (호스트 스로틀로 예의 유지, 실패 보드는 스킵)
+        val drafts = coroutineScope {
+            val sem = Semaphore(MAX_BOARD_CONCURRENCY)
+            boards.map { board ->
+                async(Dispatchers.IO) {
+                    sem.withPermit {
+                        throttler.waitFor(board.boardUrl)
+                        runCatching {
+                            crawlBoard(board.boardUrl, board.id, board.categoryId, config)
+                        }.onFailure { e ->
+                            DebugLogger.w("수집", "보드 스킵 ${board.boardName}: ${e.message}")
+                        }.getOrDefault(emptyList())
+                    }
+                }
+            }.awaitAll().flatten()
         }
         val seen = mutableSetOf<String>()
         val unique = drafts.filter { seen.add(it.originalUrl) }.toMutableList()
@@ -50,8 +65,8 @@ class BoardCrawler(
     override suspend fun crawlSingle(board: com.borasarang.communityjupjup.data.db.entity.SiteBoard): Result<List<PostDraft>> =
         runCatching {
             val config = SelectorConfig.parse(source.selectorConfigJson)
+            throttler.waitFor(board.boardUrl)
             val drafts = crawlBoard(board.boardUrl, board.id, board.categoryId, config)
-            delay(Constants.CRAWL_REQUEST_DELAY_MS)
             val seen = mutableSetOf<String>()
             val unique = drafts.filter { seen.add(it.originalUrl) }.toMutableList()
             val summarized = ensureSummaries(unique, config)
@@ -59,12 +74,14 @@ class BoardCrawler(
             unique
         }
 
-    /** 미상세 행 백필 (limit 상한, 오래된 순 — 일일 요약 워커·수동용) */
+    /** 미상세 행 백필 (limit 상한, 오래된 순 — 일일 요약 워커·수동용). R35: 최대 3병렬 수집 후 순차 저장 */
     suspend fun backfill(config: SelectorConfig, limit: Int): Int {
         val urls = db.postDao().getMissingDetailUrls(limit.coerceAtLeast(1))
+        if (urls.isEmpty()) return 0
+        val fetched = fetchDetails(urls, config)
         var done = 0
-        for (url in urls) {
-            val detail = fetchDetail(url, config)
+        urls.forEachIndexed { i, url ->
+            val detail = fetched[i]
             val summary = detail.summary
             val thumbnail = detail.thumbnailUrl
             val images = encodeImageUrls(detail.imageUrls).takeIf { detail.imageUrls.isNotEmpty() }
@@ -72,14 +89,26 @@ class BoardCrawler(
                 db.postDao().updateDetailByUrl(url, summary, thumbnail, images)
                 done++
             }
-            delay(Constants.CRAWL_REQUEST_DELAY_MS)
         }
         return done
     }
 
     /**
+     * URL 일괄 상세 수집 (R35).
+     * 최대 [MAX_DETAIL_CONCURRENCY] 병렬 + 호스트별 1초 스로틀 (수집 예의 유지).
+     * fetcher 주입 시 네트워크 없이 테스트 가능. 반환 순서는 urls와 동일.
+     */
+    internal suspend fun fetchDetails(
+        urls: List<String>,
+        config: SelectorConfig,
+        fetcher: suspend (String) -> DetailResult = { url -> fetchDetail(url, config) },
+    ): List<DetailResult> =
+        parallelFetch(urls, throttler, MAX_DETAIL_CONCURRENCY, { it }, fetcher)
+
+    /**
      * 신규 초안의 요약·썸네일 채우기 + DB 기등록 행 중 상세가 빈 것은 직접 갱신.
      * (상한 30/회 — 수집 시점이 가장 관련도 높은 글이라 백필보다 우선)
+     * R35: 대상 선정 후 최대 3병렬 수집, DB 반영은 순차 (동시성·순서 보장).
      */
     private suspend fun ensureSummaries(
         drafts: MutableList<PostDraft>,
@@ -88,9 +117,14 @@ class BoardCrawler(
         if (drafts.isEmpty()) return 0
         val existing = db.postDao().getByCanonicalUrls(drafts.map { it.canonicalUrl }.distinct())
             .associateBy { it.canonicalUrl }
-        var done = 0
+        data class Target(
+            val index: Int,
+            val draft: PostDraft,
+            val prev: com.borasarang.communityjupjup.data.db.entity.CommunityPost?,
+        )
+        val targets = mutableListOf<Target>()
         for (i in drafts.indices) {
-            if (done >= MAX_DETAIL_PER_RUN) break
+            if (targets.size >= MAX_DETAIL_PER_RUN) break
             val d = drafts[i]
             val e = existing[d.canonicalUrl]
             if (e != null && (!e.summary.isNullOrBlank() || !e.thumbnailUrl.isNullOrBlank())) {
@@ -100,13 +134,20 @@ class BoardCrawler(
                 ) continue
             }
             if (e == null && (!d.summary.isNullOrBlank() && !d.thumbnailUrl.isNullOrBlank() && d.imageUrls.isNotEmpty())) continue
-            val detail = fetchDetail(d.originalUrl, config)
+            targets += Target(i, d, e)
+        }
+        if (targets.isEmpty()) return 0
+        val fetched = fetchDetails(targets.map { it.draft.originalUrl }, config)
+        var done = 0
+        targets.forEachIndexed { ti, t ->
+            val d = t.draft
+            val e = t.prev
+            val detail = fetched[ti]
             if (detail.summary.isNullOrBlank() && detail.thumbnailUrl.isNullOrBlank() && detail.imageUrls.isEmpty()) {
-                delay(Constants.CRAWL_REQUEST_DELAY_MS)
-                continue
+                return@forEachIndexed
             }
             if (e == null) {
-                drafts[i] = d.copy(
+                drafts[t.index] = d.copy(
                     summary = detail.summary ?: d.summary,
                     thumbnailUrl = detail.thumbnailUrl ?: d.thumbnailUrl,
                     imageUrls = detail.imageUrls.ifEmpty { d.imageUrls },
@@ -122,7 +163,6 @@ class BoardCrawler(
                 )
             }
             done++
-            delay(Constants.CRAWL_REQUEST_DELAY_MS)
         }
         return done
     }
@@ -349,6 +389,11 @@ class BoardCrawler(
         /** 상세 진입 상한 (예의·수행시간 bound) */
         private const val MAX_DETAIL_PER_RUN = 30
         private const val BACKFILL_PER_RUN = 25
+        /** R35: 상세·보드 병렬 상한 (호스트 스로틀과 함께 수집 예의 유지) */
+        internal const val MAX_DETAIL_CONCURRENCY = 3
+        internal const val MAX_BOARD_CONCURRENCY = 3
+        /** 프로세스 전역 공유 스로틀러 (워커 간 동일 호스트 연타 방지) */
+        private val sharedThrottler = HostThrottler()
         private const val MIN_DETAIL_LEN = 20
         /** 본문 이미지 저장 상한 */
         private const val MAX_IMAGES = 5

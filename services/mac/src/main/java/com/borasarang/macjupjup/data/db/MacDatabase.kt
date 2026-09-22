@@ -8,18 +8,21 @@ import com.borasarang.macjupjup.data.db.dao.AppDao
 import com.borasarang.macjupjup.data.db.dao.AppSourceMappingDao
 import com.borasarang.macjupjup.data.db.dao.CrawlLogDao
 import com.borasarang.macjupjup.data.db.dao.CrawlSourceDao
+import com.borasarang.macjupjup.data.db.dao.NewsArticleDao
 import com.borasarang.macjupjup.data.db.dao.NotificationLogDao
 import com.borasarang.macjupjup.data.db.dao.VersionHistoryDao
 import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.AppSourceMapping
 import com.borasarang.macjupjup.data.db.entity.CrawlLog
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
+import com.borasarang.macjupjup.data.db.entity.NewsAppRelation
+import com.borasarang.macjupjup.data.db.entity.NewsArticle
 import com.borasarang.macjupjup.data.db.entity.NotificationLog
 import com.borasarang.macjupjup.data.db.entity.VersionHistory
 
 @Database(
-    entities = [App::class, AppSourceMapping::class, CrawlSource::class, VersionHistory::class, CrawlLog::class, NotificationLog::class],
-    version = 4,
+    entities = [App::class, AppSourceMapping::class, CrawlSource::class, VersionHistory::class, CrawlLog::class, NotificationLog::class, NewsArticle::class, NewsAppRelation::class],
+    version = 5,
     exportSchema = false,
 )
 abstract class MacDatabase : RoomDatabase() {
@@ -29,6 +32,7 @@ abstract class MacDatabase : RoomDatabase() {
     abstract fun versionHistoryDao(): VersionHistoryDao
     abstract fun crawlLogDao(): CrawlLogDao
     abstract fun notificationLogDao(): NotificationLogDao
+    abstract fun newsArticleDao(): NewsArticleDao
 
     companion object {
         const val DB_NAME = "macjupjup.db"
@@ -48,7 +52,7 @@ abstract class MacDatabase : RoomDatabase() {
                 context.applicationContext,
                 MacDatabase::class.java,
                 DB_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             if (allowDestructive) builder.fallbackToDestructiveMigration(true)
             return builder.build()
         }

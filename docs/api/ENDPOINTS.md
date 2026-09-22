@@ -24,6 +24,9 @@
 | GET | `/api/stats` / `stats/trends` / `stats/collect` / `stats/insights` | 통계 |
 | GET | `/api/notifications...` | 알림 조회/읽음/삭제/정리 |
 | GET·POST | `/api/settings` | 설정 조회·저장 (포트 등) |
+| GET | `/api/news?main=&sub=&q=&page=&pageSize=` | 뉴스 목록 (R32, sub=전체는 해제) |
+| GET | `/api/news/{id}` | 뉴스 상세 + 본문 + 관련 앱 (R32) |
+| GET | `/api/main` | 대시보드 일괄 (오늘 수집·분야별 건수·최신 4+4+4·업데이트 앱 8) (R32) |
 
 ## Plan 서버 (`:3020`) — com.borasarang.planjupjup
 | 메서드 | 경로 | 설명 |
