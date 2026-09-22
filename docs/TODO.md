@@ -2,6 +2,12 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R41 뉴스 한글 번역 (사용자 확인 대기 해소)
+- [x] DB v6 `titleKo`·`summaryKo` + MIGRATION_5_6 (컬럼 추가만)
+- [x] TranslateWorker 뉴스 단계 (최신 30건/실행, 앱과 동일 예의)
+- [x] API·포털 한/원문 표시 (목록·티커·상세·북마크, 전역 토글 연동)
+- [x] 검증: unit·build+설치·lint + 실기 5→6 마이그레이션 성공·무크래시
+
 ## R40 R30 공통화 3차 (CrawlStats)
 - [x] `CrawlStats` common 승격 (3벌 삭제, 호출부 import만 변경)
 - [x] 검증: CrawlStatsTest 2건·ScheduleLogicTest 회귀·전 모듈 unit·build+설치·lint

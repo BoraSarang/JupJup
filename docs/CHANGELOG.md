@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### R41 뉴스 한글 번역
+- **DB v6**: `titleKo`·`summaryKo` + MIGRATION_5_6 (앱 번역 패턴 이식)
+- **워커**: TranslateWorker 뉴스 단계 (최신 30건/실행, ML Kit 온디바이스)
+- **포털**: 목록·티커·상세·북마크 한/원문 표시, 전역 토글 연동
+- **검증**: unit·build+설치·lint + 실기 마이그레이션 성공·무크래시
+
 ### R40 R30 공통화 3차 (CrawlStats)
 - `CrawlStats` common 승격, 3벌 삭제 (호출부 import만 변경)
 - 검증: CrawlStatsTest 2건·전 모듈 unit·assembleDebug+설치·lint 성공

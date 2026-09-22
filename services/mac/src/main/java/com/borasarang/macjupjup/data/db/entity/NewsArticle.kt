@@ -30,6 +30,9 @@ data class NewsArticle(
     val title: String,
     /** 1줄 요약 (본문 첫 문장, 최대 200자) */
     val summary: String?,
+    /** 한글 제목·요약 (TranslateWorker, ML Kit 온디바이스, R41) */
+    val titleKo: String? = null,
+    val summaryKo: String? = null,
     /** 본문 HTML (원본 이미지 URL 유지, script/iframe 제거) */
     val contentHtml: String?,
     val originalUrl: String,
