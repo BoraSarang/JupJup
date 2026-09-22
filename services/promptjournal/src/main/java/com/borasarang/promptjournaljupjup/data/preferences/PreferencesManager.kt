@@ -26,6 +26,7 @@ class PreferencesManager(private val context: Context) {
         val PORT = intPreferencesKey("server_port")
         val AUTO_START = booleanPreferencesKey("auto_start")
         val EXA_API_KEY = stringPreferencesKey("exa_api_key")
+        val ADMIN_TOKEN = stringPreferencesKey("admin_token")
     }
 
     suspend fun getSettings(): PjSettings {
@@ -58,6 +59,15 @@ class PreferencesManager(private val context: Context) {
                 prefs[Keys.EXA_API_KEY] = trimmed
             }
         }
+    }
+
+    /** 관리웹 토큰 — 최초 1회 발급·영속 (R44). 값은 루프백 페어링 외 노출 금지 */
+    suspend fun getAdminToken(): String {
+        val existing = context.settingsStore.data.map { it[Keys.ADMIN_TOKEN] }.first()
+        if (!existing.isNullOrBlank()) return existing
+        val fresh = java.util.UUID.randomUUID().toString().replace("-", "")
+        context.settingsStore.edit { it[Keys.ADMIN_TOKEN] = fresh }
+        return fresh
     }
 
     companion object {

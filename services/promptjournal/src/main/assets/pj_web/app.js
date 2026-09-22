@@ -389,6 +389,33 @@
         });
     }
 
+    /* ---------- R44 관리 토큰: 쓰기 API 자동 첨부 + 401 시 입력·재시도 ---------- */
+    (function () {
+        var KEY = 'jupjup_admin_token_3030';
+        var origFetch = window.fetch.bind(window);
+        window.fetch = function (input, init) {
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+            var isApi = url.indexOf('/api/') === 0 || url.indexOf(API_BASE + '/api/') === 0;
+            if (!isApi || method === 'GET' || method === 'HEAD') return origFetch(input, init);
+            var tok = '';
+            try { tok = localStorage.getItem(KEY) || ''; } catch (e) {}
+            var headers = {};
+            if (init && init.headers) { for (var k in init.headers) headers[k] = init.headers[k]; }
+            if (tok) headers['X-Auth-Token'] = tok;
+            var patched = { method: method, headers: headers };
+            for (var p in (init || {})) { if (p !== 'headers' && p !== 'method') patched[p] = init[p]; }
+            return origFetch(input, patched).then(function (r) {
+                if (r.status !== 401) return r;
+                var v = prompt('관리 토큰을 입력하세요 (기기 내 브라우저에서 http://127.0.0.1:3030/api/admin/token 조회)');
+                if (!v) return r;
+                try { localStorage.setItem(KEY, v.trim()); } catch (e) {}
+                patched.headers['X-Auth-Token'] = v.trim();
+                return origFetch(input, patched);
+            });
+        };
+    })();
+
     /* ---------- 초기화 ---------- */
     function init() {
         $('logoBtn').addEventListener('click', function () {

@@ -14,6 +14,9 @@
             <div class="header-info">
                 <span id="lastUpdated">마지막 업데이트: -</span>
                 <button id="totalCount" class="badge badge-sync" type="button" title="지금 수집하기">총 0개</button>
+                <button id="adminBtn" class="btn-notif" type="button" aria-label="관리 열기" title="수집·설정 관리">
+                    <span aria-hidden="true">⚙️</span>
+                </button>
                 <button id="notifBell" class="btn-notif" type="button" aria-label="알림 센터 열기">
                     <span aria-hidden="true">🔔</span>
                     <span id="notifBadge" class="notif-badge" hidden>0</span>
@@ -27,6 +30,35 @@
     </header>
 
     <div class="backdrop" id="notifBackdrop" hidden></div>
+    <div class="backdrop" id="adminBackdrop" hidden></div>
+    <aside class="notif-panel admin-panel" id="adminPanel" aria-label="관리" hidden>
+        <div class="notif-head">
+            <h2>⚙️ 관리</h2>
+            <div class="notif-actions">
+                <button id="adminClose" class="btn-filter-close" type="button" aria-label="관리 닫기">✕</button>
+            </div>
+        </div>
+        <div class="admin-body">
+            <section class="admin-sec" aria-label="서버 설정">
+                <h3>서버 설정</h3>
+                <form id="adminSettingsForm">
+                    <label class="admin-row"><span>포트</span><input type="number" id="setPort" min="1024" max="65535" required></label>
+                    <label class="admin-row"><span>보관일</span><input type="number" id="setRetention" min="1" max="365" required></label>
+                    <label class="admin-row"><span>자동 시작</span><input type="checkbox" id="setAutoStart"></label>
+                    <label class="admin-row"><span>헬스체크(초)</span><input type="number" id="setWatchdog" min="60" max="3600" required></label>
+                    <label class="admin-row"><span>알림: 수집 완료</span><input type="checkbox" id="setNotifCrawl"></label>
+                    <label class="admin-row"><span>알림: 신규 요금제</span><input type="checkbox" id="setNotifNew"></label>
+                    <label class="admin-row"><span>알림: 실패</span><input type="checkbox" id="setNotifFail"></label>
+                    <button type="submit" class="btn-reset">설정 저장</button>
+                    <span class="admin-msg" id="settingsMsg"></span>
+                </form>
+            </section>
+            <section class="admin-sec" aria-label="수집 소스">
+                <h3>수집 소스 <button id="adminSyncAll" class="notif-link-btn" type="button">전체 즉시 수집</button></h3>
+                <div id="adminSources"><p class="admin-note">불러오는 중…</p></div>
+            </section>
+        </div>
+    </aside>
     <aside class="notif-panel" id="notifPanel" aria-label="알림 센터" hidden>
         <div class="notif-head">
             <h2>알림 센터</h2>

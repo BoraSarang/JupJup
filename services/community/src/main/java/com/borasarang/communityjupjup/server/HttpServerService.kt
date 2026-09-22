@@ -180,6 +180,7 @@ class HttpServerService : Service() {
     private fun startServer(port: Int) {
         server = embeddedServer(CIO, port = port, host = "0.0.0.0") {
             com.borasarang.common.server.LanGuard.install(this)
+            com.borasarang.common.server.AdminAuth.install(this) { app().preferences.getAdminToken() }
             install(StatusPages) {
                 exception<Throwable> { call, cause ->
                     DebugLogger.e(

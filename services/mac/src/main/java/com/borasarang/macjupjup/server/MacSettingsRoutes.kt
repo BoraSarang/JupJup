@@ -8,6 +8,8 @@ import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
 import com.borasarang.macjupjup.util.maskToken
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -24,6 +26,19 @@ internal fun HttpServerService.macSettingsRoutes(route: Route) {
     route.get("/api/settings") {
         val s = application.preferences.getSettings()
         call.respondText(settingsJson(s.toView()), ContentType.Application.Json)
+    }
+    // 관리 토큰 페어링 — 루프백에서만 발급 (R44). LAN 원격은 403.
+    route.get("/api/admin/token") {
+        if (!com.borasarang.common.server.AdminAuth.isLoopback(call.request.origin.remoteHost)) {
+            call.respondText(
+                """{"error":"forbidden: loopback only"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.Forbidden,
+            )
+            return@get
+        }
+        val token = application.preferences.getAdminToken()
+        call.respondText("""{"adminToken":"$token"}""", ContentType.Application.Json)
     }
     route.post("/api/settings") {
         val obj = call.receiveJsonObject()

@@ -33,6 +33,7 @@ class PreferencesManager(private val context: Context) {
         val SEED_STATUS = stringPreferencesKey("seed_status")
         val SEED_STARTED_AT = longPreferencesKey("seed_started_at")
         val WORK_V4_DONE = booleanPreferencesKey("work_v4_done")
+        val ADMIN_TOKEN = stringPreferencesKey("admin_token")
     }
 
     suspend fun getSettings(): SettingsData {
@@ -69,6 +70,15 @@ class PreferencesManager(private val context: Context) {
         context.settingsStore.edit { prefs ->
             prefs[Keys.CRAWL_ENABLED] = enabled
         }
+    }
+
+    /** 관리웹 토큰 — 최초 1회 발급·영속 (R44). 값은 루프백 페어링 외 노출 금지 */
+    suspend fun getAdminToken(): String {
+        val existing = context.settingsStore.data.map { it[Keys.ADMIN_TOKEN] }.first()
+        if (!existing.isNullOrBlank()) return existing
+        val fresh = java.util.UUID.randomUUID().toString().replace("-", "")
+        context.settingsStore.edit { it[Keys.ADMIN_TOKEN] = fresh }
+        return fresh
     }
 
     /** 수동 시드 상태 조회 (HttpServerService 호환 유지) */

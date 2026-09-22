@@ -41,6 +41,32 @@
 
     function el(id) { return document.getElementById(id); }
 
+    /* ---------- R44 관리 토큰: 쓰기 API 자동 첨부 + 401 시 입력·재시도 ---------- */
+    (function () {
+        var KEY = 'jupjup_admin_token_3020';
+        var origFetch = window.fetch.bind(window);
+        window.fetch = function (input, init) {
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+            if (url.indexOf('/api/') !== 0 || method === 'GET' || method === 'HEAD') return origFetch(input, init);
+            var tok = '';
+            try { tok = localStorage.getItem(KEY) || ''; } catch (e) {}
+            var headers = {};
+            if (init && init.headers) { for (var k in init.headers) headers[k] = init.headers[k]; }
+            if (tok) headers['X-Auth-Token'] = tok;
+            var patched = { method: method, headers: headers };
+            for (var p in (init || {})) { if (p !== 'headers' && p !== 'method') patched[p] = init[p]; }
+            return origFetch(input, patched).then(function (r) {
+                if (r.status !== 401) return r;
+                var v = prompt('관리 토큰을 입력하세요 (기기 내 브라우저에서 http://127.0.0.1:3020/api/admin/token 조회)');
+                if (!v) return r;
+                try { localStorage.setItem(KEY, v.trim()); } catch (e) {}
+                patched.headers['X-Auth-Token'] = v.trim();
+                return origFetch(input, patched);
+            });
+        };
+    })();
+
     function esc(s) {
         return String(s == null ? '' : s)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -1103,7 +1129,91 @@
             render();
         });
     }
+    /* ---------- 관리 패널 (R44: 앱 설정·소스 이관) ---------- */
+    var ADMIN_INTERVALS = [30, 60, 360, 720, 1440, 10080];
+    function openAdminPanel() {
+        el('adminPanel').hidden = false;
+        el('adminBackdrop').hidden = false;
+        loadAdminSettings();
+        loadAdminSources();
+    }
+    function closeAdminPanel() {
+        el('adminPanel').hidden = true;
+        el('adminBackdrop').hidden = true;
+    }
+    function loadAdminSettings() {
+        fetch('/api/settings').then(function (res) { return res.json(); }).then(function (s) {
+            el('setPort').value = s.port;
+            el('setRetention').value = s.retentionDays;
+            el('setAutoStart').checked = !!s.autoStart;
+            el('setWatchdog').value = s.watchdogIntervalSec;
+            el('setNotifCrawl').checked = !!s.notifCrawlComplete;
+            el('setNotifNew').checked = !!s.notifNewPlan;
+            el('setNotifFail').checked = !!s.notifFailure;
+            el('settingsMsg').textContent = '';
+        }).catch(function () { el('settingsMsg').textContent = '설정 조회 실패'; });
+    }
+    function saveAdminSettings(e) {
+        e.preventDefault();
+        var body = {
+            port: parseInt(el('setPort').value, 10),
+            retentionDays: parseInt(el('setRetention').value, 10),
+            autoStart: el('setAutoStart').checked,
+            watchdogIntervalSec: parseInt(el('setWatchdog').value, 10),
+            notifCrawlComplete: el('setNotifCrawl').checked,
+            notifNewPlan: el('setNotifNew').checked,
+            notifFailure: el('setNotifFail').checked
+        };
+        fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            .then(function () { el('settingsMsg').textContent = '저장됨'; })
+            .catch(function () { el('settingsMsg').textContent = '저장 실패 (값 범위 확인)'; });
+    }
+    function loadAdminSources() {
+        fetch('/api/sources').then(function (res) { return res.json(); }).then(function (srcs) {
+            if (!srcs.length) { el('adminSources').innerHTML = '<p class="admin-note">소스 없음</p>'; return; }
+            el('adminSources').innerHTML = srcs.map(function (s) {
+                var opts = ADMIN_INTERVALS.map(function (m) {
+                    return '<option value="' + m + '"' + (s.intervalMinutes === m ? ' selected' : '') + '>' + m + '분</option>';
+                }).join('');
+                return '<div class="admin-src"><span class="sname" title="' + esc(s.baseUrl || '') + '">' + esc(s.name) + '</span>' +
+                    '<span class="sstatus">' + esc(s.lastStatus || '') + '</span>' +
+                    '<select data-sint="' + esc(s.id) + '">' + opts + '</select>' +
+                    '<button type="button" data-ssync="' + esc(s.id) + '">수집</button>' +
+                    '<button type="button" data-stoggle="' + esc(s.id) + '" class="' + (s.enabled ? 'on' : 'off') + '">' +
+                    (s.enabled ? 'ON' : 'OFF') + '</button></div>';
+            }).join('');
+            var toggles = document.querySelectorAll('#adminSources [data-stoggle]');
+            for (var i = 0; i < toggles.length; i++) { toggles[i].addEventListener('click', function () {
+                var b = this;
+                fetch('/api/sources/' + encodeURIComponent(b.getAttribute('data-stoggle')) + '/toggle', { method: 'POST' })
+                    .then(function (res) { return res.json(); }).then(function (r) {
+                        b.textContent = r.enabled ? 'ON' : 'OFF';
+                        b.className = r.enabled ? 'on' : 'off';
+                    });
+            }); }
+            var syncs = document.querySelectorAll('#adminSources [data-ssync]');
+            for (var j = 0; j < syncs.length; j++) { syncs[j].addEventListener('click', function () {
+                fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sourceId: this.getAttribute('data-ssync') }) });
+            }); }
+            var sels = document.querySelectorAll('#adminSources [data-sint]');
+            for (var k = 0; k < sels.length; k++) { sels[k].addEventListener('change', function () {
+                var sel = this;
+                fetch('/api/sources/' + encodeURIComponent(sel.getAttribute('data-sint')) + '/interval',
+                    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ intervalMinutes: parseInt(sel.value, 10) }) })
+                    .catch(function () { loadAdminSources(); });
+            }); }
+        }).catch(function () { el('adminSources').innerHTML = '<p class="admin-note">불러오기 실패</p>'; });
+    }
         el('notifBell').addEventListener('click', openNotifPanel);
+        el('adminBtn').addEventListener('click', openAdminPanel);
+        el('adminClose').addEventListener('click', closeAdminPanel);
+        el('adminBackdrop').addEventListener('click', closeAdminPanel);
+        el('adminSettingsForm').addEventListener('submit', saveAdminSettings);
+        el('adminSyncAll').addEventListener('click', function () {
+            fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        });
         el('logoLink').addEventListener('click', goHome);
         el('totalCount').addEventListener('click', requestSync);
         el('tabStats').addEventListener('click', function () { setTab('stats'); });

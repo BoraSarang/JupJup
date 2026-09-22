@@ -9,6 +9,33 @@ async function api(path, opts) {
   return res.json();
 }
 
+/* ---------- R44 관리 토큰: 쓰기 API 자동 첨부 + 401 시 입력·재시도 ---------- */
+(function () {
+  const KEY = "jupjup_admin_token_3040";
+  const origFetch = window.fetch.bind(window);
+  window.fetch = async function (input, init) {
+    const url = typeof input === "string" ? input : (input && input.url) || "";
+    const method = ((init && init.method) || (input && input.method) || "GET").toUpperCase();
+    if (url.indexOf("/api/") !== 0 || method === "GET" || method === "HEAD") return origFetch(input, init);
+    let tok = "";
+    try { tok = localStorage.getItem(KEY) || ""; } catch (e) {}
+    const headers = {};
+    if (init && init.headers) {
+      if (init.headers.forEach) init.headers.forEach((v, k) => { headers[k] = v; });
+      else for (const k in init.headers) headers[k] = init.headers[k];
+    }
+    if (tok) headers["X-Auth-Token"] = tok;
+    const patched = Object.assign({}, init || {}, { method, headers });
+    let r = await origFetch(input, patched);
+    if (r.status !== 401) return r;
+    const v = prompt("관리 토큰을 입력하세요 (기기 내 브라우저에서 http://127.0.0.1:3040/api/admin/token 조회)");
+    if (!v) return r;
+    try { localStorage.setItem(KEY, v.trim()); } catch (e) {}
+    patched.headers["X-Auth-Token"] = v.trim();
+    return origFetch(input, patched);
+  };
+})();
+
 function toast(msg) {
   const t = $("toast");
   t.textContent = msg;
@@ -162,14 +189,81 @@ async function openSites() {
     try { sites = (await api("/api/sites")).sites || []; state.sites = sites; } catch (e) { console.error('[사이트] 조회 실패', e); }
   }
   if (sites.length === 0) { wrap.innerHTML = '<p class="msg">사이트 조회 실패</p>'; }
+  let srcEnabled = {};
+  try {
+    const srcData = await api("/api/sources");
+    const srcs = srcData.sources || [];
+    srcs.forEach((s) => { srcEnabled[s.id] = !!s.enabled; });
+  } catch (e) { console.error('[소스] 조회 실패', e); }
   sites.forEach((s) => {
     const div = document.createElement("div");
     div.className = "site-row";
+    const on = (s.sourceIds || []).length > 0 && (s.sourceIds || []).every((id) => srcEnabled[id] !== false);
     div.innerHTML = '<span class="badge-src" style="background:' + srcColor(s.name) + '">' + esc(s.name.slice(0, 1)) + "</span>" +
       '<div class="board-main"><div class="board-name">' + esc(s.name) + "</div>" +
-      '<div class="board-url">게시판 ' + (s.boardCount || 0) + " · 글 " + (s.postCount || 0) + "건</div></div>" +
+      '<div class="board-url">게시판 ' + (s.boardCount || 0) + " · 글 " + (s.postCount || 0) + "건</div>" +
+      '<div class="site-actions"><button class="btn' + (on ? " on" : "") + '" data-act="toggle">' + (on ? "ON" : "OFF") +
+      '</button><button class="btn" data-act="sync">수집</button><button class="btn" data-act="test">테스트</button>' +
+      '<button class="btn" data-act="purge">비우기</button></div><div class="test-preview" hidden></div></div>' +
       "<span class=\"link\">열기 ›</span>";
-    div.onclick = () => { $("siteModal").hidden = true; openBoardsSite(s.domain, s.name); };
+    const openBoards = () => { $("siteModal").hidden = true; openBoardsSite(s.domain, s.name); };
+    div.querySelector(".board-main").ondblclick = openBoards;
+    div.querySelector(".link").onclick = openBoards;
+    const prev = div.querySelector(".test-preview");
+    const setToggles = (enabled) => {
+      (s.sourceIds || []).forEach((id) => { srcEnabled[id] = enabled; });
+      const b = div.querySelector('[data-act="toggle"]');
+      b.textContent = enabled ? "ON" : "OFF";
+      b.classList.toggle("on", enabled);
+    };
+    div.querySelector('[data-act="toggle"]').onclick = async (e) => {
+      e.stopPropagation();
+      const target = !((s.sourceIds || []).every((id) => srcEnabled[id] !== false));
+      for (const id of (s.sourceIds || [])) {
+        try {
+          const r = await api("/api/sources/" + encodeURIComponent(id) + "/toggle", { method: "POST" });
+          srcEnabled[id] = !!r.enabled;
+        } catch (err) { toast("토글 실패"); return; }
+      }
+      setToggles(target);
+      toast(target ? "수집 켜짐" : "수집 꺼짐");
+    };
+    div.querySelector('[data-act="sync"]').onclick = async (e) => {
+      e.stopPropagation();
+      for (const id of (s.sourceIds || [])) {
+        await api("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourceId: id }) }).catch(() => {});
+      }
+      toast("수집 예약됨");
+    };
+    div.querySelector('[data-act="test"]').onclick = async (e) => {
+      e.stopPropagation();
+      const id = (s.sourceIds || [])[0];
+      if (!id) { toast("소스 없음"); return; }
+      prev.hidden = false;
+      prev.textContent = "테스트 중…";
+      try {
+        const r = await api("/api/crawl/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourceId: id }) });
+        if (r.ok) {
+          prev.innerHTML = "수집 " + r.found + "건<br>" + (r.preview || []).map((p) => "· " + esc(p.title)).join("<br>");
+        } else {
+          prev.textContent = "실패: " + (r.error || "");
+        }
+      } catch (err) { prev.textContent = "테스트 실패"; }
+    };
+    div.querySelector('[data-act="purge"]').onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm(s.name + " 게시글을 비웁니까? (보드·설정 유지)")) return;
+      let total = 0;
+      for (const id of (s.sourceIds || [])) {
+        try {
+          const r = await api("/api/sources/" + encodeURIComponent(id) + "/purge", { method: "POST" });
+          total += r.purged || 0;
+        } catch (err) { toast("비우기 실패"); return; }
+      }
+      toast(total + "건 비움");
+      loadSites().catch(() => {});
+      loadFeed(false);
+    };
     wrap.appendChild(div);
   });
   $("siteModal").hidden = false;
@@ -347,13 +441,51 @@ async function openDetail(id) {
       gallery +
       '<div class="body">' + bodyText + "</div>" +
       '<div class="actions"><a class="btn primary" href="' + esc(p.originalUrl) + '" target="_blank" rel="noopener">원문 보기 ↗</a>' +
-      '<button class="btn" id="btnCopyLink">링크 복사</button></div>';
+      '<button class="btn" id="btnCopyLink">링크 복사</button>' +
+      '<button class="btn" id="btnRefreshPost">새로고침</button></div>';
     $("btnCopyLink").onclick = async () => {
       try { await navigator.clipboard.writeText(p.originalUrl); toast("링크 복사됨"); }
       catch (e) { toast("복사 실패"); }
     };
+    $("btnRefreshPost").onclick = async () => {
+      try {
+        const r = await api("/api/posts/" + id + "/refresh", { method: "POST" });
+        toast(r.ok ? "보충됨" : "보충 실패");
+        if (r.ok) openDetail(id);
+      } catch (e) { toast("새로고침 실패"); }
+    };
     $("detailModal").hidden = false;
   } catch (e) { toast("상세 조회 실패"); }
+}
+
+async function loadNotifs() {
+  const wrap = $("notifList");
+  wrap.innerHTML = "";
+  $("notifMsg").textContent = "";
+  try {
+    const d = await api("/api/notifications?page=1&pageSize=20");
+    const items = d.notifications || [];
+    if (items.length === 0) { wrap.innerHTML = '<p class="msg">알림이 없습니다</p>'; return; }
+    items.forEach((n) => {
+      const div = document.createElement("div");
+      div.className = "notif-row";
+      div.innerHTML = "<div><b>" + esc(n.type) + "</b><br>" + esc(n.summary) + '</div>' +
+        '<div class="nmeta">' + fmtTime(n.createdAt) + (n.isRead ? "" : " · 안읽음") + "</div>" +
+        '<div class="nbtns">' +
+        (n.isRead ? "" : '<button class="btn" data-nread="' + n.id + '">읽음</button>') +
+        '<button class="btn" data-ndel="' + n.id + '">삭제</button></div>';
+      const rd = div.querySelector("[data-nread]");
+      if (rd) rd.onclick = async () => {
+        try { await api("/api/notifications/" + n.id + "/read", { method: "POST" }); loadNotifs(); }
+        catch (e) { toast("실패"); }
+      };
+      div.querySelector("[data-ndel]").onclick = async () => {
+        try { await api("/api/notifications/" + n.id, { method: "DELETE" }); loadNotifs(); }
+        catch (e) { toast("실패"); }
+      };
+      wrap.appendChild(div);
+    });
+  } catch (e) { $("notifMsg").textContent = "알림 조회 실패"; }
 }
 
 async function loadSettingsForm() {
@@ -370,6 +502,19 @@ async function loadSettingsForm() {
 }
 
 function init() {
+  $("btnNotif").onclick = () => { $("notifDrawer").hidden = false; loadNotifs(); };
+  $("btnCloseNotif").onclick = () => { $("notifDrawer").hidden = true; };
+  $("btnNotifReadAll").onclick = async () => {
+    try { await api("/api/notifications/read-all", { method: "POST" }); toast("모두 읽음"); loadNotifs(); }
+    catch (e) { toast("실패"); }
+  };
+  $("btnNotifCleanup").onclick = async () => {
+    try {
+      const r = await api("/api/notifications/cleanup", { method: "POST" });
+      toast((r.deleted || 0) + "건 정리됨");
+      loadNotifs();
+    } catch (e) { toast("실패"); }
+  };
   $("logo").onclick = () => { state.categoryId = null; state.q = ""; $("q").value = ""; loadCategories(); loadFeed(false); };
   let qTimer = null;
   $("q").oninput = (e) => {
@@ -437,7 +582,7 @@ function init() {
   $("btnApplyBoards").onclick = () => applyBoards(false);
   $("btnApplySync").onclick = () => applyBoards(true);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { $("detailModal").hidden = true; $("settingsDrawer").hidden = true; $("boardModal").hidden = true; $("siteModal").hidden = true; }
+    if (e.key === "Escape") { $("detailModal").hidden = true; $("settingsDrawer").hidden = true; $("boardModal").hidden = true; $("siteModal").hidden = true; $("notifDrawer").hidden = true; }
   });
   loadCategories().then(() => loadFeed(false)).catch(() => { $("feed").innerHTML = "<p>서버 연결 실패</p>"; });
   loadSites().catch(() => {});

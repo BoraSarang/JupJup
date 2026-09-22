@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.borasarang.common.prefs.SettingsStores
 import com.borasarang.planjupjup.data.repository.SettingsData
 import com.borasarang.planjupjup.util.Constants
@@ -28,6 +29,7 @@ class PreferencesManager(private val context: Context) {
         val NOTIF_NEW_PLAN = booleanPreferencesKey("notif_new_plan")
         val NOTIF_FAILURE = booleanPreferencesKey("notif_failure")
         val CRAWL_ENABLED = booleanPreferencesKey("crawl_enabled")
+        val ADMIN_TOKEN = stringPreferencesKey("admin_token")
     }
 
     suspend fun getSettings(): SettingsData {
@@ -64,6 +66,15 @@ class PreferencesManager(private val context: Context) {
         context.settingsStore.edit { prefs ->
             prefs[Keys.CRAWL_ENABLED] = enabled
         }
+    }
+
+    /** 관리웹 토큰 — 최초 1회 발급·영속 (R44). 값은 루프백 페어링 외 노출 금지 */
+    suspend fun getAdminToken(): String {
+        val existing = context.settingsStore.data.map { it[Keys.ADMIN_TOKEN] }.first()
+        if (!existing.isNullOrBlank()) return existing
+        val fresh = java.util.UUID.randomUUID().toString().replace("-", "")
+        context.settingsStore.edit { it[Keys.ADMIN_TOKEN] = fresh }
+        return fresh
     }
 
     companion object {

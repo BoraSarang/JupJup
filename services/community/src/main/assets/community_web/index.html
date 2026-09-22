@@ -13,6 +13,7 @@
     <div class="logo" id="logo">📰 커뮤니티줍줍</div>
     <div class="search"><input id="q" type="search" placeholder="제목 검색…" aria-label="제목 검색"></div>
     <button id="btnSync" class="btn" title="지금 수집">⟳ 수집</button>
+    <button id="btnNotif" class="btn icon" title="알림" aria-label="알림">🔔</button>
     <button id="btnSettings" class="btn icon" title="설정" aria-label="설정">⚙️</button>
   </div>
 </header>
@@ -61,11 +62,19 @@
   </div>
 </div>
 <div id="toast" class="toast" hidden></div>
+<div id="notifDrawer" class="drawer" hidden>
+  <div class="drawer-box" role="dialog" aria-modal="true" aria-label="알림">
+    <div class="drawer-head"><h2>알림</h2><button id="btnCloseNotif" class="btn icon" aria-label="닫기">✕</button></div>
+    <div class="drawer-actions"><button id="btnNotifReadAll" class="btn">모두 읽음</button><button id="btnNotifCleanup" class="btn">오래된 알림 정리</button></div>
+    <div id="notifList"></div>
+    <div id="notifMsg" class="msg"></div>
+  </div>
+</div>
 <div id="siteModal" class="modal" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-label="사이트 관리">
     <button id="btnCloseSites" class="btn icon modal-close" aria-label="닫기">✕</button>
     <h2>사이트 관리</h2>
-    <p class="msg">수집할 사이트의 게시판을 고르세요. 사이트를 누르면 게시판 목록이 열립니다.</p>
+    <p class="msg">수집할 사이트의 게시판을 고르세요. 사이트를 누르면 게시판 목록이 열립니다. ON/OFF·테스트·비우기는 소스 단위 즉시 적용됩니다.</p>
     <div id="siteList"></div>
   </div>
 </div>
