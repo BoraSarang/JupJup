@@ -23,8 +23,12 @@ interface NewsArticleDao {
     @Query("SELECT * FROM news_articles WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<NewsArticle>
 
-    /** 미번역 뉴스 (제목 기준, 최신 순, R41) */
-    @Query("SELECT * FROM news_articles WHERE titleKo IS NULL ORDER BY publishedAt DESC LIMIT :limit")
+    /** 미번역 뉴스 (제목 없거나 요약 미번역, 최신 순, R41·R50) */
+    @Query(
+        """SELECT * FROM news_articles
+        WHERE titleKo IS NULL OR (summary IS NOT NULL AND summaryKo IS NULL)
+        ORDER BY publishedAt DESC LIMIT :limit"""
+    )
     suspend fun getUntranslated(limit: Int): List<NewsArticle>
 
     /** 번역 부분 업데이트. null인 쪽은 기존값 보존 */
@@ -40,6 +44,10 @@ interface NewsArticleDao {
 
     @Query("SELECT appId FROM news_app_relation WHERE newsId = :newsId")
     suspend fun getAppIdsByNewsId(newsId: String): List<String>
+
+    /** 뉴스 목록용 관계 일괄 조회 (N+1 제거, R49) */
+    @Query("SELECT newsId, appId FROM news_app_relation WHERE newsId IN (:newsIds)")
+    suspend fun getRelationsByNewsIds(newsIds: List<String>): List<NewsAppRelation>
 
     @Query(
         """SELECT * FROM news_articles

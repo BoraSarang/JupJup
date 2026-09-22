@@ -42,7 +42,8 @@
   ];
   const SORT_CHOICES = [
     { label: '인기순', sort: 'stars' }, { label: '최신순', sort: 'newest' },
-    { label: '가격낮은순', sort: 'priceAsc' }, { label: '업데이트순', sort: 'updated' }
+    { label: '가격낮은순', sort: 'priceAsc' }, { label: '업데이트순', sort: 'updated' },
+    { label: 'MAS 우선', sort: 'mas' }
   ];
   const MAIN_FILTERS = [
     { label: '전체', main: '', category: '' },
@@ -61,11 +62,16 @@
   const PAGE_SIZE = 20;
   const NEWS_PAGE_SIZE = 5;
 
+  const NEWS_LAYOUT_KEY = 'macjupjup_news_layout';
   const state = {
     view: 'dashboard',
     storeSub: 'timeline',
     filters: { license: '', cat: '', q: '', sort: 'stars', page: 1, newOnly: false, updatedOnly: false },
-    news: { main: 'mac', sub: '', page: 1, q: '', detailId: null, topTab: 'news', listIds: [], total: 0 },
+    news: {
+      main: 'mac', sub: '', page: 1, q: '', detailId: null, topTab: 'news',
+      listIds: [], total: 0,
+      layout: (function () { try { return localStorage.getItem(NEWS_LAYOUT_KEY) === 'B' ? 'B' : 'A'; } catch (e) { return 'A'; } })()
+    },
     mainFilter: { main: '', category: '' },
     dashPage: 1,
     lang: 'ko',
@@ -314,31 +320,38 @@
     if (/^[vV]?\d/.test(v)) return 'v' + v.replace(/^[vV]/, '');
     return '';
   }
-  /* 제목에서 키워드 추출 (인기 태그용): 영문 4자+·숫자 포함·한글 3자+ */
+  /* 제목에서 키워드 추출 (인기 태그용): 영문 4자+·숫자 포함·한글 3자+, 한/영 병합 (R50) */
   const TAG_STOP = new Set(['THE', 'AND', 'FOR', 'WITH', 'FROM', 'NEW', 'APP', 'MAC', 'PRO', 'YOU', 'YOUR',
-    'WILL', 'NEXT', 'COME', 'USING', 'MAKE', 'WITH', 'SHOULD', 'GUIDE', 'BUYER', 'UPGRADE', 'RELEASE',
+    'WILL', 'NEXT', 'COME', 'USING', 'MAKE', 'SHOULD', 'GUIDE', 'BUYER', 'UPGRADE', 'RELEASE',
     'UPDATE', 'MONDAY', 'STARTING', 'BREAKOUT', 'STARTUP', 'ACCOUNTANT', 'BLOCKED', 'SAYS', 'SAY', 'GET',
-    'BETTER', 'AFTER', 'ABOUT', 'INTO', 'OVER', 'UNDER', 'BETWEEN', 'AFTER', 'BEFORE', 'WHILE', 'AFTER']);
-  const TAG_KEEP_SHORT = new Set(['Arc', 'M3', 'M4', 'iOS']);
+    'BETTER', 'AFTER', 'ABOUT', 'INTO', 'OVER', 'UNDER', 'BETWEEN', 'BEFORE', 'WHILE', 'THIS', 'THAT',
+    'HAVE', 'HAS', 'HOW', 'WHAT', 'WHY', 'WHO', 'WHEN', 'WHERE', 'CAN', 'NOT', 'ARE', 'WAS', 'WERE',
+    'OUR', 'THEIR', 'THEM', 'THESE', 'THOSE', 'ITS', 'IT\'S', 'DON\'T', 'DOESN\'T', 'ISN\'T',
+    '애플', '사용자', '지원', '가능', '공개', '발표', '출시', '업데이트', '새로', '통해', '위해',
+    '그리고', '하지만', '이번', '최근', '통해', '관련', '대한', '위한', '있는', '없는', '있다']);
+  const TAG_KEEP_SHORT = new Set(['Arc', 'M3', 'M4', 'M5', 'iOS', 'macOS', 'Safari', 'Xcode', 'Swift']);
   function extractTags(items) {
     const freq = {};
     items.forEach(n => {
-      const words = String(n.title || '').match(/[A-Za-z][A-Za-z0-9+_.-]{1,}|[가-힣]{2,}/g) || [];
+      const sources = [n.title, n.titleKo].filter(Boolean);
+      const words = sources.join(' ').match(/[A-Za-z][A-Za-z0-9+_.-]{1,}|[가-힣]{2,}/g) || [];
       const seen = new Set();
       words.forEach(w => {
         if (/[가-힣]/.test(w)) {
           if (w.length < 3 || seen.has(w)) return;
+          if (TAG_STOP.has(w)) return;
           seen.add(w);
           freq[w] = (freq[w] || 0) + 1;
           return;
         }
         const up = w.toUpperCase();
         if (TAG_STOP.has(up) || seen.has(w)) return;
-        // 영문은 대문자·숫자 포함만 (소문자 일반동사 제외), 4자+ (짧은 고유명사는 예외)
         if (!/[A-Z0-9]/.test(w)) return;
-        if (w.length < 4 && !/\d/.test(w) && !TAG_KEEP_SHORT.has(w)) return;
+        if (w.length < 4 && !/\d/.test(w) && !TAG_KEEP_SHORT.has(w) && !TAG_KEEP_SHORT.has(w.toLowerCase())) return;
         seen.add(w);
-        freq[w] = (freq[w] || 0) + 1;
+        // 브랜드/제품형 토큰(내부 대문자·숫자 포함) 가중
+        const brandish = /[a-z][A-Z]/.test(w) || /\d/.test(w) || TAG_KEEP_SHORT.has(w);
+        freq[w] = (freq[w] || 0) + (brandish ? 2 : 1);
       });
     });
     return Object.keys(freq).sort((a, b) => freq[b] - freq[a]).slice(0, 10).map(k => ({ tag: k, count: freq[k] }));
@@ -380,7 +393,7 @@
     });
     if (view === 'dashboard') loadDashboard();
     else if (view === 'appstore') loadStore();
-    else loadNews();
+    else { applyNewsLayout(); loadNews(); }
     window.scrollTo(0, 0);
   }
 
@@ -395,7 +408,10 @@
       api('/api/stats/trends').catch(e => { console.error('[대시보드] 트렌드 실패', e); return null; })
     ]).then(([main, sources, trends]) => {
       if (seq !== dashSeq) return;
-      if (main) renderDashboard(main, sources || [], trends);
+      if (main) {
+        renderDashboard(main, sources || [], trends);
+        setNavCounts({ news: ((main.counts || {}).mac || 0) + ((main.counts || {}).ai || 0) + ((main.counts || {}).sec || 0) });
+      }
       else $('dashHeroStats').textContent = '불러오기 실패';
     });
   }
@@ -480,10 +496,12 @@
     if (!dashCache) return;
     const d = dashCache.main;
     const f = state.mainFilter;
+    // R49: 대시보드 뉴스 행에도 관련앱 병합 (/api/main relatedApps)
+    const withRel = (arr) => arr || [];
     const groups = [
-      { main: 'mac', icon: '🍎', label: '맥 소식', items: d.mac || [], src: 'MacRumors · 9to5Mac · The Verge' },
-      { main: 'ai', icon: '✦', label: 'AI 소식', items: d.ai || [], src: 'trawling.dev · Product Hunt · GeekNews' },
-      { main: 'sec', icon: '🛡', label: '보안 소식', items: d.sec || [], src: 'BleepingComputer · The Hacker News' }
+      { main: 'mac', icon: '🍎', label: '맥 소식', items: withRel(d.mac || []), src: 'MacRumors · 9to5Mac · The Verge' },
+      { main: 'ai', icon: '✦', label: 'AI 소식', items: withRel(d.ai || []), src: 'trawling.dev · Product Hunt · GeekNews' },
+      { main: 'sec', icon: '🛡', label: '보안 소식', items: withRel(d.sec || []), src: 'BleepingComputer · The Hacker News' }
     ];
     const show = groups.filter(g => !f.main || g.main === f.main);
     ['mac', 'ai', 'sec'].forEach(m => { $('group-' + m).style.display = (!f.main || f.main === m) ? '' : 'none'; });
@@ -493,19 +511,40 @@
       $('grows-' + g.main).innerHTML = g.items.map(n => newsRowHtml(n)).join('') || '<div class="empty-state">뉴스 없음</div>';
     });
     $$('#view-dashboard .nrow').forEach(el => {
-      el.onclick = () => { state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id; switchView('news'); };
+      el.onclick = (ev) => {
+        const mini = ev.target.closest('[data-app]');
+        if (mini) { ev.stopPropagation(); openModal(mini.dataset.app); return; }
+        state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id;
+        if (state.news.layout !== 'B') setNewsLayout('B');
+        switchView('news');
+      };
     });
   }
 
+  /* R51: HOT 규칙 — 6h NEW / 6~24h HOT / 초과 무표시 */
+  function newsBadges(n) {
+    const age = Date.now() - (n.publishedAt || 0);
+    let html = '';
+    if (age < 6 * 3600 * 1000) html += '<span class="newtag">NEW</span>';
+    else if (age < 24 * 3600 * 1000) html += '<span class="hot">HOT</span>';
+    return html;
+  }
+
   function newsRowHtml(n) {
-    const fresh = Date.now() - (n.publishedAt || 0) < 24 * 3600 * 1000;
+    const rel = (n.relatedApps || []).slice(0, 3);
+    const relMore = (n.relatedApps || []).length - rel.length;
     return '<button type="button" class="nrow" data-id="' + esc(n.id) + '" data-main="' + esc(n.main) + '">' +
       (n.thumbnailUrl ? '<img class="nthumb" src="' + esc(n.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
       '<span class="nbody"><span class="nmeta"><span class="subpill">' + esc(n.sub) + '</span>' +
       '<span>' + esc(n.sourceName) + ' · ' + fmtTime(n.publishedAt) + '</span>' +
-      (fresh ? '<span class="hot">HOT</span>' : '') + '</span>' +
+      newsBadges(n) + '</span>' +
       '<span class="ntitle">' + esc(newsTitle(n)) + '</span>' +
-      (newsSummary(n) ? '<span class="ndesc">' + esc(newsSummary(n)) + '</span>' : '') + '</span>' +
+      (newsSummary(n) ? '<span class="ndesc">' + esc(newsSummary(n)) + '</span>' : '') +
+      (rel.length ? '<span class="hrow-rel">' + rel.map(a =>
+        '<span class="relmini" data-app="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
+        '<span>' + esc(a.name) + '</span></span>'
+      ).join('') + (relMore > 0 ? '<span class="relmore">+' + relMore + '</span>' : '') + '</span>' : '') +
+      '</span>' +
       '<span class="narrow" aria-hidden="true">↗</span></button>';
   }
 
@@ -532,7 +571,7 @@
       };
     });
 
-    // 세일 중인 앱 (업데이트 목록에 유료가 없으면 유료 목록 조회)
+    // 세일 중인 앱 — App 엔티티에 세일 필드 없음(R50 확인): 유료+최근 갱신 근사 셀렉션 유지
     const renderSale = (paid) => {
       $('sideSaleCount').textContent = paid.length + '개';
       $('sideSale').innerHTML = paid.map(a =>
@@ -544,7 +583,7 @@
     };
     const paid = (d.updatedApps || []).filter(a => a.license === 'PAID').slice(0, 3);
     if (paid.length) renderSale(paid);
-    else api('/api/apps?license=PAID&page=1&pageSize=3').then(r => renderSale(r.apps || [])).catch(() => renderSale([]));
+    else api('/api/apps?license=PAID&page=1&pageSize=3&sort=mas').then(r => renderSale(r.apps || [])).catch(() => renderSale([]));
 
     // 카테고리 바로가기 (실측 카운트)
     const byCat = ((trends || {}).byCategory) || {};
@@ -575,7 +614,6 @@
     for (const m of NEWS_MAINS) { if ((NEWS_SUBS[m.id] || []).includes(sub)) return m.id; }
     return 'mac';
   }
-
   /* ================= 앱 스토어 (목업 /apps) ================= */
   function switchStoreSub(sub) {
     state.storeSub = sub;
@@ -594,7 +632,6 @@
     else loadStoreList();
     loadStoreChrome();
   }
-
   function storeQueryFromFilters() {
     const f = state.filters;
     const p = new URLSearchParams({ sort: f.sort, page: f.page, pageSize: PAGE_SIZE });
@@ -717,6 +754,7 @@
       storeCache = d;
       $('appsCountLabel').textContent = d.total;
       $('storeActiveCat').textContent = state.filters.cat || '전체';
+      setNavCounts({ app: d.total });
       if (!d.apps.length) { empty.hidden = false; $('pagination').innerHTML = ''; return; }
       grid.innerHTML = d.apps.map(cardHtml).join('');
       bindCards(grid);
@@ -736,6 +774,7 @@
       if (seq !== storeChromeSeq) return;
       const total = d.totalApps || 0;
       $('storeAppsLive').textContent = total + ' apps · 본체';
+      setNavCounts({ app: total });
       // 티커 (최신 헤드라인)
       const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
       $('storeTicker').innerHTML = heads.map(n =>
@@ -974,7 +1013,7 @@
     });
     if (tab === 'appstore') { switchView('appstore'); return; }
     if (tab === 'bookmarks') loadBookmarks();
-    else loadNews();
+    else { applyNewsLayout(); loadNews(); }
   }
 
   function switchNewsMain(main) {
@@ -983,6 +1022,7 @@
     state.news.page = 1;
     state.news.detailId = null;
     syncNewsMains();
+    applyNewsLayout();
     loadNews();
   }
 
@@ -1006,16 +1046,29 @@
         state.news.page = 1;
         state.news.detailId = null;
         syncNewsMains();
+        applyNewsLayout();
         loadNews();
       };
     });
     const label = NEWS_MAINS.find(m => m.id === state.news.main);
     $('nlistTitle').textContent = state.news.main.toUpperCase() + ' / ' + ((label && label.label) || '');
   }
-
   let newsSeq = 0;
+  function setNewsLayout(layout) {
+    state.news.layout = layout === 'B' ? 'B' : 'A';
+    try { localStorage.setItem(NEWS_LAYOUT_KEY, state.news.layout); } catch (e) {}
+    applyNewsLayout();
+  }
+  function applyNewsLayout() {
+    const hybrid = state.news.layout === 'A';
+    const h = $('newsHybrid'), n3 = $('news3');
+    if (h) h.hidden = !hybrid;
+    if (n3) n3.hidden = hybrid;
+    $$('#layoutToggle .ltbtn').forEach(b => b.classList.toggle('active', b.dataset.layout === state.news.layout));
+  }
   function loadNews() {
     syncNewsMains();
+    applyNewsLayout();
     const seq = ++newsSeq;
     Promise.all([
       api('/api/main').catch(e => { console.error('[뉴스] /api/main 실패', e); return null; }),
@@ -1023,7 +1076,72 @@
     ]).then(([main, list]) => {
       if (seq !== newsSeq) return;
       if (main) renderNewsChrome(main);
-      if (list) renderNewsList(list);
+      if (state.news.layout === 'A') {
+        if (main) renderCuration(main);
+        if (list) renderHybridList(list);
+      } else if (list) renderNewsList(list);
+    });
+  }
+
+  /* R49: A형 — 큐레이션 8앱 상단 그리드 */
+  function renderCuration(d) {
+    const apps = (d.updatedApps || []).slice(0, 8);
+    $('curCount').textContent = String(apps.length || 8);
+    $('curationGrid').innerHTML = apps.map(a =>
+      '<button type="button" class="curcard" data-id="' + esc(a.id) + '" role="listitem">' +
+      appIcon(a, 'hicon') +
+      '<b>' + esc(a.name) + '</b>' +
+      '<span class="ver">' + esc([verText(a), a.category].filter(Boolean).join(' · ')) + '</span>' +
+      priceText(a) + '</button>'
+    ).join('') || '<div class="empty-state">큐레이션 없음</div>';
+    $$('#curationGrid .curcard').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
+  }
+
+  /* R49: A형 — 뉴스 행 + 인라인 관련앱 미니카드 */
+  function renderHybridList(d) {
+    const box = $('hybridList');
+    if (!d.news.length) {
+      box.innerHTML = '<div class="empty-state"><p class="empty-state-title">뉴스가 없습니다</p></div>';
+      $('hybridPagination').innerHTML = '';
+      return;
+    }
+    state.news.listIds = d.news.map(x => x.id);
+    state.news.total = d.total || 0;
+    box.innerHTML = d.news.map(n => {
+      const rel = (n.relatedApps || []).slice(0, 3);
+      const relMore = (n.relatedApps || []).length - rel.length;
+      return '<button type="button" class="hrow" data-id="' + esc(n.id) + '" data-main="' + esc(n.main) + '" role="listitem">' +
+        (n.thumbnailUrl ? '<img class="nthumb" src="' + esc(n.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+        '<span class="hrow-body">' +
+        '<span class="hrow-meta"><span class="subpill">' + esc(n.sub) + '</span>' +
+        '<span>' + esc(n.sourceName) + ' · ' + fmtTime(n.publishedAt) + '</span>' +
+        newsBadges(n) + '</span>' +
+        '<span class="hrow-title">' + esc(newsTitle(n)) + '</span>' +
+        (newsSummary(n) ? '<span class="hrow-desc">' + esc(newsSummary(n)) + '</span>' : '') +
+        (rel.length ? '<span class="hrow-rel">' + rel.map(a =>
+          '<span class="relmini" data-app="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
+          '<span>' + esc(a.name) + '</span></span>'
+        ).join('') + (relMore > 0 ? '<span class="relmore">+' + relMore + '</span>' : '') + '</span>' : '') +
+        '</span>' +
+        '<span class="narrow" aria-hidden="true">↗</span></button>';
+    }).join('');
+    $$('#hybridList .hrow').forEach(el => {
+      el.onclick = (ev) => {
+        const mini = ev.target.closest('[data-app]');
+        if (mini) { ev.stopPropagation(); openModal(mini.dataset.app); return; }
+        state.news.detailId = el.dataset.id;
+        if (el.dataset.main && el.dataset.main !== state.news.main) {
+          state.news.main = el.dataset.main;
+          state.news.sub = '';
+          syncNewsMains();
+        }
+        setNewsLayout('B');
+        applyNewsLayout();
+        openNewsDetail(el.dataset.id);
+      };
+    });
+    renderPagination($('hybridPagination'), d.page, d.pageSize, d.total, p => {
+      state.news.page = p; loadNews(); window.scrollTo(0, 0);
     });
   }
 
@@ -1034,6 +1152,7 @@
     $('ncount-sec').textContent = c.sec || 0;
     const total = (c.mac || 0) + (c.ai || 0) + (c.sec || 0);
     $('topNewsCount').textContent = total;
+    setNavCounts({ news: total });
     // 티커 (최신 헤드라인)
     const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
     const items = heads.map(n =>
@@ -1049,7 +1168,7 @@
         '<div class="railrow"><span class="dot' + (s.lastStatus === 'FAILED' ? ' wait' : '') + '"></span>' +
         '<span>' + esc(s.name) + '</span><span class="mono">' + fmtTime(s.lastRunAt) + '</span></div>'
       ).join('');
-      $('railSrcRows').innerHTML = rows;
+    $('railSrcRows').innerHTML = rows;
     }).catch(() => {});
     // 카테고리 구성안
     $('railCats').innerHTML = '<div class="railcats">' + NEWS_MAINS.map(m =>
@@ -1063,12 +1182,32 @@
         state.news.sub = b.dataset.sub;
         state.news.page = 1;
         syncNewsMains();
+        applyNewsLayout();
         loadNews();
         window.scrollTo(0, 0);
       };
     });
+    renderSponsored();
   }
 
+  /* R51: SPONSORED 슬롯 (인기순 1개, 스토어 이동) */
+  let sponLoaded = false;
+  function renderSponsored() {
+    if (sponLoaded) return;
+    sponLoaded = true;
+    api('/api/apps?page=1&pageSize=1&sort=stars').then(d => {
+      const a = d && d.apps && d.apps[0];
+      const box = $('railSponsored');
+      if (!box) return;
+      if (!a) { box.innerHTML = '<p class="mini-empty">광고 슬롯 준비 중</p>'; return; }
+      box.innerHTML = '<button type="button" class="sponrow" data-id="' + esc(a.id) + '">' +
+        appIcon(a, 'hicon') +
+        '<span><b>' + esc(a.name) + '</b><small>' + esc(a.category || '') + ' · ' + (a.license === 'FREE' ? '무료' : '유료') + '</small></span>' +
+        '<span class="spon-cta">AD</span></button>';
+      const b = box.querySelector('.sponrow');
+      if (b) b.onclick = () => openModal(b.dataset.id);
+    }).catch(() => {});
+  }
   function buildNewsQuery() {
     const p = new URLSearchParams({ page: state.news.page, pageSize: NEWS_PAGE_SIZE });
     if (state.news.main) p.set('main', state.news.main);
@@ -1076,7 +1215,6 @@
     if (state.news.q) p.set('q', state.news.q);
     return '/api/news?' + p.toString();
   }
-
   function logoText(src) {
     const m = { '9to5Mac': '9t5', 'MacRumors': 'MR', 'The Verge': 'VG', 'BleepingComputer': 'BC', 'The Hacker News': 'HN', '보안뉴스': '보안', '데일리시큐': '시큐', 'TechCrunch': 'TC', 'MarkTechPost': 'MT', 'OpenAI': 'AI' };
     for (const k of Object.keys(m)) { if ((src || '').includes(k)) return m[k]; }
@@ -1097,7 +1235,7 @@
       '<button type="button" class="ncard' + (state.news.detailId === n.id ? ' sel' : '') + '" data-id="' + esc(n.id) + '">' +
       '<span class="ncard-top"><i class="srclogo">' + esc(logoText(n.sourceName)) + '</i>' +
       '<span>' + esc(n.sourceName) + '</span>' +
-      ((Date.now() - (n.publishedAt || 0) < 6 * 3600 * 1000) ? '<span class="newtag">NEW</span>' : '') +
+      newsBadges(n) +
       '<time>' + fmtTime(n.publishedAt) + '</time></span>' +
       '<span class="ncard-main"><span class="ncard-txt"><b>' + esc(newsTitle(n)) + '</b>' +
       (newsSummary(n) ? '<p>' + esc(newsSummary(n)) + '</p>' : '') + '</span>' +
@@ -1124,6 +1262,7 @@
     state.news.page = target;
     pendingEdge = edge || null;
     state.news.detailId = null;
+    applyNewsLayout();
     loadNews();
     window.scrollTo(0, 0);
   }
@@ -1133,6 +1272,8 @@
     $$('#newsList .ncard').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
     const box = $('newsDetail');
     if (!silent) box.scrollIntoView({ block: 'nearest' });
+    // A형에서는 상세가 숨김 → B형 강제 전환
+    if (state.news.layout === 'A') setNewsLayout('B');
     api('/api/news/' + encodeURIComponent(id)).then(n => {
       if (state.news.detailId !== id) return;
       renderNewsDetail(n);
@@ -1193,7 +1334,7 @@
     box.innerHTML = apps.length ? apps.map(a =>
       '<button type="button" class="railapp" data-id="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
       '<span><b>' + esc(a.name) + '</b><small>' + esc((a.category || '') + ' · ' + (a.version || '')) + '</small></span></button>'
-    ).join('') : '<p class="muted sm">연동된 앱이 없습니다.</p>';
+    ).join('') : '<p class="muted sm">연동된 앱이 없습니다. 제목에 앱 이름이 포함되면 자동 연동됩니다.</p>';
     $$('#railApps .railapp').forEach(b => { b.onclick = () => openModal(b.dataset.id); });
   }
 
@@ -1203,6 +1344,8 @@
     $('nlistTitle').textContent = 'BOOKMARKS / ' + list.length;
     $('newsSubChips').innerHTML = '';
     $('newsSubChips2').innerHTML = '';
+    // 북마크는 B형 목록 사용
+    setNewsLayout('B');
     const box = $('newsList');
     if (!list.length) {
       box.innerHTML = '<div class="empty-state"><p class="empty-state-title">북마크가 없습니다</p><p class="empty-state-desc">뉴스 상세에서 ☆ 북마크 저장을 눌러보세요.</p></div>';
@@ -1348,6 +1491,15 @@
     $$('#topTabs .toptab').forEach(b => { b.onclick = () => switchNewsTop(b.dataset.top); });
     // 뉴스 main 탭
     $$('#newsMains .mainpill').forEach(b => { b.onclick = () => switchNewsMain(b.dataset.main); });
+    // R49: A/B 레이아웃 토글 (localStorage 기억)
+    $$('#layoutToggle .ltbtn').forEach(b => {
+      b.onclick = () => {
+        setNewsLayout(b.dataset.layout);
+        state.news.detailId = null;
+        state.news.page = 1;
+        loadNews();
+      };
+    });
     // 메인 더보기
     $('dashAppsMore').onclick = () => switchView('appstore');
     $('dashLoadMore').onclick = () => {
@@ -1360,7 +1512,13 @@
           const box = $('grows-' + m);
           box.innerHTML += (d.news || []).map(n => newsRowHtml(n)).join('');
           $$('.nrow', box).forEach(el => {
-            el.onclick = () => { state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id; switchView('news'); };
+            el.onclick = (ev) => {
+              const mini = ev.target.closest('[data-app]');
+              if (mini) { ev.stopPropagation(); openModal(mini.dataset.app); return; }
+              state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id;
+              if (state.news.layout !== 'B') setNewsLayout('B');
+              switchView('news');
+            };
           });
         }).catch((e) => { console.error('[대시보드] 더보기 실패', e); });
       });
@@ -1371,7 +1529,7 @@
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
         const q = e.target.value.trim();
-        if (state.view === 'news') { state.news.q = q; state.news.page = 1; loadNews(); }
+        if (state.view === 'news') { state.news.q = q; state.news.page = 1; applyNewsLayout(); loadNews(); }
         else if (state.view === 'appstore') { state.filters.q = q; state.filters.page = 1; loadStoreList(); }
         else if (q) { state.filters.q = q; switchView('appstore'); }
       }, 300);
@@ -1415,12 +1573,12 @@
       $('langToggle').textContent = state.lang === 'ko' ? '한' : 'EN';
       toast(state.lang === 'ko' ? '한국어' : '원문');
       // 현재 보기 즉시 반영
-      if (state.view === 'appstore') {
+    if (state.view === 'appstore') {
         if (state.storeSub === 'timeline' || state.storeSub === 'watchlist') loadStoreList();
         else loadStatsPanel();
       } else if (state.view === 'news') {
         if (state.news.detailId) openNewsDetail(state.news.detailId, true);
-        else loadNews();
+        else { applyNewsLayout(); loadNews(); }
       }
       if (state.modal.currentId) openModal(state.modal.currentId, true);
     };
@@ -1437,10 +1595,24 @@
       btn.textContent = t.showing === 'ko' ? '원문보기' : '번역 보기';
     });
     // 카운트
-    api('/api/apps?page=1&pageSize=1').then(d => { $('topAppCount').textContent = d.total; }).catch(() => {});
+    api('/api/apps?page=1&pageSize=1').then(d => {
+      $('topAppCount').textContent = d.total;
+      setNavCounts({ app: d.total });
+    }).catch(() => {});
     updateBmCount();
+    applyNewsLayout();
     switchView('dashboard');
     console.log('[INFO] [FEATURE] 맥줍줍 포털 로드 완료');
+  }
+
+  /* R51: 헤더 내비 카운트 배지 */
+  function setNavCounts(part) {
+    if (part.app != null) {
+      ['navAppCount', 'navAppCountM'].forEach(id => { const el = $(id); if (el) el.textContent = part.app; });
+    }
+    if (part.news != null) {
+      ['navNewsCount', 'navNewsCountM'].forEach(id => { const el = $(id); if (el) el.textContent = part.news; });
+    }
   }
 
   if (document.readyState === 'loading') {

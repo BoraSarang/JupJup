@@ -52,7 +52,7 @@ class TranslateWorker(
                 kotlinx.coroutines.delay(500)
             }
             DebugLogger.i("번역", "번역 워커 완료 $done/${targets.size}건")
-            // R41: 뉴스 제목·요약 번역 (제목 기준, 최신 순, 최대 30건/실행)
+            // R41·R50: 뉴스 제목·요약 번역 (미번역 대상, 최신 순, 최대 80건/실행)
             translateNews(app)
             Result.success()
         } catch (e: Exception) {
@@ -94,6 +94,6 @@ class TranslateWorker(
 
     companion object {
         const val MAX_PER_RUN = 100
-        const val MAX_NEWS_PER_RUN = 30
+        const val MAX_NEWS_PER_RUN = 80
     }
 }

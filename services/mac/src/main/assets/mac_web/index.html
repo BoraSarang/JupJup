@@ -11,14 +11,15 @@
   <header class="top" role="banner">
     <div class="top-inner">
       <a class="brand" href="#main" id="brandLink">
-        <span class="brand-mark">MJ</span>
+        <span class="brand-mark">줍</span>
         <span class="brand-name">맥줍줍</span>
+        <span class="brand-en mono">MACJUBJUB</span>
         <span class="beta">BETA</span>
       </a>
       <nav class="mainnav" aria-label="메인 메뉴" id="mainNav">
         <button type="button" class="navpill active" data-view="dashboard">메인</button>
-        <button type="button" class="navpill" data-view="appstore">앱 스토어</button>
-        <button type="button" class="navpill" data-view="news">뉴스</button>
+        <button type="button" class="navpill" data-view="appstore">앱 스토어 <span class="navcount" id="navAppCount">-</span></button>
+        <button type="button" class="navpill" data-view="news">뉴스 <span class="navcount" id="navNewsCount">-</span></button>
       </nav>
       <div class="top-actions">
         <div class="searchbox" role="search">
@@ -33,8 +34,8 @@
     </div>
     <nav class="mobilenav" id="mobileNav" aria-label="모바일 메뉴">
       <button type="button" class="navpill active" data-view="dashboard">메인</button>
-      <button type="button" class="navpill" data-view="appstore">앱 스토어</button>
-      <button type="button" class="navpill" data-view="news">뉴스</button>
+      <button type="button" class="navpill" data-view="appstore">앱 스토어 <span class="navcount" id="navAppCountM">-</span></button>
+      <button type="button" class="navpill" data-view="news">뉴스 <span class="navcount" id="navNewsCountM">-</span></button>
     </nav>
   </header>
 
@@ -105,7 +106,7 @@
       </div>
 
       <footer class="foot">
-        <div class="foot-brand"><span class="brand-mark sm">MJ</span><b>맥줍줍</b>
+        <div class="foot-brand"><span class="brand-mark sm">줍</span><b>맥줍줍</b>
           <p>맥 앱과 뉴스를 한 곳에. trawling.dev처럼 빠르게, Product Hunt처럼 아름답게, GeekNews처럼 깊게.</p>
         </div>
         <div class="foot-cols">
@@ -195,6 +196,10 @@
           <button type="button" class="mainpill" data-main="sec" role="tab" aria-selected="false">보안 소식 <span class="mono" id="ncount-sec">-</span></button>
         </div>
         <span class="crumb mono" id="newsCrumb">/news / mac</span>
+        <div class="layout-toggle" role="group" aria-label="뉴스 레이아웃" id="layoutToggle">
+          <button type="button" class="ltbtn active" data-layout="A">A 혼합</button>
+          <button type="button" class="ltbtn" data-layout="B">B 분리</button>
+        </div>
       </div>
       <div class="chiprow" id="newsSubChips" aria-label="뉴스 하위 카테고리"></div>
 
@@ -203,7 +208,16 @@
         <div class="ticker-view"><div class="ticker-move" id="tickerMove"></div></div>
       </div>
 
-      <div class="news3">
+      <div class="news-hybrid" id="newsHybrid" hidden>
+        <div class="curation-head">
+          <span class="mono">TODAY · 큐레이션 8</span>
+          <span class="countpill" id="curCount">8</span>
+        </div>
+        <div class="curation-grid" id="curationGrid" role="list" aria-label="오늘의 큐레이션 앱"></div>
+        <div class="hybrid-list" id="hybridList" role="list" aria-label="혼합 뉴스 목록"></div>
+        <nav class="pagination" id="hybridPagination" aria-label="혼합 뉴스 페이지네이션"></nav>
+      </div>
+      <div class="news3" id="news3">
         <div class="nlist-col">
           <header class="nlist-head"><span class="mono" id="nlistTitle">MAC / -</span><span class="live-dot sm"></span></header>
           <div class="chiprow sm" id="newsSubChips2" aria-label="뉴스 하위 카테고리"></div>
@@ -223,8 +237,12 @@
           </section>
           <section class="card">
             <header class="cardhead"><h3 class="mono sm">관련 맥 앱 연동</h3></header>
-            <p class="muted sm">뉴스 카테고리 "앱·업데이트" 선택 시, 오른부가 관련 맥 앱 카드가 표시됩니다.</p>
+            <p class="muted sm">뉴스 상세와 연동된 맥 앱 카드가 표시됩니다.</p>
             <div id="railApps"></div>
+          </section>
+          <section class="card sponsored" aria-label="스폰서">
+            <header class="cardhead"><h3 class="mono sm sp-label">SPONSORED</h3></header>
+            <div id="railSponsored"></div>
           </section>
           <section class="card">
             <header class="cardhead"><h3 class="mono sm">카테고리 구성안</h3></header>

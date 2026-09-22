@@ -2,6 +2,14 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R49~R51 목업 격차 해소 (PLAN_v20)
+- [x] R49 프론트: A/B 토글(혼합/분리) + 관련앱 미니카드·SPONSORED·브랜드·배지 (index/style/app.js)
+- [x] R49 서버: relatedByNews 일괄 + list/main relatedApps + 상세 matchAppIds 백필 + N+1 쿼리
+- [x] R50: 미번역 쿼리 확장 + TranslateWorker 뉴스 30→80 + AppDao mas 정렬
+- [x] R51: 브랜드마크·NEW/HOT·SPONSORED·썸네일 72×56 (프론트)
+- [x] 검증: node --check·unit·build+설치·lint + 실기 3010 E2E (A/B·관련앱·MAS·SPONSORED)
+- [x] 문서: PLAN_v20·CHANGELOG·TODO·세션로그 + 브랜치 커밋/PR
+
 ## R48 통합 관리자 ID/PW + 대시보드 토큰 (PLAN_v19)
 - [x] 대시보드 4카드 토큰 표시·복사 마무리
 - [x] 통합 ID/PW 등록 (앱) + 4서비스 인증 + 4포털 입력
