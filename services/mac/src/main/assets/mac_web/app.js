@@ -159,6 +159,50 @@
     }
     return '<div class="md-body">' + md(show) + '</div>';
   }
+  /* ---------- 뉴스 본문 단락화 (단일 <p> 한줄 표시 방지) ---------- */
+  function paraText(t) {
+    var norm = String(t == null ? '' : t).replace(/\s+/g, ' ').trim();
+    if (!norm) return '<p>본문이 없습니다. 원문에서 확인해주세요.</p>';
+    var sens = norm.match(/[^.!?。！？]+[.!?。！？]+["'”’)]?\s*/g) || [norm];
+    var parts = [];
+    if (sens.length <= 1 && norm.length > 600) {
+      var start = 0;
+      while (start < norm.length) {
+        var end = Math.min(start + 600, norm.length);
+        if (end < norm.length) { var sp = norm.lastIndexOf(' ', end); if (sp > start + 100) end = sp; }
+        parts.push(norm.slice(start, end).trim());
+        start = end;
+      }
+    } else {
+      var buf = '', cnt = 0;
+      sens.forEach(function (s) {
+        buf += (buf ? ' ' : '') + s.trim();
+        cnt++;
+        if (cnt >= 3 || buf.length >= 600) { parts.push(buf); buf = ''; cnt = 0; }
+      });
+      if (buf) parts.push(buf);
+    }
+    return parts.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
+  }
+  function formatNewsBody(html) {
+    if (!html) return '<p>본문이 없습니다. 원문에서 확인해주세요.</p>';
+    if (!/<(p|h[1-6]|ul|ol|blockquote|pre|figure|img)\b/i.test(html)) return paraText(html);
+    try {
+      var div = document.createElement('div');
+      div.innerHTML = html;
+      var ps = div.querySelectorAll('p');
+      var others = div.querySelectorAll('h1,h2,h3,h4,h5,h6,ul,ol,blockquote,pre,figure,img');
+      if (ps.length === 1 && others.length === 0) {
+        var txt = ps[0].textContent || '';
+        if (txt.length > 800 && txt.indexOf('\n') < 0) return paraText(txt);
+      }
+      div.querySelectorAll('img').forEach(function (img) {
+        img.setAttribute('referrerpolicy', 'no-referrer');
+        img.setAttribute('loading', 'lazy');
+      });
+      return div.innerHTML;
+    } catch (e) { return html; }
+  }
   function fmtTime(ts) {
     if (!ts) return '';
     const diff = Date.now() - ts;
@@ -1043,7 +1087,7 @@
       '<button type="button" class="btn-ghost' + (on ? ' on' : '') + '" id="ndBm">' + (on ? '★ 북마크됨' : '☆ 북마크 저장') + '</button></div>' +
       (n.thumbnailUrl ? '<div class="nd-hero"><img src="' + esc(n.thumbnailUrl) + '" alt="" referrerpolicy="no-referrer">' +
         '<div class="nd-cap">THUMBNAIL · 원본 URL 표시&nbsp;&nbsp;&nbsp;' + esc(n.thumbnailUrl) + '</div></div>' : '') +
-      '<div class="nd-body">' + (n.contentHtml || '<p>본문이 없습니다. 원문에서 확인해주세요.</p>') + '</div>' +
+      '<div class="nd-body">' + formatNewsBody(n.contentHtml) + '</div>' +
       '<div class="policybox"><h4>본문 크롤링 정책</h4><ul>' +
       '<li>제목, 본문 텍스트, 원본 링크, 카테고리는 크롤링하여 표시</li>' +
       '<li>본문 이미지는 원본 서버 URL을 그대로 img src로 사용</li>' +

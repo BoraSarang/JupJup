@@ -2,6 +2,11 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R34 뉴스 본문 단락화 (PLAN_v17 후속)
+- [x] 크롤러 `paragraphize` (단일 `<p>` → 문장 기준 다문단)
+- [x] 포털 `formatNewsBody` (플레인/단일 장문 `<p>` 문단 분리, 기존 저장분 즉시 적용)
+- [x] 검증: 단위 2건·node --check·assembleDebug+설치
+
 ## R33 포털 목업 일치 재작성 (PLAN_v17)
 - [x] 목업 2종 브라우저 실측 (다크 #0a0a0b·히어로·3카드·칩·분할뷰 확인)
 - [x] `mac_web` 전면 재작성 (index·style·app.js, 다크 테마)

@@ -99,12 +99,9 @@ class NewsRssCrawler(
             if (thumb == null) thumb = firstImageOf(bodyHtml)
         }
         if (bodyText.isBlank()) throw IllegalStateException("본문 없음")
-        // 피드 설명만 있고 HTML이 없으면 텍스트 단락으로 본문 구성 (상세 빈 화면 방지)
+        // 피드 설명만 있고 HTML이 없으면 텍스트를 문단 단위로 나눠 본문 구성 (단일 <p> 한줄 표시 방지)
         if (bodyHtml == null) {
-            bodyHtml = "<p>" + bodyText
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;") + "</p>"
+            bodyHtml = paragraphize(bodyText)
         }
         val sub = NewsCategories.classify(d.main, d.title, bodyText, d.rssCategory)
         val summary = NewsCategories.summarize(bodyText)
@@ -372,6 +369,51 @@ class NewsRssCrawler(
         private fun firstImageOf(html: String): String? {
             val src = Jsoup.parseBodyFragment(html).selectFirst("img")?.attr("src")?.trim()
             return src?.takeIf { it.isNotBlank() && it.startsWith("http") }
+        }
+
+        /**
+         * 순수 텍스트를 문단 HTML로 변환 (단일 <p> 한줄 표시 방지).
+         * 문장 경계(.!?。！？) 기준 분리 후 2~3문장씩 묶어 <p>로 감싼다.
+         * 순수 JVM (단위테스트 가능).
+         */
+        internal fun paragraphize(text: String, maxCharsPerPara: Int = 600): String {
+            val norm = text.replace(Regex("\\s+"), " ").trim()
+            if (norm.isBlank()) return "<p></p>"
+            val sentences = norm.split(Regex("(?<=[.!?。！？])\\s+")).filter { it.isNotBlank() }
+            val parts = if (sentences.size <= 1) {
+                // 문장 부호 없는 장문은 길이 기준 절단
+                val out = mutableListOf<String>()
+                var start = 0
+                while (start < norm.length) {
+                    var end = (start + maxCharsPerPara).coerceAtMost(norm.length)
+                    if (end < norm.length) {
+                        val space = norm.lastIndexOf(' ', end)
+                        if (space > start + 100) end = space
+                    }
+                    out += norm.substring(start, end).trim()
+                    start = end
+                }
+                out
+            } else {
+                val out = mutableListOf<String>()
+                val buf = StringBuilder()
+                var count = 0
+                for (s in sentences) {
+                    if (buf.isNotEmpty()) buf.append(' ')
+                    buf.append(s.trim())
+                    count++
+                    if (count >= 3 || buf.length >= maxCharsPerPara) {
+                        out += buf.toString()
+                        buf.clear()
+                        count = 0
+                    }
+                }
+                if (buf.isNotEmpty()) out += buf.toString()
+                out
+            }
+            return parts.joinToString("") {
+                "<p>" + it.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</p>"
+            }
         }
     }
 }

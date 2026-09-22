@@ -160,4 +160,19 @@ class NewsRssCrawlerTest {
             NewsRssCrawler.matchAppIds("Raycast와 한글앱 업데이트", names),
         )
     }
+
+    @Test
+    fun `단락화_단일문장_분할`() {
+        val long = "Apple released macOS 27. It fixes bugs. It improves performance. New Siri languages arrive. Password changes coming. Tracker updated daily."
+        val html = NewsRssCrawler.paragraphize(long)
+        assertTrue(html.startsWith("<p>"))
+        assertTrue(html.contains("</p><p>"))
+        assertTrue(!html.contains("&lt;"))
+    }
+
+    @Test
+    fun `단락화_이스케이프`() {
+        val html = NewsRssCrawler.paragraphize("a & b <c>")
+        assertTrue(html.contains("a &amp; b &lt;c&gt;"))
+    }
 }
