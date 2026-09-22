@@ -17,7 +17,7 @@
 - [x] `parallelNews` + `HostThrottler` (Semaphore 3, 호스트별 1초 예의, R35 패턴 이식)
 - [x] `crawlNews` 상세 순차 → 병렬 (실패 건 스킵 유지, DB 반영은 기존 트랜잭션 그대로)
 - [x] 검증: 단위 2건 신규·전 모듈 unit·assembleDebug+설치 성공, 실기 E2E 생략(사용자 공존)
-- [ ] 2단계 잔여: 10분 FGS 루프·외부 LLM 분류
+- [x] 2단계 종결(사용자 결정): 10분 FGS·외부 LLM 모두 현행 유지 (A안)
 
 ## R35 R31 후순위 구조 개선 (PLAN_v16 유예분)
 - [x] 상세 30건 순차→병렬: `fetchDetails`+`parallelFetch` (Semaphore 3 + HostThrottler 호스트별 1초 예의)
@@ -50,7 +50,7 @@
 - [x] 포털: 대시보드 뷰 + 뉴스 뷰(탭 3·서브 18종·분할 상세·원문 고정·출처 배너)
 - [x] 검증: 단위 14건·assembleDebug·lint·node --check + 실기(3010) E2E 141건 수집 + CHANGELOG·세션 로그
 - [x] 2단계 부분완료(R36): 상세 병렬화
-- [ ] 2단계 잔여: 10분 FGS 루프·외부 LLM 분류
+- [x] 2단계 종결: 10분 FGS 루프·외부 LLM 분류 모두 현행 유지 (사용자 A안 결정)
 
 ## R31 크롤링 성능·퍼포먼스 (PLAN_v16)
 - [x] PLAN_v16 초안 (예산 p95 300ms·250MB·캐시 70%)

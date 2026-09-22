@@ -14,7 +14,7 @@
 ### R36 R32 2단계 상세 병렬화 (PLAN_v17 유예분)
 - **상세 병렬**: `crawlNews` 순차+1s delay → `parallelNews` (Semaphore 3 + `HostThrottler` 호스트별 1초 예의, R35 패턴 이식)
 - **검증**: 단위 2건 신규·전 모듈 unit·assembleDebug+설치 성공, 실기 E2E 생략(사용자 공존)
-- **2단계 잔여**: 10분 FGS 루프·외부 LLM 분류
+- **2단계 종결**: 10분 FGS·외부 LLM은 현행 유지로 확정 (사용자 결정)
 
 ### R35 R31 후순위 구조 개선 (PLAN_v16 유예분)
 - **상세 병렬**: `ensureSummaries`·`backfill` 순차+1s delay → `parallelFetch` (Semaphore 3 + `HostThrottler` 호스트별 1초 예의 유지, DB 반영은 순차)
