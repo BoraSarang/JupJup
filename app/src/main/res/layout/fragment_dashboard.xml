@@ -84,7 +84,24 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/dashboard_mac_header" />
 
-                <LinearLayout
+                                <TextView
+                    android:id="@+id/dashboard_mac_token"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:ellipsize="middle"
+                    android:focusable="true"
+                    android:singleLine="true"
+                    android:text="@string/dashboard_token_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_mac_address" />
+
+<LinearLayout
                     android:id="@+id/dashboard_mac_stats"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -92,7 +109,7 @@
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_mac_address">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_mac_token">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -280,7 +297,24 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/dashboard_plan_header" />
 
-                <LinearLayout
+                                <TextView
+                    android:id="@+id/dashboard_plan_token"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:ellipsize="middle"
+                    android:focusable="true"
+                    android:singleLine="true"
+                    android:text="@string/dashboard_token_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_plan_address" />
+
+<LinearLayout
                     android:id="@+id/dashboard_plan_stats"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -288,7 +322,7 @@
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_plan_address">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_plan_token">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -474,7 +508,24 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/dashboard_pj_header" />
 
-                <LinearLayout
+                                <TextView
+                    android:id="@+id/dashboard_pj_token"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:ellipsize="middle"
+                    android:focusable="true"
+                    android:singleLine="true"
+                    android:text="@string/dashboard_token_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_pj_address" />
+
+<LinearLayout
                     android:id="@+id/dashboard_pj_stats"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -482,7 +533,7 @@
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_pj_address">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_pj_token">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -667,7 +718,24 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/dashboard_cm_header" />
 
-                <LinearLayout
+                                <TextView
+                    android:id="@+id/dashboard_cm_token"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:ellipsize="middle"
+                    android:focusable="true"
+                    android:singleLine="true"
+                    android:text="@string/dashboard_token_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_cm_address" />
+
+<LinearLayout
                     android:id="@+id/dashboard_cm_stats"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -675,7 +743,7 @@
                     android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dashboard_cm_address">
+                    app:layout_constraintTop_toBottomOf="@id/dashboard_cm_token">
 
                     <LinearLayout
                         android:layout_width="0dp"

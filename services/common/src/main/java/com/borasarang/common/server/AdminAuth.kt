@@ -15,13 +15,15 @@ import io.ktor.server.request.path
 import io.ktor.server.response.respondText
 
 /**
- * 관리웹 쓰기 인증 (R44, PLAN_v19).
- * GET은 읽기 전용 개방, /api 쓰기(POST/PUT/DELETE)는 X-Auth-Token 강제.
- * 토큰은 서비스별 DataStore(admin_token) 최초 1회 발급. member 호출만 사용
- * (크로스모듈 확장함수 FQN 미해결 회피 — R43 LanGuard 교훈).
+ * 관리웹 쓰기 인증 (R44 토큰 + R48 통합 ID/PW, PLAN_v19).
+ * GET은 읽기 전용 개방, /api 쓰기(POST/PUT/DELETE)는 인증 강제.
+ * 통합 PW 설정 시 ID/PW 우선, 미설정 시 기존 토큰 폴백.
+ * member 호출만 사용 (크로스모듈 확장함수 FQN 미해결 회피 — R43 LanGuard 교훈).
  */
 object AdminAuth {
     const val HEADER = "X-Auth-Token"
+    const val HEADER_ID = "X-Admin-Id"
+    const val HEADER_PW = "X-Admin-Pw"
 
     fun extractToken(call: ApplicationCall): String? {
         call.request.header(HEADER)?.takeIf { it.isNotBlank() }?.let { return it }
@@ -37,11 +39,34 @@ object AdminAuth {
     }
 
     /** 서버 블록에서 호출 — lanOnly() 다음 줄에 배치 */
-    fun install(app: Application, tokenProvider: suspend () -> String?) {
+    fun install(
+        app: Application,
+        credentialProvider: suspend () -> Pair<String, String>,
+        tokenProvider: suspend () -> String?,
+    ) {
         app.intercept(ApplicationCallPipeline.Setup) {
             val method = call.request.httpMethod
             if (method == HttpMethod.Get || method == HttpMethod.Head || method == HttpMethod.Options) return@intercept
             if (!call.request.path().startsWith("/api/")) return@intercept
+            val (expectedId, expectedPw) = try {
+                credentialProvider()
+            } catch (_: Exception) {
+                "" to ""
+            }
+            if (expectedPw.isNotBlank()) {
+                val givenId = call.request.header(HEADER_ID)?.trim().orEmpty()
+                val givenPw = call.request.header(HEADER_PW)?.trim().orEmpty()
+                val idOk = expectedId.isBlank() || givenId == expectedId
+                if (!idOk || givenPw != expectedPw) {
+                    call.respondText(
+                        """{"error":"unauthorized"}""",
+                        ContentType.Application.Json,
+                        HttpStatusCode.Unauthorized,
+                    )
+                    finish()
+                }
+                return@intercept
+            }
             val expected = try {
                 tokenProvider()
             } catch (_: Exception) {

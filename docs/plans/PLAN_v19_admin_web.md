@@ -31,7 +31,6 @@
 - B2 plan_web + B3 community_web + C2 관리 토큰 4서비스·4포털 (PR #14)
 
 ## R45 범위
-
 - B4 pj_web: 서랍 4번째 탭(서버 설정: 포트·자동시작, GET/POST /api/settings)
 - 토큰 표시: 앱 정보(About) 대화상자에 서비스별 관리 토큰 + 탭하여 복사
 - D 앱 슬리밍 1차: 하단 SOURCE·NOTIF 탭 삭제 (8 프래그먼트 + 3 VM + 14 레이아웃),
@@ -59,3 +58,10 @@
 - `node --check` 3종 + unit 6모듈 + assembleDebug+설치 + lint
 - 실기: 3010 포털에서 설정 저장·토글·수집·알림 스팟체크 (사용자 공존 시 생략 가능)
 - DoD: 한국어·CHANGELOG·TODO·ENDPOINTS·세션로그
+
+## R48 범위 (통합 관리자 ID/PW)
+
+- 앱 정보(About)에 ID/PW 등록 → 4서비스 DataStore에 동일 저장 (통합).
+- 서버: 통합 PW 설정 시 ID/PW 인증 우선, 미설정 시 기존 토큰 폴백.
+- 웹: `X-Admin-Id`/`X-Admin-Pw` 자동 첨부 + 401 시 입력 재시도 (토큰 병행).
+- 대시보드 4카드 토큰 표시·복사 마무리 (폴백 확인용).

@@ -203,6 +203,7 @@ class MainActivity : AppCompatActivity() {
             bindTokenRow(view, R.id.about_token_plan, getString(R.string.nav_plan), planToken)
             bindTokenRow(view, R.id.about_token_pj, getString(R.string.nav_pj), pjToken)
             bindTokenRow(view, R.id.about_token_cm, getString(R.string.nav_community), cmToken)
+            bindCredentialForm(view)
             view.findViewById<TextView>(R.id.about_repo_link).setOnClickListener {
                 openUrl(getString(R.string.about_repo_url))
             }
@@ -210,6 +211,51 @@ class MainActivity : AppCompatActivity() {
                 .setView(view)
                 .setPositiveButton(R.string.about_close, null)
                 .show()
+        }
+    }
+
+    /** 통합 관리자 ID/PW 등록 (R48, 4서비스 동일 저장) */
+    private fun bindCredentialForm(view: android.view.View) {
+        val idView = view.findViewById<android.widget.EditText>(R.id.about_cred_id)
+        val pwView = view.findViewById<android.widget.EditText>(R.id.about_cred_pw)
+        val stateView = view.findViewById<TextView>(R.id.about_cred_state)
+        lifecycleScope.launch {
+            try {
+                val (id, pw) = withContext(Dispatchers.IO) {
+                    MacJupJupRuntime.preferences.getAdminCredential()
+                }
+                idView.setText(id)
+                stateView.text = if (pw.isNotBlank()) {
+                    getString(R.string.about_cred_saved)
+                } else {
+                    getString(R.string.about_cred_cleared)
+                }
+            } catch (e: Exception) {
+                MacDebugLogger.e("내비", "E-AND-DB-0404", "관리자 조회 실패: ${e.message}", e)
+            }
+        }
+        view.findViewById<android.widget.Button>(R.id.about_cred_save).setOnClickListener {
+            val id = idView.text.toString()
+            val pw = pwView.text.toString()
+            if (pw.isBlank()) {
+                Toast.makeText(this, R.string.about_cred_need_pw, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            lifecycleScope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        MacJupJupRuntime.preferences.setAdminCredential(id, pw)
+                        PlanJupJupRuntime.preferences.setAdminCredential(id, pw)
+                        com.borasarang.promptjournaljupjup.PromptJournalRuntime.preferences.setAdminCredential(id, pw)
+                        com.borasarang.communityjupjup.CommunityJupJupRuntime.preferences.setAdminCredential(id, pw)
+                    }
+                    pwView.text?.clear()
+                    stateView.text = getString(R.string.about_cred_saved)
+                    Toast.makeText(this@MainActivity, R.string.about_cred_saved, Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    MacDebugLogger.e("내비", "E-AND-DB-0404", "관리자 저장 실패: ${e.message}", e)
+                }
+            }
         }
     }
 

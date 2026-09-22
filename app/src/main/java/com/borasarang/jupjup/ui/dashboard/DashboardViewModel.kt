@@ -31,6 +31,8 @@ data class DashboardServiceUi(
     val crawlEnabled: Boolean = true,
     /** 네트워크 사용량 1줄 (R42b, 30일 합산·plan 24h·pj 프로세스 누적) */
     val netLabel: String = "",
+    /** 관리 토큰 (R48, 탭하여 복사 → 웹 관리 입력) */
+    val adminToken: String = "",
 )
 
 data class DashboardUiState(
