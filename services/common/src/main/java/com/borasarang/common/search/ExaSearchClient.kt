@@ -1,5 +1,6 @@
 package com.borasarang.common.search
 
+import com.borasarang.common.util.NetMeter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -55,6 +56,11 @@ class ExaSearchClient(private val apiKey: String) {
                 .build()
             val response = client.newCall(request).execute()
             val respBody = response.body?.string() ?: throw IllegalStateException("빈 응답")
+            NetMeter.record(
+                "ai",
+                respBody.toByteArray(Charsets.UTF_8).size.toLong(),
+                body.toString().toByteArray(Charsets.UTF_8).size.toLong() + 300L,
+            )
             if (!response.isSuccessful) {
                 throw IllegalStateException("Exa 오류 ${response.code}: ${respBody.take(200)}")
             }

@@ -1,5 +1,6 @@
 package com.borasarang.communityjupjup.crawler
 
+import com.borasarang.common.util.NetMeter
 import com.borasarang.communityjupjup.util.Constants
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -23,6 +24,8 @@ object CrawlHttp {
         headers: Map<String, String>,
         timeoutSec: Long = Constants.CRAWL_TIMEOUT_SEC,
     ): HttpResult {        var connection: HttpURLConnection? = null
+        val txEstimate = url.toByteArray(Charsets.UTF_8).size.toLong() + 300L +
+            headers.entries.sumOf { it.key.toByteArray().size + it.value.toByteArray().size }
         return try {
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
@@ -35,7 +38,9 @@ object CrawlHttp {
                 setRequestProperty("Accept-Encoding", "gzip")
                 headers.forEach { (k, v) -> setRequestProperty(k, v) }
             }
-            readResult(connection)
+            readResult(connection, txEstimate).also {
+                NetMeter.record("community", it.rxBytes, it.txBytes)
+            }
         } finally {
             connection?.disconnect()
         }
@@ -51,6 +56,7 @@ object CrawlHttp {
         maxBytes: Int = 3 * 1024 * 1024,
     ): HttpBytes {
         var connection: HttpURLConnection? = null
+        val txEstimate = url.toByteArray(Charsets.UTF_8).size.toLong() + 200L
         return try {
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
@@ -64,14 +70,20 @@ object CrawlHttp {
             val code = try {
                 connection.responseCode
             } catch (e: Exception) {
-                return HttpBytes(-1, null, null, e.message)
+                return HttpBytes(-1, null, null, e.message, 0L, txEstimate).also {
+                    NetMeter.record("community", 0L, txEstimate)
+                }
             }
             if (code !in 200..299) {
-                return HttpBytes(code, null, null, "HTTP $code")
+                return HttpBytes(code, null, null, "HTTP $code", 0L, txEstimate).also {
+                    NetMeter.record("community", 0L, txEstimate)
+                }
             }
             val contentType = connection.contentType?.substringBefore(";")?.trim().orEmpty()
             if (!contentType.startsWith("image/")) {
-                return HttpBytes(code, null, contentType, "not an image: $contentType")
+                return HttpBytes(code, null, contentType, "not an image: $contentType", 0L, txEstimate).also {
+                    NetMeter.record("community", 0L, txEstimate)
+                }
             }
             val bytes = try {
                 connection.inputStream.use { input ->
@@ -83,33 +95,39 @@ object CrawlHttp {
                         if (n < 0) break
                         total += n
                         if (total > maxBytes) {
-                            return HttpBytes(code, null, contentType, "too large")
+                            return HttpBytes(code, null, contentType, "too large", total.toLong(), txEstimate).also {
+                                NetMeter.record("community", total.toLong(), txEstimate)
+                            }
                         }
                         out.write(buf, 0, n)
                     }
                     out.toByteArray()
                 }
             } catch (e: Exception) {
-                return HttpBytes(code, null, contentType, e.message)
+                return HttpBytes(code, null, contentType, e.message, 0L, txEstimate).also {
+                    NetMeter.record("community", 0L, txEstimate)
+                }
             }
-            HttpBytes(code, bytes, contentType, null)
+            HttpBytes(code, bytes, contentType, null, bytes.size.toLong(), txEstimate).also {
+                NetMeter.record("community", bytes.size.toLong(), txEstimate)
+            }
         } finally {
             connection?.disconnect()
         }
     }
 
-    private fun readResult(connection: HttpURLConnection): HttpResult {
+    private fun readResult(connection: HttpURLConnection, txBytes: Long = 0L): HttpResult {
         val code = try {
             connection.responseCode
         } catch (e: Exception) {
-            return HttpResult(-1, "", e.message)
+            return HttpResult(-1, "", e.message, 0L, txBytes)
         }
         // 304 Not Modified는 정상(변경 없음)으로 취급, 바디는 빈 문자열
         if (code == HttpURLConnection.HTTP_NOT_MODIFIED) {
-            return HttpResult(code, "", null)
+            return HttpResult(code, "", null, 0L, txBytes)
         }
         if (code !in 200..299) {
-            return HttpResult(code, "", "HTTP $code")
+            return HttpResult(code, "", "HTTP $code", 0L, txBytes)
         }
         return try {
             val encoding = connection.contentEncoding ?: ""
@@ -118,9 +136,9 @@ object CrawlHttp {
             val bytes = stream.use { it.readBytes() }
             // 구형 게시판(뽐뿌 등)은 EUC-KR — 헤더/meta에서 charset 판정, 기본 UTF-8
             val charset = detectCharset(connection.contentType, bytes)
-            HttpResult(code, bytes.toString(charset), null)
+            HttpResult(code, bytes.toString(charset), null, bytes.size.toLong(), txBytes)
         } catch (e: Exception) {
-            HttpResult(code, "", e.message)
+            HttpResult(code, "", e.message, 0L, txBytes)
         }
     }
 
@@ -145,6 +163,8 @@ data class HttpResult(
     val code: Int,
     val body: String,
     val error: String?,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 ) {
     val isOk: Boolean get() = code in 200..299 && error == null
 }
@@ -154,6 +174,8 @@ data class HttpBytes(
     val bytes: ByteArray?,
     val contentType: String?,
     val error: String?,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 ) {
     val isOk: Boolean get() = code in 200..299 && error == null && bytes != null
 }

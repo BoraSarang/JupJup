@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### R42a 네트워크 트래픽 측정 기반 (PLAN_v18)
+- `common NetMeter` 서비스별 rx/tx 원자 카운터 + 크롤 3벌·AI 3종 계측 연결
+- 동작 동결(주기·예의·타임아웃 유지), DB·API·UI는 R42b로 분리
+
 ### R41 뉴스 한글 번역
 - **DB v6**: `titleKo`·`summaryKo` + MIGRATION_5_6 (앱 번역 패턴 이식)
 - **워커**: TranslateWorker 뉴스 단계 (최신 30건/실행, ML Kit 온디바이스)
