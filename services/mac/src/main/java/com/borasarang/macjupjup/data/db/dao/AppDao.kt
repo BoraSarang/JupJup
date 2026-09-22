@@ -37,6 +37,7 @@ interface AppDao {
           AND (:newOnly = 0 OR isNew = 1)
           AND (:filterBySource = 0 OR sourceId IN (:sourceIds))
         ORDER BY
+          CASE WHEN :sort = 'mas' THEN (CASE WHEN trackId IS NOT NULL THEN 0 ELSE 1 END) END ASC,
           CASE WHEN :sort = 'stars' THEN stars END DESC,
           CASE WHEN :sort = 'rating' THEN averageRating END DESC,
           CASE WHEN :sort = 'updated' THEN lastUpdatedAt END DESC,

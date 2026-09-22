@@ -1,7 +1,9 @@
 package com.borasarang.macjupjup.data.repository
 
 import androidx.room.withTransaction
+import com.borasarang.macjupjup.crawler.news.NewsRssCrawler
 import com.borasarang.macjupjup.data.db.MacDatabase
+import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.NewsAppRelation
 import com.borasarang.macjupjup.data.db.entity.NewsArticle
 import com.borasarang.macjupjup.util.Constants
@@ -57,14 +59,39 @@ class NewsRepository(private val db: MacDatabase) {
     data class NewsDetail(
         val article: NewsArticle,
         val sourceName: String,
-        val relatedApps: List<com.borasarang.macjupjup.data.db.entity.App>,
+        val relatedApps: List<App>,
     )
 
     suspend fun detail(id: String): NewsDetail? {
         val article = db.newsArticleDao().getById(id) ?: return null
-        val appIds = db.newsArticleDao().getAppIdsByNewsId(id)
+        var appIds = db.newsArticleDao().getAppIdsByNewsId(id)
+        // R49: 관계 없으면 제목 기준 라이브 매칭 후 백필 (수집 시 미매칭·신규 앱 대응)
+        if (appIds.isEmpty()) {
+            val names = db.appDao().getAllNames().filter { it.name.length >= 3 }
+                .map { it.id to it.name }
+            val matched = NewsRssCrawler.matchAppIds(article.title, names)
+            if (matched.isNotEmpty()) {
+                db.newsArticleDao().insertRelations(
+                    matched.map { NewsAppRelation(newsId = id, appId = it) },
+                )
+                appIds = matched
+            }
+        }
         val apps = if (appIds.isEmpty()) emptyList() else db.appDao().getByIds(appIds)
         return NewsDetail(article, article.sourceName, apps)
+    }
+
+    /** 뉴스 목록용 관련 앱 일괄 조회 (N+1 제거, R49) */
+    suspend fun relatedByNews(ids: List<String>): Map<String, List<App>> {
+        if (ids.isEmpty()) return emptyMap()
+        val rels = db.newsArticleDao().getRelationsByNewsIds(ids)
+        if (rels.isEmpty()) return emptyMap()
+        val appIds = rels.map { it.appId }.distinct()
+        val apps = db.appDao().getByIds(appIds).associateBy { it.id }
+        return rels.groupBy { it.newsId }.mapNotNull { (newsId, rs) ->
+            val list = rs.mapNotNull { apps[it.appId] }
+            if (list.isEmpty()) null else newsId to list
+        }.toMap()
     }
 
     /** 대시보드 main별 최신 N건 */

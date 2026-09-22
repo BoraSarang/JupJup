@@ -38,8 +38,10 @@ internal fun HttpServerService.macNewsRoutes(route: Route) {
                     ?: Constants.API_DEFAULT_PAGE_SIZE,
             ),
         )
+        // R49: 목록에 관련 앱 일괄 조회 (관련앱 레일 노출용)
+        val related = application.newsRepository.relatedByNews(result.articles.map { it.id })
         call.respondText(
-            newsListJson(result.articles, result.total, result.page, result.pageSize),
+            newsListJson(result.articles, result.total, result.page, result.pageSize, related),
             ContentType.Application.Json,
         )
     }
@@ -85,6 +87,10 @@ internal fun HttpServerService.macNewsRoutes(route: Route) {
             ),
         )
         val totalApps = application.appRepository.overview().totalApps
+        // R49: 메인 대시보드 뉴스에 관련 앱 일괄 조회
+        val related = news.relatedByNews(
+            (recentMac + recentAi + recentSec).map { it.id },
+        )
         call.respondText(
             buildJsonObject {
                 put("todayNews", today)
@@ -94,9 +100,9 @@ internal fun HttpServerService.macNewsRoutes(route: Route) {
                     put(NewsCategories.MAIN_AI, counts[NewsCategories.MAIN_AI] ?: 0)
                     put(NewsCategories.MAIN_SEC, counts[NewsCategories.MAIN_SEC] ?: 0)
                 })
-                put("mac", newsArray(recentMac))
-                put("ai", newsArray(recentAi))
-                put("sec", newsArray(recentSec))
+                put("mac", newsArray(recentMac, related))
+                put("ai", newsArray(recentAi, related))
+                put("sec", newsArray(recentSec, related))
                 put("updatedApps", buildJsonArray {
                     updatedApps.apps.forEach { item ->
                         add(
@@ -121,8 +127,11 @@ internal fun HttpServerService.macNewsRoutes(route: Route) {
     }
 }
 
-/** 목록용 뉴스 필드 (본문 제외) */
-internal fun newsElement(a: NewsArticle) = buildJsonObject {
+/** 목록용 뉴스 필드 (본문 제외) + 관련 앱 (R49) */
+internal fun newsElement(
+    a: NewsArticle,
+    related: List<com.borasarang.macjupjup.data.db.entity.App> = emptyList(),
+) = buildJsonObject {
     put("id", a.id)
     put("sourceId", a.sourceId)
     put("sourceName", a.sourceName)
@@ -136,10 +145,31 @@ internal fun newsElement(a: NewsArticle) = buildJsonObject {
     put("originalUrl", a.originalUrl)
     put("publishedAt", a.publishedAt)
     put("collectedAt", a.collectedAt)
+    put("relatedApps", relatedAppArray(related))
 }
 
-internal fun newsArray(articles: List<NewsArticle>) = buildJsonArray {
-    articles.forEach { add(newsElement(it)) }
+/** 관련 앱 카드 공용 (목록·상세 공통) */
+internal fun relatedAppArray(
+    apps: List<com.borasarang.macjupjup.data.db.entity.App>,
+) = buildJsonArray {
+    apps.forEach { app ->
+        add(
+            buildJsonObject {
+                put("id", app.id)
+                put("name", app.name)
+                put("category", app.category)
+                app.version?.let { put("version", it) }
+                app.iconUrl?.let { put("iconUrl", it) }
+            },
+        )
+    }
+}
+
+internal fun newsArray(
+    articles: List<NewsArticle>,
+    related: Map<String, List<com.borasarang.macjupjup.data.db.entity.App>> = emptyMap(),
+) = buildJsonArray {
+    articles.forEach { add(newsElement(it, related[it.id] ?: emptyList())) }
 }
 
 internal fun newsListJson(
@@ -147,9 +177,10 @@ internal fun newsListJson(
     total: Int,
     page: Int,
     pageSize: Int,
+    related: Map<String, List<com.borasarang.macjupjup.data.db.entity.App>> = emptyMap(),
 ): String {
     return buildJsonObject {
-        put("news", newsArray(articles))
+        put("news", newsArray(articles, related))
         put("total", total)
         put("page", page)
         put("pageSize", pageSize)
@@ -158,20 +189,8 @@ internal fun newsListJson(
 
 internal fun newsDetailJson(item: com.borasarang.macjupjup.data.repository.NewsRepository.NewsDetail): String {
     return buildJsonObject {
-        newsElement(item.article).entries.forEach { (key, value) -> put(key, value) }
+        newsElement(item.article, item.relatedApps).entries.forEach { (key, value) -> put(key, value) }
         item.article.contentHtml?.let { put("contentHtml", it) }
-        put("relatedApps", buildJsonArray {
-            item.relatedApps.forEach { app ->
-                add(
-                    buildJsonObject {
-                        put("id", app.id)
-                        put("name", app.name)
-                        put("category", app.category)
-                        app.version?.let { put("version", it) }
-                        app.iconUrl?.let { put("iconUrl", it) }
-                    },
-                )
-            }
-        })
+        put("relatedApps", relatedAppArray(item.relatedApps))
     }.toString()
 }

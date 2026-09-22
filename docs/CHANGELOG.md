@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### R49~R51 목업 격차 해소 (PLAN_v20)
+- **R49 포털**: 뉴스 A/B 레이아웃 토글(혼합/분리, localStorage) + 기사별 관련앱 미니카드·상세 레일
+- **R49 서버**: `relatedByNews` 일괄조회 + `/api/news`·`/api/main` `relatedApps` 노출 + 상세 관계 없으면 `matchAppIds` 라이브 백필 + `getRelationsByNewsIds`(N+1 제거)
+- **R50**: 뉴스 미번역 쿼리 확장(제목·요약) + TranslateWorker 뉴스 배치 30→80 + `/api/apps?sort=mas` (trackId 우선)
+- **R51 포털**: 브랜드마크 `줄`+MACJUBJUB·BETA, NEW(6h)/HOT(24h) 배지, SPONSORED 슬롯, 썸네일 72×56
+- **세일**: App 엔티티 세일 필드 부재 → 유료+updated 근사 유지 ([SOFT] PLAN_v20 기재)
+- 검증: node --check·unit·build+설치·lint + 실기 3010 E2E (A/B·관련앱·MAS·SPONSORED·배지)
+
 ### R48 통합 관리자 ID/PW + 대시보드 토큰
 - **앱**: 관리자 ID/PW 1회 등록 → 4서비스 공통 적용, 대시보드 카드 토큰 표시·복사
 - **서버**: ID/PW 우선·토큰 폴백 인증, **웹**: 401 시 ID/PW 입력 재시도
