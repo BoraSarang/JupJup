@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### 메인 UI 폴리시 + 설정서랍 (JupJup-344)
+- **폰트 크기 조절**: 헤더 A−/A+ 버튼, 12~20px 범위, localStorage(`macjupjup_font_px`)로 재방문 시 유지
+- **하이라이트 3카드 클릭**: 맥/보안 → 뉴스 상세, 앱 → 앱 정보 모달 (`openDashboardNews` 공통 헬퍼)
+- **앱 정보 모달**: 폭 680px → `min(840px, 94vw)` 확대
+- **메인 필터 칩 제거**: 해드라인 아래 chiprow 행·`MAIN_FILTERS`·`renderMainFilters` 삭제, 섹션 뉴스는 항상 전체 표시
+- **모달 포커스**: 열 때 소개 탭 자동 포커스 해소 → 제목(`modalTitle`)으로 이동
+- **설정 서랍 통합**: 헤더 통계·알림 제거 → 중앙 팝롭 3탭(설정/알림/통계), `.drawer-top` sticky로 스크롤 시 헤더·탭 상단 고정
+- **수집 소스 2그룹**: 앱 스토어 / 뉴스 분리 표시
+- **가격·배지**: ₩ → `$`(`usdPrice`), 해드라인 유료 배지 오탐 수정(`priceBadge` — FREE/OSS·미확정 무료 처리)
+- **BETA 뱃지 제거**, 푸터 축소, 대시보드 topSec 카드 통일
+- **style.css**: px 단위 font-size → rem(14px 기준) 전환
+- 검증: `node --check app.js` + RedditParseTest 4/4 + unit BUILD SUCCESSFUL + build_and_run 설치
+
+### Reddit r/macapps Atom RSS 전환
+- **배경**: JSON `/new.json`은 커스텀 UA로 403, Atom `.rss`는 200 확인
+- **크롤러**: `RedditMacAppsCrawler` Atom(`Parser.xmlParser`) 재작성 — content `.text()`·SKIP/NSFW 제목 스킵·`cleanName`·`dedupById`
+- **시드**: `SOURCE_REDDIT_MACAPPS` 12h 주기, type `REDDIT_JSON` 유지(DB 호환)
+- **테스트**: `RedditParseTest` Atom fixture 4건 (파싱/스킵·cleanName·깨진XML·빈피드)
+- 검증: 실기 sync `atom found=21 new=21`, `lastStatus: SUCCESS`
+
 ### 문서 정리
 - **README(한/영)**: 4서비스·기본 포트 3010/3020/3030/3040·`:services:common` 반영 (2서비스·3000/3001 오기 수정)
 - **DESIGN**: 깨진 글자 복구, 상단 세그먼트 3열→4열·대시보드 네 카드로 현행화
@@ -106,7 +126,7 @@
 ### R33 포털 목업 일치 재작성 (PLAN_v17)
 - **배경**: 1차 구현이 라이트 테마로 목업과 불일치 → 목업 2종 브라우저 실측 후 전면 재작성
 - **테마**: 다크 #0a0a0b·zinc 보더·lime/mono 포인트·Inter/JetBrains 폰트
-- **메인**: 히어로 LIVE·하이라이트 3·필터칩·앱 가로스크롤·뉴스 4+4+4·사이드바 4종·푸터
+- **메인**: 히어로 LIVE·하이라이트 3·앱 가로스크롤·뉴스 4+4+4·사이드바 4종·푸터 (필터 칩은 JupJup-344에서 제거)
 - **뉴스**: TopTab(앱/뉴스/북마크)·분야탭·서브 18종·LIVE 티커·3열 분할·원문/북마크 버튼·정책 박스
 - **앱스토어**: 기존 기능 전부 유지 (타임라인·Watchlist·통계·10종 카테고리·모달·알림)
 - **API**: `/api/main` 확장 (license·price·totalApps)

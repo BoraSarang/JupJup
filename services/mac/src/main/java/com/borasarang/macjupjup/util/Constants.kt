@@ -37,6 +37,7 @@ object Constants {
     const val SOURCE_ITUNES_LOOKUP = "itunes_lookup"
     const val SOURCE_NAME_MATCH = "name_match"
     const val SOURCE_MAS_DISCOVERY = "mas_discovery"
+    const val SOURCE_REDDIT_MACAPPS = "reddit_macapps"
 
     // 소스 타입
     const val TYPE_GITHUB_SEARCH = "GITHUB_SEARCH"
@@ -46,6 +47,7 @@ object Constants {
     const val TYPE_NAME_MATCH = "NAME_MATCH"
     const val TYPE_MAS_DISCOVERY = "MAS_DISCOVERY"
     const val TYPE_NEWS_RSS = "NEWS_RSS"
+    const val TYPE_REDDIT_JSON = "REDDIT_JSON"
 
     // 뉴스 RSS 소스 ID (R32 PLAN_v17, InitialDataSeeder와 일치)
     const val SOURCE_NEWS_MACRUMORS = "news_macrumors"
