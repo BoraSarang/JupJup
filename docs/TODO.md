@@ -2,6 +2,14 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R35 R31 후순위 구조 개선 (PLAN_v16 유예분)
+- [x] 상세 30건 순차→병렬: `fetchDetails`+`parallelFetch` (Semaphore 3 + HostThrottler 호스트별 1초 예의)
+- [x] 보드 직렬→병렬: `crawl()` 보드 최대 3병렬 (실패 보드 스킵 유지, 전역 공유 스로틀러)
+- [x] 전건 스캔 제거: `list` 매핑 getAll→getByIds, `stats` getEnabled→countEnabled
+- [x] 복합 인덱스 DB v6 (`idx_posts_cat_src`·`idx_posts_collected`) + MIGRATION_5_6
+- [x] LIKE 전방와일드: FTS 보류 (수천 행 규모에 과잉 + JVM 검증 불가, 필터 인덱스로 절삭)
+- [x] 검증: 단위 4건 신규·전 모듈 unit·assembleDebug+설치·lint + 실기 E2E는 사용자 공존으로 생략
+
 ## R34 뉴스 본문 단락화 (PLAN_v17 후속)
 - [x] 크롤러 `paragraphize` (단일 `<p>` → 문장 기준 다문단)
 - [x] 포털 `formatNewsBody` (플레인/단일 장문 `<p>` 문단 분리, 기존 저장분 즉시 적용)
@@ -33,7 +41,7 @@
 - [x] 크롤러: 타임아웃 20s·정규식 precompile 6곳·mac/community backoff
 - [x] 서버: community 통계 4종 캐시·thumb 메모리 캐시
 - [x] 검증: assembleDebug·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
-- [ ] 후순위(구조 변경 유예): 상세 30건 순차→병렬·보드 직렬→분할·LIKE 전방와일드·전건 스캔 리포지토리
+- [x] 후순위(구조 변경 유예, R35에서 완료): 상세 30건 병렬·보드 병렬·LIKE 인덱스 대응·전건 스캔 제거
 
 ## R30 전체 리팩토링 + 버그·동작연결 (PLAN_v15)
 - [x] PLAN_v15 초안 (1단계 전체 + 2단계 버그 범위 확정)
