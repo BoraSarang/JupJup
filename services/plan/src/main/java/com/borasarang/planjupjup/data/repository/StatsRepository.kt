@@ -43,6 +43,14 @@ class StatsRepository(
         val avgDataGb = if (parsedCount == 0) 0.0 else parsed.filter { it.isParsed }
             .map { it.dataGb.toDouble() }.average()
         val logs24h = db.crawlLogDao().getLogsSince(now - TimeUnit.DAYS.toMillis(1))
+        val netRx24h = logs24h.sumOf { it.rxBytes }
+        val netTx24h = logs24h.sumOf { it.txBytes }
+        if (com.borasarang.common.util.NetBudget.isDailyOver(netRx24h + netTx24h)) {
+            com.borasarang.planjupjup.util.DebugLogger.w(
+                "트래픽",
+                "일일 사용량 초과(200MB) plan ${com.borasarang.common.util.NetMeter.formatBytes(netRx24h + netTx24h)}",
+            )
+        }
 
         OverviewStats(
             totalPlans = rows.size,
@@ -58,6 +66,8 @@ class StatsRepository(
             crawlCountToday = logs24h.count { it.startedAt >= TimeUtils.startOfToday() },
             crawlFail24h = logs24h.count { it.status == "FAILED" },
             lastCollectedAt = rows.map { it.firstCollectedAt }.maxOrNull(),
+            netRx24h = netRx24h,
+            netTx24h = netTx24h,
         )
     }
 
@@ -160,6 +170,8 @@ class StatsRepository(
                     plansNew = list.sumOf { it.plansNew },
                     plansUpdated = list.sumOf { it.plansUpdated },
                     failCount = list.count { it.status == "FAILED" },
+                    rxBytes = list.sumOf { it.rxBytes },
+                    txBytes = list.sumOf { it.txBytes },
                 )
             }
         } else {
@@ -174,6 +186,8 @@ class StatsRepository(
                     plansNew = list.sumOf { it.plansNew },
                     plansUpdated = list.sumOf { it.plansUpdated },
                     failCount = list.count { it.status == "FAILED" },
+                    rxBytes = list.sumOf { it.rxBytes },
+                    txBytes = list.sumOf { it.txBytes },
                 )
             }
         }

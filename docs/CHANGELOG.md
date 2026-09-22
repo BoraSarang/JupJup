@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### R42b 네트워크 영속·집계·노출
+- **DB**: mac v6→7·community v6→7·plan v5→6 (`crawl_logs rxBytes/txBytes`)
+- **기록**: 3 워커 실행 델타 저장 · **API**: `/api/stats`·collect·trends rx/tx 노출
+- **앱**: 대시보드 4카드 사용량 표시 · **예산**: 일일 200MB 초과 WARN(차단 없음)
+- 검증: unit·build+설치·lint 성공
+
 ### R42a 네트워크 트래픽 측정 기반 (PLAN_v18)
 - `common NetMeter` 서비스별 rx/tx 원자 카운터 + 크롤 3벌·AI 3종 계측 연결
 - 동작 동결(주기·예의·타임아웃 유지), DB·API·UI는 R42b로 분리

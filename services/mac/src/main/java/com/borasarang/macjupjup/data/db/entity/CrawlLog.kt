@@ -21,4 +21,7 @@ data class CrawlLog(
     val plansNew: Int,
     val plansUpdated: Int,
     val errorMessage: String?,
+    /** 수집 1회 실행의 실수신·실송신 바이트 (R42b, NetMeter 델타) */
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 )

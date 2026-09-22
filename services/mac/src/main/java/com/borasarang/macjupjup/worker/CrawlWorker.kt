@@ -13,6 +13,7 @@ import com.borasarang.macjupjup.R
 import com.borasarang.macjupjup.crawler.CrawlerFactory
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
+import com.borasarang.common.util.NetMeter
 import com.borasarang.common.util.NetUtils
 import com.borasarang.common.worker.SourceLocks
 
@@ -71,6 +72,7 @@ class CrawlWorker(
         app.sourceRepository.markRunning(sourceId)
         setForeground(createForegroundInfo(source.name))
         val startedAt = System.currentTimeMillis()
+        val netBefore = NetMeter.snapshotFor("mac")
 
         // R32: 뉴스 RSS는 별도 경로 (AppDraft 미사용, NewsRepository 저장)
         if (source.type == Constants.TYPE_NEWS_RSS) {
@@ -85,6 +87,7 @@ class CrawlWorker(
                     val apps = drafts.map { it.app }
                     val mappings = drafts.flatMap { it.mappings }
                     val saved = app.appRepository.saveApps(apps, mappings)
+                    val net = NetMeter.deltaSince("mac", netBefore)
                     app.sourceRepository.logResult(
                         sourceId = sourceId,
                         sourceName = source.name,
@@ -94,6 +97,8 @@ class CrawlWorker(
                         created = saved.created,
                         updated = saved.updated,
                         error = null,
+                        rxBytes = net.rxBytes,
+                        txBytes = net.txBytes,
                     )
                     DebugLogger.i(
                         "수집",
@@ -123,12 +128,14 @@ class CrawlWorker(
                     Result.success()
                 },
                 onFailure = { e ->
-                    fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName)
+                    val net = NetMeter.deltaSince("mac", netBefore)
+                    fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
                     Result.retry()
                 },
             )
         } catch (e: Exception) {
-            fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName)
+            val net = NetMeter.deltaSince("mac", netBefore)
+            fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
             Result.retry()
         }
     }
@@ -144,10 +151,12 @@ class CrawlWorker(
     ): Result {
         val sourceId = source.id
         val sourceName = source.name
+        val netBefore = NetMeter.snapshotFor("mac")
         return try {
             val crawler = com.borasarang.macjupjup.crawler.news.NewsRssCrawler(source, app.database)
             val outcome = crawler.crawlNews().getOrThrow()
             val saved = app.newsRepository.saveArticles(outcome.articles, outcome.relations)
+            val net = NetMeter.deltaSince("mac", netBefore)
             app.sourceRepository.logResult(
                 sourceId = sourceId,
                 sourceName = sourceName,
@@ -157,6 +166,8 @@ class CrawlWorker(
                 created = saved.created,
                 updated = 0,
                 error = null,
+                rxBytes = net.rxBytes,
+                txBytes = net.txBytes,
             )
             DebugLogger.i(
                 "뉴스수집",
@@ -189,7 +200,8 @@ class CrawlWorker(
             }
             Result.success()
         } catch (e: Exception) {
-            fail(app, sourceId, sourceName, startedAt, e.message ?: e.javaClass.simpleName)
+            val net = NetMeter.deltaSince("mac", netBefore)
+            fail(app, sourceId, sourceName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
             Result.retry()
         }
     }
@@ -237,6 +249,8 @@ class CrawlWorker(
         sourceName: String,
         startedAt: Long,
         message: String,
+        rxBytes: Long = 0L,
+        txBytes: Long = 0L,
     ) {
         app.sourceRepository.logResult(
             sourceId = sourceId,
@@ -247,6 +261,8 @@ class CrawlWorker(
             created = 0,
             updated = 0,
             error = message,
+            rxBytes = rxBytes,
+            txBytes = txBytes,
         )
         DebugLogger.e("수집", "E-AND-CRAWL-0201", "워커 실패 source=$sourceName: $message")
         checkFailureStreak(app, sourceId, sourceName, message)

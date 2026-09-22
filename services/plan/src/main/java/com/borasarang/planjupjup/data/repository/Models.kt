@@ -20,6 +20,8 @@ data class PlanStats(
     val totalPlans: Int,
     val activeSources: Int,
     val lastCollectedAt: Long?,
+    val netRx24h: Long = 0L,
+    val netTx24h: Long = 0L,
 )
 
 /** 목록 조회 필터 */
@@ -216,6 +218,8 @@ data class OverviewStats(
     val crawlCountToday: Int,
     val crawlFail24h: Int,
     val lastCollectedAt: Long?,
+    val netRx24h: Long = 0L,
+    val netTx24h: Long = 0L,
 )
 
 data class BrandStats(
@@ -309,6 +313,8 @@ data class TrendPoint(
     val plansNew: Int,
     val plansUpdated: Int,
     val failCount: Int,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 )
 
 /** 가성비 랭킹 1행 */

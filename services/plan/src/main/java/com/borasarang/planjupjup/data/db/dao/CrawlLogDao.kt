@@ -31,7 +31,7 @@ interface CrawlLogDao {
 
     /** 통계 추이용: 지정 시각 이후 로그의 시계열 프로젝션 */
     @Query(
-        """SELECT startedAt, finishedAt, status, plansFound, plansNew, plansUpdated
+        """SELECT startedAt, finishedAt, status, plansFound, plansNew, plansUpdated, rxBytes, txBytes
            FROM crawl_logs WHERE startedAt >= :since ORDER BY startedAt""",
     )
     suspend fun getLogsSince(since: Long): List<CrawlLogStatsRow>
@@ -45,4 +45,6 @@ data class CrawlLogStatsRow(
     val plansFound: Int,
     val plansNew: Int,
     val plansUpdated: Int,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 )

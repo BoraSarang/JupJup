@@ -29,6 +29,8 @@ data class DashboardServiceUi(
     val lastCollectedLabel: String = "",
     val isCrawling: Boolean = false,
     val crawlEnabled: Boolean = true,
+    /** 네트워크 사용량 1줄 (R42b, 30일 합산·plan 24h·pj 프로세스 누적) */
+    val netLabel: String = "",
 )
 
 data class DashboardUiState(

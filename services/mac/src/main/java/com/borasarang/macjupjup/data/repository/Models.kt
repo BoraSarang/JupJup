@@ -82,6 +82,8 @@ data class DayCollect(
     val updated: Long,
     val runs: Long,
     val bySource: List<SourceCollect>,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 )
 
 /** 일자별 소스 수집량 */
@@ -91,6 +93,8 @@ data class SourceCollect(
     val found: Long,
     val newCount: Long,
     val updated: Long,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 )
 
 data class SourceStatus(

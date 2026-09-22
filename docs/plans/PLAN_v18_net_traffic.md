@@ -27,3 +27,13 @@
 ## R42b 예고 (별도)
 
 - `CrawlLog rxBytes/txBytes` 컬럼 + Migration + DAO SUM + `/api/stats` envelope + 대시보드/웹 표시 + 일일 예산 WARN
+
+## R42b 실적 (2026-09-22)
+
+- DB: mac v6→7·community v6→7·plan v5→6 (`crawl_logs rxBytes/txBytes`, 기존 행 0)
+- 기록: 3 워커 NetMeter 델타 → `logResult(rxBytes/txBytes)` (성공·실패 전부)
+- 집계: mac/community `netTotals(30)` 캐시 + plan 24h 합산(`getStats`·`getOverview`·`getCrawlTrend`)
+- API: `/api/stats` net 필드 3종 + collect/trends 일별·소스별 rx/tx
+- 앱: 대시보드 4카드 `netLabel` (mac/community 30일·plan 24h·pj AI 프로세스 누적)
+- 예산: `NetBudget` 일일 200MB 초과 시 `[트래픽]` WARN (차단 없음)
+- 웹 포털 표시는 R43 관리웹 이관 시 통합

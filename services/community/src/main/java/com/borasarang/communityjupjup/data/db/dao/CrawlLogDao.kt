@@ -37,7 +37,8 @@ interface CrawlLogDao {
     @Query(
         """SELECT date(startedAt/1000,'unixepoch','localtime') AS day, sourceId, sourceName,
         SUM(plansFound) AS found, SUM(plansNew) AS newCount, SUM(plansUpdated) AS updated,
-        COUNT(*) AS runs, SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) AS failed
+        COUNT(*) AS runs, SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) AS failed,
+        SUM(rxBytes) AS rxBytes, SUM(txBytes) AS txBytes
         FROM crawl_logs WHERE startedAt >= :since GROUP BY day, sourceId ORDER BY day ASC"""
     )
     suspend fun collectByDay(since: Long): List<DaySourceCollect>
@@ -53,4 +54,6 @@ data class DaySourceCollect(
     val updated: Long,
     val runs: Long,
     val failed: Long,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 )

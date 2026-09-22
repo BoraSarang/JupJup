@@ -16,11 +16,14 @@ internal fun HttpServerService.macStatsRoutes(route: Route) {
     val application = app()
     route.get("/api/stats") {
         val stats = application.appRepository.overview()
+        val net = application.appRepository.netTotals(30)
         call.respondText(
             buildJsonObject {
                 put("totalApps", stats.totalApps)
                 put("activeSources", stats.activeSources)
                 stats.lastCollectedAt?.let { put("lastCollectedAt", it) }
+                put("netRxBytes", net.first)
+                put("netTxBytes", net.second)
             }.toString(),
             ContentType.Application.Json,
         )
@@ -71,6 +74,8 @@ internal fun HttpServerService.macStatsRoutes(route: Route) {
                                 put("new", d.newCount)
                                 put("updated", d.updated)
                                 put("runs", d.runs)
+                                put("rxBytes", d.rxBytes)
+                                put("txBytes", d.txBytes)
                                 put("bySource", buildJsonArray {
                                     d.bySource.forEach { s ->
                                         add(
@@ -80,6 +85,8 @@ internal fun HttpServerService.macStatsRoutes(route: Route) {
                                                 put("found", s.found)
                                                 put("new", s.newCount)
                                                 put("updated", s.updated)
+                                                put("rxBytes", s.rxBytes)
+                                                put("txBytes", s.txBytes)
                                             },
                                         )
                                     }
@@ -92,6 +99,8 @@ internal fun HttpServerService.macStatsRoutes(route: Route) {
                     put("found", list.sumOf { it.found })
                     put("new", list.sumOf { it.newCount })
                     put("updated", list.sumOf { it.updated })
+                    put("rxBytes", list.sumOf { it.rxBytes })
+                    put("txBytes", list.sumOf { it.txBytes })
                 })
             }.toString(),
             ContentType.Application.Json,

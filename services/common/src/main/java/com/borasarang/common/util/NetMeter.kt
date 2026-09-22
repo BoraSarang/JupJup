@@ -34,6 +34,27 @@ object NetMeter {
         }
     }
 
+    /** 단일 서비스 스냅샷 (워커 실행 전후 델타용) */
+    fun snapshotFor(service: String): NetUsage {
+        return NetUsage(
+            service = service,
+            rxBytes = rx[service]?.get() ?: 0L,
+            txBytes = tx[service]?.get() ?: 0L,
+            requests = reqs[service]?.get() ?: 0L,
+        )
+    }
+
+    /** [before] 이후 해당 서비스의 증분 (수집 1회 실행분 기록용) */
+    fun deltaSince(service: String, before: NetUsage): NetUsage {
+        val after = snapshotFor(service)
+        return NetUsage(
+            service = service,
+            rxBytes = (after.rxBytes - before.rxBytes).coerceAtLeast(0L),
+            txBytes = (after.txBytes - before.txBytes).coerceAtLeast(0L),
+            requests = (after.requests - before.requests).coerceAtLeast(0L),
+        )
+    }
+
     fun total(): NetUsage {
         val s = snapshot().values
         return NetUsage("total", s.sumOf { it.rxBytes }, s.sumOf { it.txBytes }, s.sumOf { it.requests })

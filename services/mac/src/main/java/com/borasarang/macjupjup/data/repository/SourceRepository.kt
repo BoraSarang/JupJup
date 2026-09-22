@@ -75,6 +75,8 @@ class SourceRepository(private val db: MacDatabase) {
         created: Int,
         updated: Int,
         error: String?,
+        rxBytes: Long = 0L,
+        txBytes: Long = 0L,
     ) {
         db.withTransaction {
             db.crawlLogDao().insert(
@@ -88,6 +90,8 @@ class SourceRepository(private val db: MacDatabase) {
                     plansNew = created,
                     plansUpdated = updated,
                     errorMessage = error,
+                    rxBytes = rxBytes,
+                    txBytes = txBytes,
                 )
             )
             markRunEnd(sourceId, status == "SUCCESS", error)
