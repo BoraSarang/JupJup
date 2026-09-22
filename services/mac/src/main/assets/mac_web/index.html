@@ -27,6 +27,7 @@
           <kbd>⌘K</kbd>
         </div>
         <button type="button" class="iconbtn" id="langToggle" aria-label="언어 전환" title="한국어/원문">한</button>
+        <button type="button" class="iconbtn" id="adminBtn" aria-label="관리 열기" title="수집·설정 관리">⚙️</button>
         <button type="button" class="iconbtn" id="notifBell" aria-label="알림 센터 열기">🔔</button>
       </div>
     </div>
@@ -256,6 +257,52 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- ============ 관리 서랍 (R43: 앱 설정·소스·도구 이관) ============ -->
+  <div class="drawer-backdrop" id="adminBackdrop" hidden></div>
+  <aside class="drawer" id="adminDrawer" aria-label="관리" hidden>
+    <header class="drawer-head">
+      <h2>⚙️ 관리</h2>
+      <button type="button" class="iconbtn" id="adminClose" aria-label="관리 닫기">✕</button>
+    </header>
+    <section class="drawer-sec" aria-label="서버 설정">
+      <h3>서버 설정</h3>
+      <form id="adminSettingsForm">
+        <label class="frow"><span>포트</span><input type="number" id="setPort" min="1024" max="65535" required></label>
+        <label class="frow"><span>보관일</span>
+          <select id="setRetention"><option value="30">30일</option><option value="90">90일</option></select>
+        </label>
+        <label class="frow"><span>자동 시작</span><input type="checkbox" id="setAutoStart"></label>
+        <label class="frow"><span>헬스체크(초)</span><input type="number" id="setWatchdog" min="60" max="3600" required></label>
+        <label class="frow"><span>GitHub 토큰</span><input type="password" id="setToken" placeholder="미입력 시 유지" autocomplete="off"></label>
+        <p class="tiny-note" id="tokenState">토큰 상태: 확인 중…</p>
+        <label class="frow"><span>한글 번역</span><input type="checkbox" id="setTranslateKo"></label>
+        <label class="frow"><span>알림: 수집 완료</span><input type="checkbox" id="setNotifCrawl"></label>
+        <label class="frow"><span>알림: 신규 앱</span><input type="checkbox" id="setNotifApp"></label>
+        <label class="frow"><span>알림: 뉴스</span><input type="checkbox" id="setNotifNews"></label>
+        <label class="frow"><span>알림: 실패</span><input type="checkbox" id="setNotifFail"></label>
+        <button type="submit" class="btn-primary">설정 저장</button>
+      </form>
+    </section>
+    <section class="drawer-sec" aria-label="수집 소스">
+      <h3>수집 소스 <button type="button" class="linkmore" id="adminSyncAll">전체 즉시 수집</button></h3>
+      <div id="adminSources"><p class="tiny-note">불러오는 중…</p></div>
+    </section>
+    <section class="drawer-sec" aria-label="도구">
+      <h3>도구</h3>
+      <div class="btnrow">
+        <button type="button" class="chip" id="adminTranslateNow">번역 즉시 실행</button>
+        <button type="button" class="chip" id="adminNotifReadAll">알림 모두 읽음</button>
+        <button type="button" class="chip" id="adminNotifCleanup">오래된 알림 정리</button>
+      </div>
+      <form id="adminSeedForm" class="seedform">
+        <label class="frow"><span>수동 시드</span><input type="text" id="seedQuery" placeholder="trackId 또는 앱 이름" autocomplete="off"></label>
+        <button type="submit" class="chip">시드 등록</button>
+        <span class="tiny-note" id="seedState"></span>
+      </form>
+    </section>
+  </aside>
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@
 
 > 각 서비스는 독립 포트로 동작: **mac=3010 / plan=3020 / promptjournal=3030 / community=3040** (설정 변경 가능).
 > 웹 포털 정적 에셋: `mac_web/` · `plan_web/` · `pj_web/` · `community_web/` (루트 `/`).
+> **내부망 전용 (R43)**: 전 라우트 `lanOnly()` — 사설대역(10/172.16-31/192.168/169.254·localhost) 외 403.
 
 ## 공통 (서비스별 서버)
 | 메서드 | 경로 | 설명 |
@@ -19,6 +20,7 @@
 | GET | `/api/apps/seed/status` | 시드 상태 |
 | GET | `/api/watchlist` | 수집 소스 목록 |
 | POST | `/api/sources/{id}/toggle` | 소스 on/off |
+| POST | `/api/sources/{id}/interval` | 수집 주기 변경(분, 15 이상, R43) |
 | POST | `/api/sync` | 즉시 수집 |
 | POST | `/api/translate` | 번역 즉시 실행 |
 | GET | `/api/stats` / `stats/trends` / `stats/collect` / `stats/insights` | 통계 |

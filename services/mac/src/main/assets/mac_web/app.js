@@ -225,6 +225,22 @@
       return r.json();
     });
   }
+  function apiPost(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body === undefined ? {} : body)
+    }).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+  function apiDel(path) {
+    return fetch(path, { method: 'DELETE' }).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
   function toast(msg) {
     const t = $('toast');
     t.textContent = msg;
@@ -1161,18 +1177,109 @@
     $('modalIcon').style.display = 'none';
     $('modalDev').textContent = '';
     $('modalMetaPills').innerHTML = '';
-    $('modalCta').innerHTML = '';
+    $('modalCta').innerHTML = '<button type="button" class="chip" id="notifReadAllBtn">모두 읽음</button>';
     $('panelIntro').innerHTML = '<div class="empty-state">불러오는 중…</div>';
     $('panelFeatures').hidden = true;
     $('panelChangelog').hidden = true;
     setActiveTab('intro');
     if (typeof modal.showModal === 'function') modal.showModal();
-    api('/api/notifications?page=1&pageSize=20').then(d => {
+    const renderNotifs = d => {
       if (!d.notifications || !d.notifications.length) { $('panelIntro').innerHTML = '<div class="empty-state">알림이 없습니다</div>'; return; }
       $('panelIntro').innerHTML = d.notifications.map(n =>
-        '<p><b>' + esc(n.type) + '</b><br>' + esc(n.summary) + '<br><small class="muted">' + fmtDate(n.createdAt) + '</small></p>'
+        '<p class="nrow-admin"><span style="flex:1"><b>' + esc(n.type) + '</b><br>' + esc(n.summary) +
+        '<br><small class="muted">' + fmtDate(n.createdAt) + (n.isRead ? '' : ' · <b>안읽음</b>') + '</small></span>' +
+        (n.isRead ? '' : '<button type="button" data-nread="' + n.id + '">읽음</button>') +
+        '<button type="button" data-ndel="' + n.id + '">삭제</button></p>'
       ).join('');
-    }).catch(() => { $('panelIntro').innerHTML = '<div class="empty-state">불러오기 실패</div>'; });
+      $$('#panelIntro [data-nread]').forEach(b => { b.onclick = () => {
+        apiPost('/api/notifications/' + b.dataset.nread + '/read').then(() => { toast('읽음 처리'); openNotifCenter(); }).catch(() => toast('실패'));
+      }; });
+      $$('#panelIntro [data-ndel]').forEach(b => { b.onclick = () => {
+        apiDel('/api/notifications/' + b.dataset.ndel).then(() => { toast('삭제됨'); openNotifCenter(); }).catch(() => toast('실패'));
+      }; });
+    };
+    api('/api/notifications?page=1&pageSize=20').then(renderNotifs).catch(() => { $('panelIntro').innerHTML = '<div class="empty-state">불러오기 실패</div>'; });
+    const ra = $('notifReadAllBtn');
+    if (ra) ra.onclick = () => {
+      apiPost('/api/notifications/read-all').then(() => { toast('모두 읽음'); openNotifCenter(); }).catch(() => toast('실패'));
+    };
+  }
+
+  /* ---------- 관리 서랍 (R43: 앱 설정·소스·도구 이관) ---------- */
+  const ADMIN_INTERVALS = [15, 30, 60, 120, 360, 720, 1440, 10080];
+  function openAdmin() {
+    $('adminDrawer').hidden = false;
+    $('adminBackdrop').hidden = false;
+    loadAdminSettings();
+    loadAdminSources();
+  }
+  function closeAdmin() {
+    $('adminDrawer').hidden = true;
+    $('adminBackdrop').hidden = true;
+  }
+  function loadAdminSettings() {
+    api('/api/settings').then(s => {
+      $('setPort').value = s.port;
+      $('setRetention').value = String(s.retentionDays);
+      $('setAutoStart').checked = !!s.autoStart;
+      $('setWatchdog').value = s.watchdogIntervalSec;
+      $('setTranslateKo').checked = !!s.translateKo;
+      $('setNotifCrawl').checked = !!s.notifCrawlComplete;
+      $('setNotifApp').checked = !!s.notifNewApp;
+      $('setNotifNews').checked = !!s.notifNews;
+      $('setNotifFail').checked = !!s.notifFailure;
+      $('tokenState').textContent = '토큰 상태: ' + (s.githubTokenSet ? '등록됨 (미입력 시 유지)' : '미등록');
+    }).catch(() => { $('tokenState').textContent = '토큰 상태: 불러오기 실패'; });
+  }
+  function saveAdminSettings(e) {
+    e.preventDefault();
+    const body = {
+      port: parseInt($('setPort').value, 10),
+      retentionDays: parseInt($('setRetention').value, 10),
+      autoStart: $('setAutoStart').checked,
+      watchdogIntervalSec: parseInt($('setWatchdog').value, 10),
+      translateKo: $('setTranslateKo').checked,
+      notifCrawlComplete: $('setNotifCrawl').checked,
+      notifNewApp: $('setNotifApp').checked,
+      notifNews: $('setNotifNews').checked,
+      notifFailure: $('setNotifFail').checked
+    };
+    const tok = $('setToken').value.trim();
+    if (tok) body.githubToken = tok;
+    apiPost('/api/settings', body).then(s => {
+      $('setToken').value = '';
+      toast(s.port !== body.port ? '저장됨 (포트 변경은 서버 재시작 후 적용)' : '설정 저장됨');
+      loadAdminSettings();
+    }).catch(() => toast('설정 저장 실패'));
+  }
+  function loadAdminSources() {
+    api('/api/watchlist').then(srcs => {
+      if (!srcs.length) { $('adminSources').innerHTML = '<p class="tiny-note">소스 없음</p>'; return; }
+      $('adminSources').innerHTML = srcs.map(s =>
+        '<div class="srcrow"><span class="sname" title="' + esc(s.baseUrl || '') + '">' + esc(s.name) + '</span>' +
+        '<span class="sstatus">' + esc(s.lastStatus || '') + '</span>' +
+        '<select data-sint="' + esc(s.id) + '">' + ADMIN_INTERVALS.map(m =>
+          '<option value="' + m + '"' + (s.intervalMinutes === m ? ' selected' : '') + '>' + m + '분</option>'
+        ).join('') + '</select>' +
+        '<button type="button" data-ssync="' + esc(s.id) + '">수집</button>' +
+        '<button type="button" data-stoggle="' + esc(s.id) + '" class="' + (s.enabled ? 'on' : 'off') + '">' +
+        (s.enabled ? 'ON' : 'OFF') + '</button></div>'
+      ).join('');
+      $$('#adminSources [data-stoggle]').forEach(b => { b.onclick = () => {
+        apiPost('/api/sources/' + encodeURIComponent(b.dataset.stoggle) + '/toggle').then(r => {
+          b.textContent = r.enabled ? 'ON' : 'OFF';
+          b.className = r.enabled ? 'on' : 'off';
+          toast('소스 ' + (r.enabled ? '켜짐' : '꺼짐'));
+        }).catch(() => toast('토글 실패'));
+      }; });
+      $$('#adminSources [data-ssync]').forEach(b => { b.onclick = () => {
+        apiPost('/api/sync', { sourceId: b.dataset.ssync }).then(() => toast('수집 요청됨')).catch(() => toast('수집 요청 실패'));
+      }; });
+      $$('#adminSources [data-sint]').forEach(sel => { sel.onchange = () => {
+        apiPost('/api/sources/' + encodeURIComponent(sel.dataset.sint) + '/interval',
+          { intervalMinutes: parseInt(sel.value, 10) }).then(() => toast('주기 변경됨')).catch(() => { toast('주기 변경 실패'); loadAdminSources(); });
+      }; });
+    }).catch(() => { $('adminSources').innerHTML = '<p class="tiny-note">불러오기 실패</p>'; });
   }
 
   /* ---------- 초기화 ---------- */
@@ -1221,6 +1328,34 @@
     // 정렬/필터 (앱 스토어 — 사이드바·칩은 renderStoreSidebar/renderStoreChips에서 배선)
     // 헤더
     $('notifBell').onclick = openNotifCenter;
+    $('adminBtn').onclick = openAdmin;
+    $('adminClose').onclick = closeAdmin;
+    $('adminBackdrop').onclick = closeAdmin;
+    $('adminSettingsForm').onsubmit = saveAdminSettings;
+    $('adminSyncAll').onclick = () => {
+      apiPost('/api/sync', {}).then(() => toast('전체 수집 요청됨')).catch(() => toast('수집 요청 실패'));
+    };
+    $('adminTranslateNow').onclick = () => {
+      apiPost('/api/translate', {}).then(() => toast('번역 요청됨')).catch(() => toast('번역 요청 실패'));
+    };
+    $('adminNotifReadAll').onclick = () => {
+      apiPost('/api/notifications/read-all').then(() => toast('모두 읽음')).catch(() => toast('실패'));
+    };
+    $('adminNotifCleanup').onclick = () => {
+      apiPost('/api/notifications/cleanup').then(d => toast('정리됨 ' + (d.deleted || 0) + '건')).catch(() => toast('실패'));
+    };
+    $('adminSeedForm').onsubmit = e => {
+      e.preventDefault();
+      const q = $('seedQuery').value.trim();
+      if (!q) return;
+      const body = /^\d+$/.test(q) ? { trackId: q } : { name: q };
+      apiPost('/api/apps/seed', body).then(() => {
+        $('seedState').textContent = '등록 요청됨 — 5초 후 상태 확인';
+        setTimeout(() => {
+          api('/api/apps/seed/status').then(d => { $('seedState').textContent = '상태: ' + d.status; }).catch(() => {});
+        }, 5000);
+      }).catch(() => toast('시드 등록 실패'));
+    };
     $('langToggle').onclick = () => {
       state.lang = state.lang === 'ko' ? 'en' : 'ko';
       $('langToggle').textContent = state.lang === 'ko' ? '한' : 'EN';

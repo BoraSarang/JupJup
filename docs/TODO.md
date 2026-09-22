@@ -2,6 +2,13 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R43 관리웹 이관 1차: mac_web + 내부망 필터 (PLAN_v19)
+- [x] B1 mac_web: 설정 서랍 + 소스 토글/수집/주기 + 시드/번역 + 알림 쓰기
+- [x] 서버 `POST /api/sources/{id}/interval` 신설 (앱 setIntervalMinutes 대응)
+- [x] C1 `common LanGuard` + 4서비스 IP 필터 (사설대역 외 403)
+- [x] 검증: node --check·unit·build+설치·lint (실기 스팟체크 생략)
+- [ ] 후속: R44(B2/B3/C2 토큰)·R45(B4/D 앱 슬리밍)
+
 ## R42b 네트워크 영속·집계·노출 (PLAN_v18)
 - [x] CrawlLog rx/tx 컬럼 + Migration (mac v7·community v7·plan v6)
 - [x] 3 워커 NetMeter 델타 기록 + DAO SUM + Repository 집계 + WARN

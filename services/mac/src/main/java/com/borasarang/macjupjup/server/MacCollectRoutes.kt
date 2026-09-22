@@ -42,8 +42,33 @@ internal fun HttpServerService.macCollectRoutes(route: Route) {
             )
         }
     }
-    route.post("/api/sync") {
-        val sourceId = call.receiveJsonObject()
+    route.post("/api/sources/{id}/interval") {
+        val id = call.pathId()
+        val minutes = call.receiveJsonObject()
+            ?.get("intervalMinutes")?.jsonPrimitive?.content?.toIntOrNull()
+        if (id.isNullOrBlank() || minutes == null) {
+            call.respondText(
+                """{"error":"id and intervalMinutes required"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.BadRequest,
+            )
+            return@post
+        }
+        val ok = application.sourceRepository.setIntervalMinutes(id, minutes)
+        if (!ok) {
+            call.respondText(
+                """{"error":"unknown source or interval < 15"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.BadRequest,
+            )
+        } else {
+            call.respondText(
+                """{"id":"${escapeJson(id)}","intervalMinutes":$minutes}""",
+                ContentType.Application.Json,
+            )
+        }
+    }
+    route.post("/api/sync") {        val sourceId = call.receiveJsonObject()
             ?.get("sourceId")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
         DebugLogger.i("수동수집", "즉시 수집 요청 sourceId=$sourceId")
         if (!sourceId.isNullOrBlank() &&
