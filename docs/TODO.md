@@ -2,6 +2,12 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R38 R30 공통화 2차 (DebugLogger·TimeUtils)
+- [x] `ServiceLogger`+`BaseTimeUtils` common 승격, 4벌·3벌 해소 (호출부 무변경)
+- [x] plan 전용부 유지 (formatPrice·30분 옵션·formatInterval 재정의)
+- [x] 검증: BaseTimeUtilsTest 4건·전 모듈 unit·assembleDebug+설치·lint 성공
+- [ ] 잔여(유예 유지): HttpServer 4벌·Scheduler/Worker·Notification 3벌·CrawlHttp (동작 분기 있어 별도 라운드)
+
 ## R37 수집예의 공용화 (R30 부분)
 - [x] `HostThrottler`+`parallelFetch` common 승격 (`common.util.Throttler`)
 - [x] community/mac 중복분 삭제, 테스트 common 통합 (ThrottlerTest 4건)
@@ -60,7 +66,7 @@
 - [x] 1단계: build test community 추가·문자열/placeholder 하드코딩 제거·KDoc·Factory·매직포트·문서 포트 현행화
 - [x] 2단계: 앱정보 pj 행·PJ 알림 최근기록·Plan cancelAll 태그화·웹 console.error
 - [x] 검증: assembleDebug+설치·unit 6모듈·lint·node --check + CHANGELOG·세션 로그
-- [ ] 후순위(대규모 공통화 유예): HttpServer 4벌·DebugLogger 4벌·Scheduler/Worker·Notification 3벌·TimeUtils·CrawlHttp (다음 라운드)
+- [x] 부분완료(R37 수집예의·R38 로거/시간): HttpServer·Scheduler·Notification·CrawlHttp는 동작 분기로 유예
 
 ## R29 포트 설정 실동작 + 기본 포트 변경 + 프롬 저널 설정 화면
 - [x] 기본 포트 변경: 앱(4610) 서버 시작 문구·홈 레이아웃 하드코딩 포함 3010/3020/3030/3040 전수

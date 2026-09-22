@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### R38 R30 공통화 2차 (DebugLogger·TimeUtils)
+- `ServiceLogger`·`BaseTimeUtils` common 승격, 4벌·3벌 해소 (호출부 무변경, plan 전용부 유지)
+- 검증: BaseTimeUtilsTest 4건·전 모듈 unit·assembleDebug+설치·lint 성공
+- 잔여 유예: HttpServer·Scheduler/Worker·Notification·CrawlHttp (동작 분기)
+
 ### R37 수집예의 공용화 (R30 부분)
 - `HostThrottler`+`parallelFetch`를 `:services:common`으로 승격, community/mac 중복분 삭제
 - 테스트 common 통합 (ThrottlerTest 4건), 전 모듈 unit·빌드·lint 성공
