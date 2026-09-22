@@ -159,7 +159,10 @@ class DashboardFragment : Fragment() {
         binding.dashboardMacStatValue1.text = s.statValue1.toString()
         binding.dashboardMacStatValue2.text = s.statValue2.toString()
         binding.dashboardMacStatValue3.text =
-            s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) }
+            listOf(
+                s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) },
+                s.netLabel.takeIf { it.isNotBlank() },
+            ).filterNotNull().joinToString("\n")
 
         binding.dashboardMacBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardMacBtnCrawl.text =
@@ -188,7 +191,10 @@ class DashboardFragment : Fragment() {
         binding.dashboardPlanStatValue1.text = s.statValue1.toString()
         binding.dashboardPlanStatValue2.text = s.statValue2.toString()
         binding.dashboardPlanStatValue3.text =
-            s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) }
+            listOf(
+                s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) },
+                s.netLabel.takeIf { it.isNotBlank() },
+            ).filterNotNull().joinToString("\n")
 
         binding.dashboardPlanBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardPlanBtnCrawl.text =
@@ -218,7 +224,10 @@ class DashboardFragment : Fragment() {
         binding.dashboardPjStatValue1.text = s.statValue1.toString()
         binding.dashboardPjStatValue2.text = s.statValue2.toString()
         binding.dashboardPjStatValue3.text =
-            s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) }
+            listOf(
+                s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) },
+                s.netLabel.takeIf { it.isNotBlank() },
+            ).filterNotNull().joinToString("\n")
 
         binding.dashboardPjBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardPjBtnCrawl.text =
@@ -248,7 +257,10 @@ class DashboardFragment : Fragment() {
         binding.dashboardCmStatValue1.text = s.statValue1.toString()
         binding.dashboardCmStatValue2.text = s.statValue2.toString()
         binding.dashboardCmStatValue3.text =
-            s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) }
+            listOf(
+                s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) },
+                s.netLabel.takeIf { it.isNotBlank() },
+            ).filterNotNull().joinToString("\n")
 
         binding.dashboardCmBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardCmBtnCrawl.text =

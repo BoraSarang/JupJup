@@ -25,6 +25,8 @@ internal fun HttpServerService.planStatsRoutes(route: Route) {
                 put("totalPlans", stats.totalPlans)
                 put("activeSources", stats.activeSources)
                 putIfNotNull("lastCollectedAt", stats.lastCollectedAt)
+                put("netRxBytes", stats.netRx24h)
+                put("netTxBytes", stats.netTx24h)
             }.toString(),
             ContentType.Application.Json,
         )

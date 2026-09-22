@@ -92,10 +92,17 @@ class PlanRepository(
     }
 
     suspend fun getStats(): PlanStats {
+        val logs24h = try {
+            db.crawlLogDao().getLogsSince(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1))
+        } catch (_: Exception) {
+            emptyList()
+        }
         return PlanStats(
             totalPlans = db.planDao().countAll(),
             activeSources = db.crawlSourceDao().countEnabled(),
             lastCollectedAt = db.planDao().getLatestCollectedAt(),
+            netRx24h = logs24h.sumOf { it.rxBytes },
+            netTx24h = logs24h.sumOf { it.txBytes },
         )
     }
 

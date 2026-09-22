@@ -102,6 +102,8 @@ internal fun overviewJson(o: OverviewStats): String {
         put("avgDataGb", o.avgDataGb)
         put("crawlCountToday", o.crawlCountToday)
         put("crawlFail24h", o.crawlFail24h)
+        put("netRx24h", o.netRx24h)
+        put("netTx24h", o.netTx24h)
         putIfNotNull("lastCollectedAt", o.lastCollectedAt)
     }.toString()
 }
@@ -152,6 +154,8 @@ internal fun pointElement(p: TrendPoint): JsonElement {
         put("plansNew", p.plansNew)
             put("plansUpdated", p.plansUpdated)
         put("failCount", p.failCount)
+        put("rxBytes", p.rxBytes)
+        put("txBytes", p.txBytes)
     }
 }
 

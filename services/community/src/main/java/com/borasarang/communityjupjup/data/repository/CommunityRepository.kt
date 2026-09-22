@@ -129,6 +129,26 @@ class CommunityRepository(private val db: CommunityDatabase) {
         return CommunityStats(totalPosts = total, activeSources = active, lastCollectedAt = last)
     }
 
+    /** 기간 네트워크 합산 (대시보드·/api/stats용, 캐시 5분). 초과 시 WARN만 */
+    suspend fun netTotals(days: Int = 30): Pair<Long, Long> {
+        val d = days.coerceIn(1, 90)
+        return statsCache.cached("net:$d") {
+            val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(d.toLong())
+            val rows = db.crawlLogDao().collectByDay(since)
+            val rx = rows.sumOf { it.rxBytes }
+            val tx = rows.sumOf { it.txBytes }
+            val byDay = rows.groupBy { it.day }.mapValues { (_, rs) -> rs.sumOf { it.rxBytes + it.txBytes } }
+            val lastDay = byDay.toSortedMap().values.lastOrNull() ?: 0L
+            if (com.borasarang.common.util.NetBudget.isDailyOver(lastDay)) {
+                com.borasarang.communityjupjup.util.DebugLogger.w(
+                    "트래픽",
+                    "일일 사용량 초과(200MB) community ${com.borasarang.common.util.NetMeter.formatBytes(lastDay)}",
+                )
+            }
+            rx to tx
+        }
+    }
+
     /** TTL 정리: 핫딜 3일·중고 7일·그 외 retentionDays */
     suspend fun purgeExpired(retentionDays: Int): Int {
         val now = System.currentTimeMillis()
@@ -170,5 +190,6 @@ class CommunityRepository(private val db: CommunityDatabase) {
         statsCache.invalidatePrefix("overview")
         statsCache.invalidatePrefix("collect")
         statsCache.invalidatePrefix("trends")
+        statsCache.invalidatePrefix("net")
     }
 }

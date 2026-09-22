@@ -17,6 +17,7 @@ import com.borasarang.planjupjup.data.repository.NotificationService
 import com.borasarang.planjupjup.data.repository.NotificationType
 import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
+import com.borasarang.common.util.NetMeter
 import com.borasarang.common.util.NetUtils
 import com.borasarang.common.worker.SourceLocks
 
@@ -70,6 +71,7 @@ class CrawlWorker(
     ): Result {
         app.sourceRepository.markRunning(sourceId)
         setForeground(createForegroundInfo(source.name))
+        val netBefore = NetMeter.snapshotFor("plan")
 
         return try {
             val crawler = CrawlerFactory(app.database).create(source)
@@ -79,6 +81,7 @@ class CrawlWorker(
                     val plans = drafts.map { it.plan }
                     val mappings = drafts.flatMap { it.mappings }
                     val saved = app.planRepository.saveCrawlResults(plans, mappings)
+                    val net = NetMeter.deltaSince("plan", netBefore)
                     app.sourceRepository.logResult(
                         sourceId = sourceId,
                         sourceName = source.name,
@@ -88,6 +91,8 @@ class CrawlWorker(
                         created = saved.created,
                         updated = saved.updated,
                         error = null,
+                        rxBytes = net.rxBytes,
+                        txBytes = net.txBytes,
                     )
                     DebugLogger.i(
                         "수집",
@@ -117,6 +122,7 @@ class CrawlWorker(
                 },
                 onFailure = { e ->
                     val message = e.message ?: e.javaClass.simpleName
+                    val net = NetMeter.deltaSince("plan", netBefore)
                     app.sourceRepository.logResult(
                         sourceId = sourceId,
                         sourceName = source.name,
@@ -126,6 +132,8 @@ class CrawlWorker(
                         created = 0,
                         updated = 0,
                         error = message,
+                        rxBytes = net.rxBytes,
+                        txBytes = net.txBytes,
                     )
                     DebugLogger.e("수집", "E-AND-CRAWL-0211", "워커 실패 source=${source.name}: $message", e)
                     checkFailureStreak(app, sourceId, source.name, message)
@@ -133,6 +141,7 @@ class CrawlWorker(
                 },
             )
         } catch (e: Exception) {
+            val net = NetMeter.deltaSince("plan", netBefore)
             app.sourceRepository.logResult(
                 sourceId = sourceId,
                 sourceName = source.name,
@@ -142,6 +151,8 @@ class CrawlWorker(
                 created = 0,
                 updated = 0,
                 error = e.message,
+                rxBytes = net.rxBytes,
+                txBytes = net.txBytes,
             )
             DebugLogger.e("수집", "E-AND-CRAWL-0211", "워커 예외 source=${source.name}: ${e.message}", e)
             checkFailureStreak(app, sourceId, source.name, e.message ?: e.javaClass.simpleName)

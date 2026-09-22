@@ -182,10 +182,27 @@ class AppRepository(
                     updated = rs.sumOf { it.updated },
                     runs = rs.sumOf { it.runs },
                     bySource = rs.map {
-                        SourceCollect(it.sourceId, it.sourceName, it.found, it.newCount, it.updated)
+                        SourceCollect(it.sourceId, it.sourceName, it.found, it.newCount, it.updated, it.rxBytes, it.txBytes)
                     }.sortedByDescending { it.found },
+                    rxBytes = rs.sumOf { it.rxBytes },
+                    txBytes = rs.sumOf { it.txBytes },
                 )
             }
+        }
+    }
+
+    /** 기간 네트워크 합산 (대시보드·/api/stats용, 캐시 5분). 초과 시 WARN만 */
+    suspend fun netTotals(days: Int = 30): Pair<Long, Long> {
+        val d = days.coerceIn(1, 30)
+        return cache.cached("net:$d") {
+            val rows = collect(d)
+            val rx = rows.sumOf { it.rxBytes }
+            val tx = rows.sumOf { it.txBytes }
+            val lastDay = rows.lastOrNull()?.let { it.rxBytes + it.txBytes } ?: 0L
+            if (com.borasarang.common.util.NetBudget.isDailyOver(lastDay)) {
+                DebugLogger.w("트래픽", "일일 사용량 초과(200MB) mac ${com.borasarang.common.util.NetMeter.formatBytes(lastDay)}")
+            }
+            rx to tx
         }
     }
 

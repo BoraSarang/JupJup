@@ -15,6 +15,7 @@ import com.borasarang.communityjupjup.data.db.entity.CommunityPost
 import com.borasarang.communityjupjup.data.db.entity.SiteBoard
 import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.common.util.CrawlStats
+import com.borasarang.common.util.NetMeter
 import com.borasarang.communityjupjup.util.DebugLogger
 import com.borasarang.communityjupjup.util.takeSafe
 import com.borasarang.common.util.NetUtils
@@ -79,6 +80,7 @@ class CrawlWorker(
         app.sourceRepository.markRunning(source.id)
         setForeground(createForegroundInfo(displayName))
         val startedAt = System.currentTimeMillis()
+        val netBefore = NetMeter.snapshotFor("community")
 
         return try {
             val crawler = CrawlerFactory(app.database).create(source)
@@ -114,6 +116,7 @@ class CrawlWorker(
                         )
                     }
                     val saved = app.communityRepository.savePosts(posts)
+                    val net = NetMeter.deltaSince("community", netBefore)
                     app.sourceRepository.logResult(
                         sourceId = source.id,
                         sourceName = displayName,
@@ -123,6 +126,8 @@ class CrawlWorker(
                         created = saved.created,
                         updated = saved.updated,
                         error = null,
+                        rxBytes = net.rxBytes,
+                        txBytes = net.txBytes,
                     )
                     DebugLogger.i(
                         "수집",
@@ -151,12 +156,14 @@ class CrawlWorker(
                     Result.success()
                 },
                 onFailure = { e ->
-                    fail(app, source.id, displayName, startedAt, e.message ?: e.javaClass.simpleName)
+                    val net = NetMeter.deltaSince("community", netBefore)
+                    fail(app, source.id, displayName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
                     Result.retry()
                 },
             )
         } catch (e: Exception) {
-            fail(app, source.id, displayName, startedAt, e.message ?: e.javaClass.simpleName)
+            val net = NetMeter.deltaSince("community", netBefore)
+            fail(app, source.id, displayName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
             Result.retry()
         }
     }
@@ -167,6 +174,8 @@ class CrawlWorker(
         displayName: String,
         startedAt: Long,
         message: String,
+        rxBytes: Long = 0L,
+        txBytes: Long = 0L,
     ) {
         app.sourceRepository.logResult(
             sourceId = sourceId,
@@ -177,6 +186,8 @@ class CrawlWorker(
             created = 0,
             updated = 0,
             error = message,
+            rxBytes = rxBytes,
+            txBytes = txBytes,
         )
         DebugLogger.e("수집", "E-AND-CRAWL-0201", "워커 실패 board=$displayName: $message")
         checkFailureStreak(app, sourceId, displayName, message)

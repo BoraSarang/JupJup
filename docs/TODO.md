@@ -2,6 +2,13 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R42b 네트워크 영속·집계·노출 (PLAN_v18)
+- [x] CrawlLog rx/tx 컬럼 + Migration (mac v7·community v7·plan v6)
+- [x] 3 워커 NetMeter 델타 기록 + DAO SUM + Repository 집계 + WARN
+- [x] API (`/api/stats`·collect·trends) + 앱 대시보드 4카드 netLabel
+- [x] 검증: 전 모듈 unit·assembleDebug+설치·lint (실기 E2E 생략)
+- [ ] 후속(R43 관리웹): 웹 포털 트래픽 표시 통합
+
 ## R42a 네트워크 트래픽 측정 기반 (PLAN_v18)
 - [x] `common/util/NetMeter` (서비스별 rx/tx 원자 카운터, snapshot/reset/format)
 - [x] 크롤 3벌 `HttpResult(rxBytes/txBytes)` + `NetMeter.record` 연결

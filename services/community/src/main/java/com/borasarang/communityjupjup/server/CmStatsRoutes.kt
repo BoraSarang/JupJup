@@ -19,10 +19,13 @@ internal fun HttpServerService.cmStatsRoutes(route: Route) {
     route.get("/api/stats") {
         val payload = application.communityRepository.statsCache.cached("stats") {
             val stats = application.communityRepository.stats()
+            val net = application.communityRepository.netTotals(30)
             buildJsonObject {
                 put("totalPosts", stats.totalPosts)
                 put("activeSources", stats.activeSources)
                 stats.lastCollectedAt?.let { put("lastCollectedAt", it) }
+                put("netRxBytes", net.first)
+                put("netTxBytes", net.second)
             }.toString()
         }
         call.respondText(payload, ContentType.Application.Json)
@@ -71,6 +74,8 @@ internal fun HttpServerService.cmStatsRoutes(route: Route) {
                             put("newCount", dayRows.sumOf { it.newCount })
                             put("runs", dayRows.sumOf { it.runs })
                             put("failed", dayRows.sumOf { it.failed })
+                            put("rxBytes", dayRows.sumOf { it.rxBytes })
+                            put("txBytes", dayRows.sumOf { it.txBytes })
                             put("bySource", buildJsonArray {
                                 dayRows.forEach { r ->
                                     add(buildJsonObject {
@@ -78,6 +83,8 @@ internal fun HttpServerService.cmStatsRoutes(route: Route) {
                                         put("sourceName", r.sourceName)
                                         put("found", r.found)
                                         put("newCount", r.newCount)
+                                        put("rxBytes", r.rxBytes)
+                                        put("txBytes", r.txBytes)
                                     })
                                 }
                             })

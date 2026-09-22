@@ -85,6 +85,8 @@ class SourceRepository(private val db: PlanDatabase) {
         created: Int,
         updated: Int,
         error: String?,
+        rxBytes: Long = 0L,
+        txBytes: Long = 0L,
     ) {
         // R5: 로그 insert + 상태 갱신 원자화 (크래시 시 불일치 방지)
         db.withTransaction {
@@ -99,6 +101,8 @@ class SourceRepository(private val db: PlanDatabase) {
                     plansNew = created,
                     plansUpdated = updated,
                     errorMessage = error,
+                    rxBytes = rxBytes,
+                    txBytes = txBytes,
                 ),
             )
             updateRunStatus(sourceId, status, error)

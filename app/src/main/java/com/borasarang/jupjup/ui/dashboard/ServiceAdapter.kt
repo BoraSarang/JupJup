@@ -47,6 +47,11 @@ object MacServiceAdapter : ServiceAdapter {
         val app = MacJupJupRuntime
         val settings = app.preferences.getSettings()
         val stats = app.appRepository.overview()
+        val net = try {
+            app.appRepository.netTotals(30)
+        } catch (_: Exception) {
+            0L to 0L
+        }
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
             address = "http://$ip:${settings.port}",
@@ -54,6 +59,7 @@ object MacServiceAdapter : ServiceAdapter {
             statValue2 = stats.activeSources,
             lastCollectedLabel = MacTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
+            netLabel = "네트워크 30일 ${com.borasarang.common.util.NetMeter.formatBytes(net.first + net.second)}",
         )
     }
 
@@ -111,6 +117,7 @@ object PlanServiceAdapter : ServiceAdapter {
             statValue2 = stats.activeSources,
             lastCollectedLabel = PlanTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
+            netLabel = "네트워크 24시간 ${com.borasarang.common.util.NetMeter.formatBytes(stats.netRx24h + stats.netTx24h)}",
         )
     }
 
@@ -174,6 +181,7 @@ object PjServiceAdapter : ServiceAdapter {
         // getAll()은 프롬프트 본문(대형 마크다운)까지 전건 로딩한다 → 활성 목록만 조회
         val enabled = app.promptRepository.getEnabled()
         val activeCount = enabled.size
+        val aiNet = com.borasarang.common.util.NetMeter.snapshotFor("ai")
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
             address = "http://$ip:${settings.port}",
@@ -181,6 +189,7 @@ object PjServiceAdapter : ServiceAdapter {
             statValue2 = activeCount,
             lastCollectedLabel = if (activeCount > 0) "프롬프트 ${activeCount}개 활성" else "활성 프롬프트 없음",
             crawlEnabled = activeCount > 0,
+            netLabel = "AI·검색 ${com.borasarang.common.util.NetMeter.formatBytes(aiNet.totalBytes)}",
         )
     }
 
@@ -235,6 +244,11 @@ object CmServiceAdapter : ServiceAdapter {
         val app = CommunityJupJupRuntime
         val settings = app.preferences.getSettings()
         val stats = app.communityRepository.stats()
+        val net = try {
+            app.communityRepository.netTotals(30)
+        } catch (_: Exception) {
+            0L to 0L
+        }
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
             address = "http://$ip:${settings.port}",
@@ -242,6 +256,7 @@ object CmServiceAdapter : ServiceAdapter {
             statValue2 = stats.activeSources,
             lastCollectedLabel = CmTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
+            netLabel = "네트워크 30일 ${com.borasarang.common.util.NetMeter.formatBytes(net.first + net.second)}",
         )
     }
 
