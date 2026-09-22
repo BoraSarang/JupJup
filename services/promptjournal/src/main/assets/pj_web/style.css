@@ -48,6 +48,7 @@ body {
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
 .status-dot.running { background: var(--success); }
 .status-dot.stopped { background: var(--error); }
+.net-stats { font-size: 11px; color: var(--secondary); white-space: nowrap; }
 .btn-gear { background: none; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; padding: 2px 8px; cursor: pointer; min-height: 36px; }
 .btn-gear:active { transform: scale(0.97); }
 

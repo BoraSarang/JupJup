@@ -37,6 +37,16 @@
 - D 앱 슬리밍 1차: 하단 SOURCE·NOTIF 탭 삭제 (8 프래그먼트 + 3 VM + 14 레이아웃),
   대시보드·홈·설정만 유지. 설정 화면 축소는 후속.
 
+## R45 실적
+
+- B4·토큰 표시·D 1차 완료 (PR #15)
+
+## R46 범위 (PLAN_v19 완결)
+
+- A 설정 화면 축소 4종: 웹 이관 항목(토큰·포트·보관·Watchdog·알림·로그·앱정보) UI 삭제,
+  OS 전용(배터리 예외·자동시작)만 유지. DataStore 키·saveSettings 구조는 유지.
+- B 웹 트래픽 표시 4포털: mac kpi + plan kpi + community 위젯 + pj `/api/health` 확장·헤더 표시
+
 ## 원칙 (R43~R44 공통)
 
 - 쓰기 API 동작 변경 없음. 웹은 기존 API 재사용 + interval 1개 신설.

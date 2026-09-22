@@ -45,8 +45,9 @@ fun pjRoutes(route: Route) {
 
 private fun Route.healthRoute() {
     get("/health") {
+        val net = com.borasarang.common.util.NetMeter.snapshotFor("ai")
         call.respondText(
-            """{"status":"ok","service":"promptjournal","port":${PromptJournalRuntime.preferences.getSettings().port}}""",
+            """{"status":"ok","service":"promptjournal","port":${PromptJournalRuntime.preferences.getSettings().port},"netRxBytes":${net.rxBytes},"netTxBytes":${net.txBytes}}""",
             ContentType.Application.Json,
         )
     }

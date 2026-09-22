@@ -826,7 +826,8 @@
       const max = cats.length ? t.byCategory[cats[0]] : 1;
       box.innerHTML = '<div class="kpi-grid">' +
         kpi(s.totalApps, '수집 앱') + kpi(s.activeSources, '활성 소스') +
-        kpi(t.newLast7d, '최근 7일 신규') + kpi(t.versionBumpsLast7d, '최근 7일 버전업') + '</div>' +
+        kpi(t.newLast7d, '최근 7일 신규') + kpi(t.versionBumpsLast7d, '최근 7일 버전업') +
+        kpi(formatBytes((s.netRxBytes || 0) + (s.netTxBytes || 0)), '30일 네트워크') + '</div>' +
         '<h3 class="stats-section-title">카테고리 분포</h3>' +
         cats.map(c => '<div class="bar-row"><span class="bar-name">' + esc(c) + '</span>' +
           '<span class="bar-track"><span class="bar-fill" style="width:' + Math.round(t.byCategory[c] / max * 100) + '%"></span></span>' +
@@ -837,6 +838,15 @@
     });
   }
   function kpi(n, l) { return '<div class="kpi"><div class="kpi-value">' + n + '</div><div class="kpi-label">' + l + '</div></div>'; }
+  function formatBytes(b) {
+    b = Number(b) || 0;
+    if (b < 1024) return b + 'B';
+    const kb = b / 1024;
+    if (kb < 1024) return kb.toFixed(1) + 'KB';
+    const mb = kb / 1024;
+    if (mb < 1024) return mb.toFixed(1) + 'MB';
+    return (mb / 1024).toFixed(1) + 'GB';
+  }
 
   /* ---------- 앱 모달 (기존 유지) ---------- */
   function openModal(id, silent) {

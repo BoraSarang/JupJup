@@ -39,50 +39,19 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         DebugLogger.i("설정", "설정 화면 진입")
 
-        binding.pjBtnApplyPort.setOnClickListener {
-            val port = binding.pjEtPort.text.toString().toIntOrNull()
-            if (port == null) {
-                Toast.makeText(requireContext(), "포트 번호를 입력하세요", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            viewModel.savePort(port)
-        }
         binding.pjSwitchAutoStart.setOnCheckedChangeListener { _, checked ->
             if (checked != viewModel.settings.value.autoStart) {
                 viewModel.saveAutoStart(checked)
             }
         }
         binding.pjBtnBatteryRequest.setOnClickListener { requestBatteryExemption() }
-        binding.pjBtnSaveExaKey.setOnClickListener {
-            viewModel.saveExaApiKey(binding.pjEtExaKey.text.toString())
-            Toast.makeText(requireContext(), "저장되었습니다", Toast.LENGTH_SHORT).show()
-        }
-
-        val versionName = try {
-            requireContext().packageManager
-                .getPackageInfo(requireContext().packageName, 0).versionName
-        } catch (_: Exception) {
-            "?"
-        }
-        binding.pjAppInfo.text = "버전 $versionName · 제작자 BoRaSaRang · leeborasarang@gmail.com"
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.settings.collect {
-                        if (binding.pjEtPort.text.toString() != it.port.toString()) {
-                            binding.pjEtPort.setText(it.port.toString())
-                        }
                         if (binding.pjSwitchAutoStart.isChecked != it.autoStart) {
                             binding.pjSwitchAutoStart.isChecked = it.autoStart
-                        }
-                    }
-                }
-                launch {
-                    viewModel.exaApiKey.collect {
-                        if (binding.pjEtExaKey.tag != it) {
-                            binding.pjEtExaKey.setText(if (it.isEmpty()) "" else "••••••••")
-                            binding.pjEtExaKey.tag = it
                         }
                     }
                 }
