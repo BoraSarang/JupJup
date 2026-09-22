@@ -39,6 +39,8 @@ class PreferencesManager(private val context: Context) {
         val SEED_STATUS = stringPreferencesKey("seed_status")
         val SEED_STARTED_AT = longPreferencesKey("seed_started_at")
         val ADMIN_TOKEN = stringPreferencesKey("admin_token")
+        val ADMIN_ID = stringPreferencesKey("admin_id")
+        val ADMIN_PW = stringPreferencesKey("admin_pw")
     }
 
     suspend fun getSettings(): SettingsData {
@@ -81,6 +83,24 @@ class PreferencesManager(private val context: Context) {
     suspend fun setCrawlEnabled(enabled: Boolean) {
         context.settingsStore.edit { prefs ->
             prefs[Keys.CRAWL_ENABLED] = enabled
+        }
+    }
+
+
+    /** 통합 관리자 ID/PW 조회 (R48, 4서비스 동일값 등록) */
+    suspend fun getAdminCredential(): Pair<String, String> {
+        return context.settingsStore.data.map { prefs ->
+            (prefs[Keys.ADMIN_ID] ?: "") to (prefs[Keys.ADMIN_PW] ?: "")
+        }.first()
+    }
+
+    /** 통합 관리자 ID/PW 저장 (R48, 빈 값이면 삭제) */
+    suspend fun setAdminCredential(id: String, pw: String) {
+        context.settingsStore.edit { prefs ->
+            val i = id.trim()
+            val p = pw.trim()
+            if (i.isEmpty()) prefs.remove(Keys.ADMIN_ID) else prefs[Keys.ADMIN_ID] = i
+            if (p.isEmpty()) prefs.remove(Keys.ADMIN_PW) else prefs[Keys.ADMIN_PW] = p
         }
     }
 

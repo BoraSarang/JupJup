@@ -46,6 +46,7 @@ object MacServiceAdapter : ServiceAdapter {
     override suspend fun loadState(ip: String?): DashboardServiceUi {
         val app = MacJupJupRuntime
         val settings = app.preferences.getSettings()
+        val macToken = try { app.preferences.getAdminToken() } catch (_: Exception) { "" }
         val stats = app.appRepository.overview()
         val net = try {
             app.appRepository.netTotals(30)
@@ -57,6 +58,7 @@ object MacServiceAdapter : ServiceAdapter {
             address = "http://$ip:${settings.port}",
             statValue1 = stats.totalApps,
             statValue2 = stats.activeSources,
+            adminToken = macToken,
             lastCollectedLabel = MacTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
             netLabel = "네트워크 30일 ${com.borasarang.common.util.NetMeter.formatBytes(net.first + net.second)}",
@@ -109,12 +111,14 @@ object PlanServiceAdapter : ServiceAdapter {
     override suspend fun loadState(ip: String?): DashboardServiceUi {
         val app = PlanJupJupRuntime
         val settings = app.preferences.getSettings()
+        val planToken = try { app.preferences.getAdminToken() } catch (_: Exception) { "" }
         val stats = app.planRepository.getStats()
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
             address = "http://$ip:${settings.port}",
             statValue1 = stats.totalPlans,
             statValue2 = stats.activeSources,
+            adminToken = planToken,
             lastCollectedLabel = PlanTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
             netLabel = "네트워크 24시간 ${com.borasarang.common.util.NetMeter.formatBytes(stats.netRx24h + stats.netTx24h)}",
@@ -182,6 +186,7 @@ object PjServiceAdapter : ServiceAdapter {
         val enabled = app.promptRepository.getEnabled()
         val activeCount = enabled.size
         val aiNet = com.borasarang.common.util.NetMeter.snapshotFor("ai")
+        val pjToken = try { app.preferences.getAdminToken() } catch (_: Exception) { "" }
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
             address = "http://$ip:${settings.port}",
@@ -190,6 +195,7 @@ object PjServiceAdapter : ServiceAdapter {
             lastCollectedLabel = if (activeCount > 0) "프롬프트 ${activeCount}개 활성" else "활성 프롬프트 없음",
             crawlEnabled = activeCount > 0,
             netLabel = "AI·검색 ${com.borasarang.common.util.NetMeter.formatBytes(aiNet.totalBytes)}",
+            adminToken = pjToken,
         )
     }
 
@@ -243,6 +249,7 @@ object CmServiceAdapter : ServiceAdapter {
     override suspend fun loadState(ip: String?): DashboardServiceUi {
         val app = CommunityJupJupRuntime
         val settings = app.preferences.getSettings()
+        val cmToken = try { app.preferences.getAdminToken() } catch (_: Exception) { "" }
         val stats = app.communityRepository.stats()
         val net = try {
             app.communityRepository.netTotals(30)
@@ -254,6 +261,7 @@ object CmServiceAdapter : ServiceAdapter {
             address = "http://$ip:${settings.port}",
             statValue1 = stats.totalPosts,
             statValue2 = stats.activeSources,
+            adminToken = cmToken,
             lastCollectedLabel = CmTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
             netLabel = "네트워크 30일 ${com.borasarang.common.util.NetMeter.formatBytes(net.first + net.second)}",

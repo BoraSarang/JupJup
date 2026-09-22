@@ -389,28 +389,45 @@
         });
     }
 
-    /* ---------- R44 관리 토큰: 쓰기 API 자동 첨부 + 401 시 입력·재시도 ---------- */
+    /* ---------- R44 관리 토큰 + R48 통합 ID/PW: 쓰기 API 자동 첨부 + 401 시 입력·재시도 ---------- */
     (function () {
         var KEY = 'jupjup_admin_token_3030';
+        var KEY_ID = 'jupjup_admin_id';
+        var KEY_PW = 'jupjup_admin_pw';
+        var PAIR_URL = 'http://127.0.0.1:3030/api/admin/token';
+        function stored(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+        function attach(headers) {
+            headers['X-Auth-Token'] = stored(KEY);
+            headers['X-Admin-Id'] = stored(KEY_ID);
+            headers['X-Admin-Pw'] = stored(KEY_PW);
+        }
         var origFetch = window.fetch.bind(window);
         window.fetch = function (input, init) {
             var url = typeof input === 'string' ? input : (input && input.url) || '';
             var method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
             var isApi = url.indexOf('/api/') === 0 || url.indexOf(API_BASE + '/api/') === 0;
             if (!isApi || method === 'GET' || method === 'HEAD') return origFetch(input, init);
-            var tok = '';
-            try { tok = localStorage.getItem(KEY) || ''; } catch (e) {}
             var headers = {};
             if (init && init.headers) { for (var k in init.headers) headers[k] = init.headers[k]; }
-            if (tok) headers['X-Auth-Token'] = tok;
+            attach(headers);
             var patched = { method: method, headers: headers };
             for (var p in (init || {})) { if (p !== 'headers' && p !== 'method') patched[p] = init[p]; }
             return origFetch(input, patched).then(function (r) {
                 if (r.status !== 401) return r;
-                var v = prompt('관리 토큰을 입력하세요 (기기 내 브라우저에서 http://127.0.0.1:3030/api/admin/token 조회)');
-                if (!v) return r;
-                try { localStorage.setItem(KEY, v.trim()); } catch (e) {}
-                patched.headers['X-Auth-Token'] = v.trim();
+                var i = prompt('관리자 ID (토큰 사용 시 비워두기, 발급: ' + PAIR_URL + ')', stored(KEY_ID));
+                if (i === null) return r;
+                var v = prompt('관리자 PW (토큰 사용 시 토큰 입력)');
+                if (v === null) return r;
+                try {
+                    if ((i || '').trim()) {
+                        localStorage.setItem(KEY_ID, i.trim());
+                        localStorage.setItem(KEY_PW, (v || '').trim());
+                    } else {
+                        localStorage.setItem(KEY, (v || '').trim());
+                        localStorage.setItem(KEY_PW, '');
+                    }
+                } catch (e) {}
+                attach(patched.headers);
                 return origFetch(input, patched);
             });
         };

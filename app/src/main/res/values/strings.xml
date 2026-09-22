@@ -25,6 +25,14 @@
     <string name="about_token_row">%1$s: %2$s</string>
     <string name="about_token_unknown">확인 중…</string>
     <string name="about_token_copied">토큰 복사됨</string>
+    <string name="about_cred_title">관리자 ID/PW (4서비스 공통)</string>
+    <string name="about_cred_hint">등록하면 웹 관리 로그인이 ID/PW로 통일됩니다. 비우면 토큰 방식으로 돌아갑니다.</string>
+    <string name="about_cred_id_hint">관리자 ID (비우기 가능)</string>
+    <string name="about_cred_pw_hint">관리자 PW</string>
+    <string name="about_cred_save">저장</string>
+    <string name="about_cred_saved">저장됨 — 4서비스 적용</string>
+    <string name="about_cred_cleared">해제됨 — 토큰 방식</string>
+    <string name="about_cred_need_pw">PW를 입력하세요</string>
 
     <string name="dashboard_status_checking">상태 확인 중…</string>
     <string name="dashboard_status_running">실행 중</string>
@@ -50,6 +58,7 @@
     <string name="dashboard_stat_runs">실행 횟수</string>
     <string name="dashboard_stat_posts">게시글</string>
     <string name="dashboard_stat_state">상태</string>
+    <string name="dashboard_token_hint">관리 토큰 확인 중… (탭하여 복사)</string>
     <string name="dashboard_pj_btn_run_now">지금 실행</string>
     <string name="dashboard_pj_btn_running">실행 중…</string>
     <string name="dashboard_pj_btn_enable">실행 켜기</string>

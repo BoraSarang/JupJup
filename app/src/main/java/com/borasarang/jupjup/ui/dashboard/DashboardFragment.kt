@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -15,7 +17,6 @@ import com.borasarang.jupjup.databinding.FragmentDashboardBinding
 import com.borasarang.jupjup.ui.nav.Service
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
 import kotlinx.coroutines.launch
-
 /**
  * 줍줍 시리즈 대시보드 — 네 서비스를 카드로 병렬 표시.
  *
@@ -116,6 +117,25 @@ class DashboardFragment : Fragment() {
         renderCm(state.cm)
     }
 
+    /** 관리 토큰 표시 + 탭하여 복사 (R48, 웹 관리 입력용) */
+    private fun bindToken(tv: TextView, token: String) {
+        tv.text = if (token.isBlank()) {
+            getString(R.string.dashboard_token_hint)
+        } else {
+            "토큰: $token"
+        }
+        tv.setOnClickListener {
+            if (token.isBlank()) return@setOnClickListener
+            try {
+                val cm = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("admin_token", token))
+                Toast.makeText(requireContext(), R.string.about_token_copied, Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                MacDebugLogger.e("대시보드", "E-AND-UI-0701", "토큰 복사 실패: ${e.message}", e)
+            }
+        }
+    }
+
     /** 활성 서비스 카드 강조: 스트로크 + "현재" 배지 */
     private fun applyActiveHighlight() {
         val b = _binding ?: return
@@ -164,6 +184,7 @@ class DashboardFragment : Fragment() {
                 s.netLabel.takeIf { it.isNotBlank() },
             ).filterNotNull().joinToString("\n")
 
+        bindToken(binding.dashboardMacToken, s.adminToken)
         binding.dashboardMacBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardMacBtnCrawl.text =
             getString(if (s.isCrawling) R.string.dashboard_btn_crawling else R.string.dashboard_btn_crawl_now)
@@ -196,6 +217,7 @@ class DashboardFragment : Fragment() {
                 s.netLabel.takeIf { it.isNotBlank() },
             ).filterNotNull().joinToString("\n")
 
+        bindToken(binding.dashboardPlanToken, s.adminToken)
         binding.dashboardPlanBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardPlanBtnCrawl.text =
             getString(if (s.isCrawling) R.string.dashboard_btn_crawling else R.string.dashboard_btn_crawl_now)
@@ -229,6 +251,7 @@ class DashboardFragment : Fragment() {
                 s.netLabel.takeIf { it.isNotBlank() },
             ).filterNotNull().joinToString("\n")
 
+        bindToken(binding.dashboardPjToken, s.adminToken)
         binding.dashboardPjBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardPjBtnCrawl.text =
             getString(if (s.isCrawling) R.string.dashboard_pj_btn_running else R.string.dashboard_pj_btn_run_now)
@@ -262,6 +285,7 @@ class DashboardFragment : Fragment() {
                 s.netLabel.takeIf { it.isNotBlank() },
             ).filterNotNull().joinToString("\n")
 
+        bindToken(binding.dashboardCmToken, s.adminToken)
         binding.dashboardCmBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
         binding.dashboardCmBtnCrawl.text =
             getString(if (s.isCrawling) R.string.dashboard_btn_crawling else R.string.dashboard_btn_crawl_now)
