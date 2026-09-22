@@ -34,6 +34,9 @@
     <plurals name="mac_notif_new_apps">
         <item quantity="other">새로운 맥 앱 %d건이 발견되었습니다</item>
     </plurals>
+    <plurals name="mac_notif_new_news">
+        <item quantity="other">새로운 뉴스 %d건이 수집되었습니다</item>
+    </plurals>
     <plurals name="mac_notif_version_bump">
         <item quantity="other">버전 업데이트 %d건이 감지되었습니다</item>
     </plurals>

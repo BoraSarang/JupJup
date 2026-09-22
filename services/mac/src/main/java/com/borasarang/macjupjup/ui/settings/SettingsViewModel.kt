@@ -127,6 +127,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun saveNotifNews(enabled: Boolean) {
+        viewModelScope.launch {
+            DebugLogger.i("설정", "신규 뉴스 알림 → $enabled")
+            app.preferences.saveSettings(_settings.value.copy(notifNews = enabled))
+            refresh()
+        }
+    }
+
     fun saveNotifFailure(enabled: Boolean) {
         viewModelScope.launch {
             DebugLogger.i("설정", "실패 알림 → $enabled")

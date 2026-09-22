@@ -162,6 +162,24 @@ class CrawlWorker(
                 "뉴스수집",
                 "워커 완료 source=$sourceName found=${outcome.articles.size} new=${saved.created}",
             )
+            // R39: 뉴스 수집 알림 (신규 + 완료 — 기존에는 알림이 전혀 없었음)
+            if (saved.createdIds.isNotEmpty()) {
+                val newNews = app.database.newsArticleDao().getByIds(saved.createdIds.take(50))
+                if (newNews.isNotEmpty()) {
+                    app.notificationService.createNewNewsNotification(newNews)
+                }
+            }
+            app.notificationService.createCrawlCompleteNotification(
+                com.borasarang.macjupjup.data.repository.CrawlResult(
+                    sourceName = sourceName,
+                    found = outcome.articles.size,
+                    created = saved.created,
+                    updated = 0,
+                    startedAt = startedAt,
+                ),
+                // 뉴스 경로에는 App 엔티티 없음 — 건수는 detail copy로 반영, 목록은 신규 뉴스 알림이 담당
+                emptyList(),
+            )
             // 보관기간 초과분 정리 (기사 + 연동행)
             try {
                 val purged = app.newsRepository.purge()

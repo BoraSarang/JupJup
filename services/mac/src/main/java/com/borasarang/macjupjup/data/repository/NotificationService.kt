@@ -106,6 +106,14 @@ class NotificationService(
                         it.version?.let { v -> put("version", v) }
                     }
                 }))
+                put("newNewsDetail", JsonArray(detail.newNewsDetail.map {
+                    buildJsonObject {
+                        put("id", it.id)
+                        put("title", it.title)
+                        put("sourceName", it.sourceName)
+                        put("main", it.main)
+                    }
+                }))
                 put("failedSources", JsonArray(detail.failedSources.map {
                     buildJsonObject {
                         put("sourceId", it.sourceId)
@@ -200,6 +208,33 @@ class NotificationService(
             )
         )
         DebugLogger.i("알림", "신규 앱 알림 저장 ${newApps.size}건")
+    }
+
+    /** 신규 뉴스 발견 알림 (R39: 뉴스 수집 경로에 알림이 전혀 없어 추가) */
+    suspend fun createNewNewsNotification(news: List<com.borasarang.macjupjup.data.db.entity.NewsArticle>) {
+        if (news.isEmpty()) return
+        if (!settings().notifNews) return
+        val summary = appContext.resources.getQuantityString(
+            R.plurals.mac_notif_new_news, news.size, news.size,
+        )
+        val detail = baseDetail(NotificationType.NEWS_FOUND, summary, emptyList()).copy(
+            totalFound = news.size,
+            newApps = news.size,
+            bySource = news.groupingBy { it.sourceName }.eachCount()
+                .map { SourceCount(it.key, it.value) },
+            newNewsDetail = news.take(50).map {
+                NewsNewsSummary(id = it.id, title = it.title, sourceName = it.sourceName, main = it.main)
+            },
+        )
+        db.notificationLogDao().insert(
+            NotificationLog(
+                type = NotificationType.NEWS_FOUND,
+                summary = summary,
+                detailJson = detailToJson(detail),
+                createdAt = System.currentTimeMillis(),
+            )
+        )
+        DebugLogger.i("알림", "신규 뉴스 알림 저장 ${news.size}건")
     }
 
     /** 버전 업데이트 알림 */

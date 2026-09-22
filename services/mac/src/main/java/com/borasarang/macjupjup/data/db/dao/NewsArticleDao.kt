@@ -19,6 +19,10 @@ interface NewsArticleDao {
     @Query("SELECT * FROM news_articles WHERE id = :id")
     suspend fun getById(id: String): NewsArticle?
 
+    /** 신규 수집 알림용 일괄 조회 (N+1 제거) */
+    @Query("SELECT * FROM news_articles WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<NewsArticle>
+
     /** 원문 fetch 전 기존 저장분 제외용 (IN 배치 1회) */
     @Query("SELECT id FROM news_articles WHERE id IN (:ids)")
     suspend fun getExistingIds(ids: List<String>): List<String>

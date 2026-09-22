@@ -130,6 +130,7 @@ data class SettingsData(
     val translateKo: Boolean = true,
     val notifCrawlComplete: Boolean = true,
     val notifNewApp: Boolean = true,
+    val notifNews: Boolean = true,
     val notifFailure: Boolean = true,
     val crawlEnabled: Boolean = true,
 )
@@ -144,6 +145,7 @@ data class SettingsView(
     val translateKo: Boolean,
     val notifCrawlComplete: Boolean,
     val notifNewApp: Boolean,
+    val notifNews: Boolean,
     val notifFailure: Boolean,
 )
 
@@ -156,6 +158,7 @@ fun SettingsData.toView() = SettingsView(
     translateKo = translateKo,
     notifCrawlComplete = notifCrawlComplete,
     notifNewApp = notifNewApp,
+    notifNews = notifNews,
     notifFailure = notifFailure,
 )
 
@@ -220,6 +223,7 @@ data class NotificationDetail(
     val byCategory: List<CategoryCount>,
     val byLicense: List<LicenseCount>,
     val newAppsDetail: List<NewAppSummary>,
+    val newNewsDetail: List<NewsNewsSummary> = emptyList(),
     val failedSources: List<FailedSource>,
     val startedAt: Long,
     val finishedAt: Long,
@@ -235,6 +239,14 @@ data class NewAppSummary(
     val developer: String,
     val license: String,
     val version: String?,
+)
+
+/** 신규 뉴스 요약 (알림 상세용) */
+data class NewsNewsSummary(
+    val id: String,
+    val title: String,
+    val sourceName: String,
+    val main: String,
 )
 
 data class FailedSource(val sourceId: String, val sourceName: String, val error: String)

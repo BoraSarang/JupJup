@@ -233,6 +233,7 @@ private fun typeLabel(type: String): String = when (type) {
     NotificationType.CRAWL_COMPLETE -> "수집 완료"
     NotificationType.CRAWL_FAILED -> "수집 실패"
     NotificationType.NEW_APPS_FOUND -> "신규 앱"
+    NotificationType.NEWS_FOUND -> "신규 뉴스"
     NotificationType.VERSION_BUMPED -> "버전 업데이트"
     NotificationType.CRAWL_SUMMARY -> "요약"
     NotificationType.CRAWL_FAILED_STREAK -> "수집 실패"

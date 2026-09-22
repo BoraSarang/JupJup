@@ -33,6 +33,7 @@ class PreferencesManager(private val context: Context) {
         val TRANSLATE_KO = booleanPreferencesKey("translate_ko")
         val NOTIF_CRAWL_COMPLETE = booleanPreferencesKey("notif_crawl_complete")
         val NOTIF_NEW_APP = booleanPreferencesKey("notif_new_app")
+        val NOTIF_NEWS = booleanPreferencesKey("notif_news")
         val NOTIF_FAILURE = booleanPreferencesKey("notif_failure")
         val CRAWL_ENABLED = booleanPreferencesKey("crawl_enabled")
         val SEED_STATUS = stringPreferencesKey("seed_status")
@@ -50,6 +51,7 @@ class PreferencesManager(private val context: Context) {
                 translateKo = prefs[Keys.TRANSLATE_KO] ?: true,
                 notifCrawlComplete = prefs[Keys.NOTIF_CRAWL_COMPLETE] ?: true,
                 notifNewApp = prefs[Keys.NOTIF_NEW_APP] ?: true,
+                notifNews = prefs[Keys.NOTIF_NEWS] ?: true,
                 notifFailure = prefs[Keys.NOTIF_FAILURE] ?: true,
                 crawlEnabled = prefs[Keys.CRAWL_ENABLED] ?: true,
             )
@@ -69,6 +71,7 @@ class PreferencesManager(private val context: Context) {
             prefs[Keys.TRANSLATE_KO] = settings.translateKo
             prefs[Keys.NOTIF_CRAWL_COMPLETE] = settings.notifCrawlComplete
             prefs[Keys.NOTIF_NEW_APP] = settings.notifNewApp
+            prefs[Keys.NOTIF_NEWS] = settings.notifNews
             prefs[Keys.NOTIF_FAILURE] = settings.notifFailure
         }
     }

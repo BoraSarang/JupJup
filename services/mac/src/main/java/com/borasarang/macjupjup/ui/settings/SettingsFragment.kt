@@ -90,6 +90,9 @@ class SettingsFragment : Fragment() {
         binding.macSwitchNotifNewplan.setOnCheckedChangeListener { _, checked ->
             viewModel.saveNotifNewApp(checked)
         }
+        binding.macSwitchNotifNews.setOnCheckedChangeListener { _, checked ->
+            viewModel.saveNotifNews(checked)
+        }
         binding.macSwitchNotifFailure.setOnCheckedChangeListener { _, checked ->
             viewModel.saveNotifFailure(checked)
         }
@@ -107,7 +110,7 @@ class SettingsFragment : Fragment() {
                 launch {
                     viewModel.settings.collect {
                         renderSettings(it.port, it.retentionDays, it.autoStart, it.watchdogIntervalSec)
-                        renderNotifToggles(it.notifCrawlComplete, it.notifNewApp, it.notifFailure)
+                        renderNotifToggles(it.notifCrawlComplete, it.notifNewApp, it.notifNews, it.notifFailure)
                         renderTokenStatus(it.githubToken)
                         if (binding.macSwitchTranslateKo.isChecked != it.translateKo) {
                             binding.macSwitchTranslateKo.isChecked = it.translateKo
@@ -149,12 +152,15 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun renderNotifToggles(notifCrawl: Boolean, notifNewApp: Boolean, notifFailure: Boolean) {
+    private fun renderNotifToggles(notifCrawl: Boolean, notifNewApp: Boolean, notifNews: Boolean, notifFailure: Boolean) {
         if (binding.macSwitchNotifCrawl.isChecked != notifCrawl) {
             binding.macSwitchNotifCrawl.isChecked = notifCrawl
         }
         if (binding.macSwitchNotifNewplan.isChecked != notifNewApp) {
             binding.macSwitchNotifNewplan.isChecked = notifNewApp
+        }
+        if (binding.macSwitchNotifNews.isChecked != notifNews) {
+            binding.macSwitchNotifNews.isChecked = notifNews
         }
         if (binding.macSwitchNotifFailure.isChecked != notifFailure) {
             binding.macSwitchNotifFailure.isChecked = notifFailure

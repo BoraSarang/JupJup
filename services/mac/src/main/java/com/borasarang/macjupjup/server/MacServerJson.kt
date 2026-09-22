@@ -124,6 +124,7 @@ internal fun settingsJson(s: SettingsView): String {
         put("translateKo", s.translateKo)
         put("notifCrawlComplete", s.notifCrawlComplete)
         put("notifNewApp", s.notifNewApp)
+        put("notifNews", s.notifNews)
         put("notifFailure", s.notifFailure)
     }.toString()
 }
