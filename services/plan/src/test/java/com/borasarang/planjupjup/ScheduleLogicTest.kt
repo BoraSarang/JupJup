@@ -1,6 +1,6 @@
 package com.borasarang.planjupjup
 
-import com.borasarang.planjupjup.util.CrawlStats
+import com.borasarang.common.util.CrawlStats
 import com.borasarang.planjupjup.util.TimeUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -2,6 +2,11 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R40 R30 공통화 3차 (CrawlStats)
+- [x] `CrawlStats` common 승격 (3벌 삭제, 호출부 import만 변경)
+- [x] 검증: CrawlStatsTest 2건·ScheduleLogicTest 회귀·전 모듈 unit·build+설치·lint
+- [ ] 잔여(설계 필요로 유예): HttpServer 4벌·Scheduler/Worker·Notification 3벌·CrawlHttp (구조 상이)
+
 ## R39 뉴스 수집 알림 (사용자 제보)
 - [x] `NEWS_FOUND` 타입 + `createNewNewsNotification` (신규 50건 상세 포함)
 - [x] `runNewsCrawl`에 신규·완료 알림 연결 (기존 무알림 해소, 실패는 기존 streak 경로)
