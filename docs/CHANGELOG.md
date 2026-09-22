@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### R43 관리웹 1차: mac_web + 내부망 필터 (PLAN_v19)
+- **mac_web 관리 서랍**: 설정 저장·소스 토글/수집/주기·시드·번역·알림 쓰기 (앱 기능 이관)
+- **서버**: `POST /api/sources/{id}/interval` 신설 (앱 주기 변경 대응)
+- **보안**: 4서비스 `lanOnly()` — 사설대역 외 403 (내부망 전용)
+- 검증: node --check·unit·build+설치·lint
+
 ### R42b 네트워크 영속·집계·노출
 - **DB**: mac v6→7·community v6→7·plan v5→6 (`crawl_logs rxBytes/txBytes`)
 - **기록**: 3 워커 실행 델타 저장 · **API**: `/api/stats`·collect·trends rx/tx 노출
