@@ -45,6 +45,7 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
                 ?: Constants.API_DEFAULT_PAGE_SIZE,
             bumped = params["bumped"]?.toBooleanStrictOrNull() ?: false,
             updatedOnly = params["updatedOnly"]?.toBooleanStrictOrNull() ?: false,
+            newOnly = params["newOnly"]?.toBooleanStrictOrNull() ?: false,
         )
         val result = application.appRepository.list(filter)
         call.respondText(

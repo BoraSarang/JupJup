@@ -45,6 +45,27 @@ object Constants {
     const val TYPE_ITUNES_LOOKUP = "ITUNES_LOOKUP"
     const val TYPE_NAME_MATCH = "NAME_MATCH"
     const val TYPE_MAS_DISCOVERY = "MAS_DISCOVERY"
+    const val TYPE_NEWS_RSS = "NEWS_RSS"
+
+    // 뉴스 RSS 소스 ID (R32 PLAN_v17, InitialDataSeeder와 일치)
+    const val SOURCE_NEWS_MACRUMORS = "news_macrumors"
+    const val SOURCE_NEWS_9TO5MAC = "news_9to5mac"
+    const val SOURCE_NEWS_APPLE = "news_apple_newsroom"
+    const val SOURCE_NEWS_MACWORLD = "news_macworld"
+    const val SOURCE_NEWS_MARKTECHPOST = "news_marktechpost"
+    const val SOURCE_NEWS_GOOGLE_BLOG = "news_google_research"
+    const val SOURCE_NEWS_OPENAI = "news_openai"
+    const val SOURCE_NEWS_TECHCRUNCH_AI = "news_techcrunch_ai"
+    const val SOURCE_NEWS_HACKERNEWS = "news_hackernews"
+    const val SOURCE_NEWS_BLEEPING = "news_bleeping"
+    const val SOURCE_NEWS_BOAN = "news_boan"
+    const val SOURCE_NEWS_DAILYSECU = "news_dailysecu"
+
+    /** 뉴스 수집 주기(분). WorkManager 최소 15분 */
+    const val NEWS_INTERVAL_MINUTES = 15
+
+    /** 뉴스 본문 상한 (기사 전문, 앱 2000자보다 넉넉히) */
+    const val NEWS_MAX_BODY_LEN = 20000
 
     // 수집 상태
     const val STATUS_NEVER_RUN = "NEVER_RUN"

@@ -133,10 +133,11 @@ class AppRepository(
             offset = offset,
             bumped = filter.bumped,
             updatedOnly = filter.updatedOnly,
+            newOnly = filter.newOnly,
             filterBySource = filterBySource,
             sourceIds = sourceIds,
         )
-        val total = db.appDao().countFiltered(filter.license, filter.category, filter.tag, q, filter.bumped, filter.updatedOnly, filterBySource, sourceIds)
+        val total = db.appDao().countFiltered(filter.license, filter.category, filter.tag, q, filter.bumped, filter.updatedOnly, filter.newOnly, filterBySource, sourceIds)
         // P1-1: 대표 매핑 일괄 조회 (행당 getByApp N+1 제거)
         val mapsByApp = if (apps.isEmpty()) {
             emptyMap()

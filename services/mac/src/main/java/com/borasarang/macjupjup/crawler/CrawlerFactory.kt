@@ -10,7 +10,8 @@ import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.util.Constants
 
-/** 소스 type으로 크롤러 구현체 분기 (6종, PH·HN·MMB 제거) */
+/** 소스 type으로 크롤러 구현체 분기 (6종, PH·HN·MMB 제거).
+ * R32: NEWS_RSS는 NewsRssCrawler(별도 경로, CrawlWorker에서 직접 분기) */
 class CrawlerFactory(
     private val db: MacDatabase,
     private val githubToken: String = "",

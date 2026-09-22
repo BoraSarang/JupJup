@@ -2,6 +2,25 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R33 포털 목업 일치 재작성 (PLAN_v17)
+- [x] 목업 2종 브라우저 실측 (다크 #0a0a0b·히어로·3카드·칩·분할뷰 확인)
+- [x] `mac_web` 전면 재작성 (index·style·app.js, 다크 테마)
+- [x] 메인: 히어로 LIVE·하이라이트 3·필터칩·가로스크롤·뉴스 4+4+4·사이드바·푸터
+- [x] 뉴스: TopTab·분야탭·서브칩·티커·3열(목록/상세/레일)·북마크(localStorage)
+- [x] 앱스토어: 기존 타임라인/Watchlist/통계·10종 카테고리 유지 (다크 only)
+- [x] 수정: /api/main 확장(license·price·totalApps)·설명 이미지 썸네일·본문 폴백·태그 품질
+- [x] 검증: 라이브 스크린샷 3종 대조 + 단위 15건·lint·node --check + 실기 E2E
+
+## R32 맥줍줍 뉴스 리뉴얼 (PLAN_v17)
+- [x] PLAN_v17 초안 (A안 확정, 예산 p95 300ms·250MB·캐시 70%)
+- [x] DB: Room v4→v5 (`news_articles`·`news_app_relation` + MIGRATION_4_5)
+- [x] 크롤러: `NewsRssCrawler`(RSS 12종) + TYPE_NEWS_RSS + 시드 + 15분 스케줄
+- [x] 분류/요약 1단계: 키워드 규칙 + RSS 카테고리 매핑 (외부 LLM 없음)
+- [x] 서버: `MacNewsRoutes` (`/api/news`·`/api/news/:id`·`/api/main`, `/api/apps` 유지)
+- [x] 포털: 대시보드 뷰 + 뉴스 뷰(탭 3·서브 18종·분할 상세·원문 고정·출처 배너)
+- [x] 검증: 단위 14건·assembleDebug·lint·node --check + 실기(3010) E2E 141건 수집 + CHANGELOG·세션 로그
+- [ ] 2단계 유예: 10분 FGS 루프·외부 LLM 분류·상세 병렬화
+
 ## R31 크롤링 성능·퍼포먼스 (PLAN_v16)
 - [x] PLAN_v16 초안 (예산 p95 300ms·250MB·캐시 70%)
 - [x] 앱: 대시보드 4-way 병렬·IP 30s 캐시·PJ getEnabled·StatsCache 부분무효화

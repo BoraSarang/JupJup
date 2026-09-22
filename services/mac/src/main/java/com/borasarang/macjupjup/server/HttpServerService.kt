@@ -197,6 +197,7 @@ class HttpServerService : Service() {
             routing {
                 macAssetRoutes(this)
                 macItemRoutes(this)
+                macNewsRoutes(this)
                 macCollectRoutes(this)
                 macStatsRoutes(this)
                 macNotifRoutes(this)

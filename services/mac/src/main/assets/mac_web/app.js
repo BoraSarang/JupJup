@@ -1,38 +1,75 @@
-/* 맥줍줍 포털 리디자인 — 바닐라 JS. 사이드바 네비 + 카드 그리드 + 탭 모달 */
+/* 맥줍줍 포털 — 목업 기준 다크 테마 (R33 전면 재작성, 바닐라 JS) */
 (function () {
   'use strict';
 
+  /* 기존 앱 카테고리 10종 유지 (절대 삭제 금지) */
   const CATEGORIES = ['생산성', '유틸리티', '보안·프라이버시', '미디어·엔터', '개발',
     '디자인·크리에이티브', '금융', '글쓰기·노트', '시스템최적화', '커뮤니케이션'];
 
-  const LICENSE_LABEL = { OSS: '오픈소스', FREE: '프리', PAID: '유료' };
-  const LICENSE_CLASS = { OSS: 'license-oss', FREE: 'license-free', PAID: 'license-paid' };
-
-  const LANG_COLORS = {
-    swift: '#fa544b', python: '#fbc02d', javascript: '#f7df1e',
-    typescript: '#3178c6', rust: '#dea584', go: '#00add8',
-    cpp: '#00599c', default: '#86868b'
+  const NEWS_MAINS = [
+    { id: 'mac', label: '맥 소식', icon: '🍎' },
+    { id: 'ai', label: 'AI 소식', icon: '✦' },
+    { id: 'sec', label: '보안 소식', icon: '🛡' }
+  ];
+  const NEWS_SUBS = {
+    mac: ['전체', 'macOS', 'Apple Silicon', '앱·업데이트', '루머', '팁'],
+    ai: ['전체', '모델 출시', '연구/논문', '도구/서비스', '비즈니스', '정책'],
+    sec: ['전체', '취약점/CVE', '랜섬웨어', '개인정보', '국내', 'Apple보안']
   };
+  /* 목업 11종 바로가기 → 앱 스토어 매핑 (params: license/category/sort/newOnly/updatedOnly) */
+  const APP_CHIPS = [
+    { label: '전체', params: {} },
+    { label: '신규 등록', params: { newOnly: true, sort: 'newest' } },
+    { label: '무료', params: { license: 'FREE' } },
+    { label: '유료', params: { license: 'PAID' } },
+    { label: '업데이트', params: { updatedOnly: true, sort: 'updated' } },
+    { label: '생산성', params: { category: '생산성' } },
+    { label: '개발자 도구', params: { category: '개발' } },
+    { label: '유틸리티', params: { category: '유틸리티' } },
+    { label: '크리에이티브', params: { category: '디자인·크리에이티브' } },
+    { label: '라이프스타일', params: { category: '미디어·엔터' }, approx: true },
+    { label: '세일중', params: { license: 'PAID', sort: 'updated' }, approx: true }
+  ];
+  /* 좌측 필터 사이드바 옵션 */
+  const CAT_CHOICES = [
+    { label: '전체', cat: '' }, { label: '생산성', cat: '생산성' }, { label: '개발자 도구', cat: '개발' },
+    { label: '유틸리티', cat: '유틸리티' }, { label: '크리에이티브', cat: '디자인·크리에이티브' },
+    { label: '라이프스타일', cat: '미디어·엔터' }
+  ];
+  const PRICE_CHOICES = [
+    { label: '전체', license: '' }, { label: '무료', license: 'FREE' },
+    { label: '유료', license: 'PAID' }, { label: '세일중', license: 'PAID', sale: true }
+  ];
+  const SORT_CHOICES = [
+    { label: '인기순', sort: 'stars' }, { label: '최신순', sort: 'newest' },
+    { label: '가격낮은순', sort: 'priceAsc' }, { label: '업데이트순', sort: 'updated' }
+  ];
+  const MAIN_FILTERS = [
+    { label: '전체', main: '', category: '' },
+    { label: '맥', main: 'mac', category: '' },
+    { label: 'AI', main: 'ai', category: '' },
+    { label: '보안', main: 'sec', category: '' },
+    { label: '생산성', main: '', category: '생산성' },
+    { label: '개발자도구', main: '', category: '개발' },
+    { label: '유틸리티', main: '', category: '유틸리티' },
+    { label: '크리에이티브', main: '', category: '디자인·크리에이티브' }
+  ];
+  const ICON_BG = ['linear-gradient(135deg,#f97316,#ef4444)', 'linear-gradient(135deg,#3b82f6,#06b6d4)',
+    'linear-gradient(135deg,#8b5cf6,#d946ef)', 'linear-gradient(135deg,#18181b,#3f3f46)',
+    'linear-gradient(135deg,#22c55e,#15803d)', 'linear-gradient(135deg,#eab308,#f97316)'];
 
   const PAGE_SIZE = 20;
+  const NEWS_PAGE_SIZE = 5;
 
   const state = {
-    view: 'timeline',
-    sidebarCollapsed: false,
-    sidebarMobileOpen: false,
-    filters: {
-      sources: [],
-      allSources: [],
-      licenseType: '',
-      category: '',
-      q: '',
-      sort: 'newest',
-      page: 1,
-      watchMode: 'updated'
-    },
+    view: 'dashboard',
+    storeSub: 'timeline',
+    filters: { license: '', cat: '', q: '', sort: 'stars', page: 1, newOnly: false, updatedOnly: false },
+    news: { main: 'mac', sub: '', page: 1, q: '', detailId: null, topTab: 'news', listIds: [], total: 0 },
+    mainFilter: { main: '', category: '' },
+    dashPage: 1,
     lang: 'ko',
-    modal: { currentId: null, activeTab: 'intro' },
-    stats: { collectDays: 14, collectSource: '' }
+    modal: { currentId: null, activeTab: 'intro' }
   };
 
   const $ = (id) => document.getElementById(id);
@@ -44,542 +81,12 @@
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
   }
-
-  function pick(ko, en) {
-    if (state.lang === 'ko' && ko) return { text: ko, isKo: true };
-    return { text: en || ko || '', isKo: false };
-  }
-
   function fmtDate(ts) {
     if (!ts) return '-';
     const d = new Date(ts);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-
-  function fmtDateTime(ts) {
-    if (!ts) return '-';
-    const d = new Date(ts);
-    return fmtDate(ts) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  }
-
-  /* 날초 → 읽기 형태 (59초 / 3분 20초 / 9시간 10분) */
-  function fmtDuration(totalSecs) {
-    const s = Math.max(0, Math.round(totalSecs));
-    if (s < 60) return s + '초';
-    const m = Math.floor(s / 60);
-    if (m < 60) {
-      const r = s % 60;
-      return r ? m + '분 ' + r + '초' : m + '분';
-    }
-    const h = Math.floor(m / 60);
-    const rm = m % 60;
-    return rm ? h + '시간 ' + rm + '분' : h + '시간';
-  }
-
-  function fmtSize(bytes) {
-    if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + 'GB';
-    if (bytes >= 1048576) return Math.round(bytes / 1048576) + 'MB';
-    return Math.round(bytes / 1024) + 'KB';
-  }
-
-  function api(path) {
-    return fetch(path).then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    });
-  }
-
-  function toast(msg) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.hidden = false;
-    t.classList.add('show');
-    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.hidden = true, 200); }, 2200);
-  }
-
-  /* ---------- 사이드바 ---------- */
-  function initSidebar() {
-    const sidebar = $('sidebar');
-    const toggle = $('sidebarToggle');
-    const overlay = $('sidebarOverlay');
-    const mainContent = $('mainContent');
-
-    toggle.onclick = () => {
-      if (window.innerWidth <= 720) {
-        state.sidebarMobileOpen = !state.sidebarMobileOpen;
-        sidebar.classList.toggle('mobile-open', state.sidebarMobileOpen);
-        overlay.classList.toggle('visible', state.sidebarMobileOpen);
-        toggle.setAttribute('aria-expanded', state.sidebarMobileOpen);
-      } else {
-        state.sidebarCollapsed = !state.sidebarCollapsed;
-        sidebar.classList.toggle('collapsed', state.sidebarCollapsed);
-        toggle.setAttribute('aria-expanded', !state.sidebarCollapsed);
-      }
-    };
-
-    overlay.onclick = () => {
-      state.sidebarMobileOpen = false;
-      sidebar.classList.remove('mobile-open');
-      overlay.classList.remove('visible');
-      toggle.setAttribute('aria-expanded', 'false');
-    };
-
-    $$('.nav-link', sidebar).forEach(link => {
-      link.onclick = (e) => {
-        e.preventDefault();
-        const view = link.dataset.view;
-        if (view) switchView(view);
-        if (window.innerWidth <= 720) {
-          state.sidebarMobileOpen = false;
-          sidebar.classList.remove('mobile-open');
-          overlay.classList.remove('visible');
-          toggle.setAttribute('aria-expanded', 'false');
-        }
-      };
-      link.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); link.click(); } };
-    });
-
-    // 출처 체크박스는 trends 로드 후 동적 렌더 — 변경 감지는 컨테이너 위임
-    $('sourceFilters').addEventListener('change', () => {
-      const checked = Array.from($$('#sourceFilters input[type="checkbox"]:checked')).map(c => c.value);
-      const total = $$('#sourceFilters input[type="checkbox"]').length;
-      // 전체 선택 또는 전체 해제 = 필터 없음 (빈 결과 함정 방지)
-      state.filters.sources = (checked.length === 0 || checked.length === total) ? [] : checked;
-      state.filters.page = 1;
-      reloadCurrentView();
-    });
-
-    $$('#typeFilters input[type="radio"]').forEach(radio => {
-      radio.onchange = () => {
-        state.filters.licenseType = radio.value;
-        state.filters.page = 1;
-        reloadCurrentView();
-      };
-    });
-
-    $$('#categorySubnav input[type="radio"]').forEach(radio => {
-      radio.onchange = () => {
-        state.filters.category = radio.value;
-        state.filters.page = 1;
-        // 카테고리는 타임라인 하위이므로 다른 뷰에서는 타임라인으로 이동
-        if (state.view !== 'timeline') switchView('timeline');
-        else reloadCurrentView();
-      };
-    });
-
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 720 && state.sidebarMobileOpen) {
-        state.sidebarMobileOpen = false;
-        sidebar.classList.remove('mobile-open');
-        overlay.classList.remove('visible');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
-    });
-  }
-
-  /* 사이드바 배지 = 뷰별 전체 카운트 (검색/필터 결과 total이 아님).
-   * 목록 로드 시 덮어쓰지 않고, 진입 시 1회 + 뷰 전환 시 갱신. */
-  function loadNavCounts() {
-    api('/api/apps?page=1&pageSize=1').then(d => {
-      const el = $('navCountTimeline');
-      if (el) el.textContent = d.total;
-    }).catch(() => {});
-    api('/api/apps?bumped=true&updatedOnly=true&page=1&pageSize=1').then(d => {
-      const el = $('navCountWatchlist');
-      if (el) el.textContent = d.total;
-    }).catch(() => {});
-  }
-
-  /* 출처 필터 렌더 (trends.bySource 실측 — 전체 선택 상태 유지) */
-  function renderSourceFilters(list) {
-    const box = $('sourceFilters');
-    const prevChecked = new Set(
-      Array.from($$('#sourceFilters input[type="checkbox"]:checked')).map(c => c.value)
-    );
-    const firstRender = prevChecked.size === 0 && !box.dataset.ready;
-    state.filters.allSources = list.map(s => s.sourceId);
-    box.dataset.ready = '1';
-    box.innerHTML = list.map(s => {
-      const checked = firstRender || prevChecked.has(s.sourceId) ? ' checked' : '';
-      return '<label class="filter-option">' +
-        '<input type="checkbox" value="' + esc(s.sourceId) + '"' + checked + '>' +
-        '<span>' + esc(s.sourceName) + '</span>' +
-        '<small>' + s.count + '</small></label>';
-    }).join('') || '<div class="empty-state" style="padding:12px 0;font-size:12px;">수집처 없음</div>';
-  }
-
-  /* ---------- 뷰 전환 ---------- */
-  function switchView(view) {
-    state.view = view;
-    $$('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.view === view));
-    $$('.view-panel').forEach(p => {
-      const isActive = p.id === view + 'View';
-      p.classList.toggle('active', isActive);
-      p.hidden = !isActive;
-    });
-    state.filters.page = 1;
-    state.modal.currentId = null;
-    closeModal();
-    // 카테고리 서브네비는 타임라인 선택 시만 표시
-    const subnav = $('categorySubnav');
-    if (subnav) subnav.hidden = (view !== 'timeline');
-    loadNavCounts();
-    reloadCurrentView();
-    window.scrollTo(0, 0);
-  }
-
-  function reloadCurrentView() {
-    if (state.view === 'watchlist') loadWatchlist();
-    else if (state.view === 'stats') loadStats();
-    else loadTimeline();
-  }
-
-  /* ---------- 검색/정렬 ---------- */
-  function bindSearchSort() {
-    let searchTimer = null;
-    $('globalSearch').addEventListener('input', e => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        state.filters.q = e.target.value.trim();
-        state.filters.page = 1;
-        reloadCurrentView();
-      }, 300);
-    });
-
-    $('sortSelect').onchange = e => {
-      state.filters.sort = e.target.value;
-      state.filters.page = 1;
-      reloadCurrentView();
-    };
-
-    $$('.watch-mode-tab').forEach(btn => {
-      btn.onclick = () => {
-        state.filters.watchMode = btn.dataset.mode;
-        state.filters.page = 1;
-        $$('.watch-mode-tab').forEach(b => {
-          b.classList.toggle('active', b === btn);
-          b.setAttribute('aria-selected', b === btn);
-        });
-        loadWatchlist();
-        window.scrollTo(0, 0);
-      };
-    });
-
-    $$('.period-tab', $('statsContent')).forEach(btn => {
-      btn.onclick = () => {
-        state.stats.collectDays = parseInt(btn.dataset.days, 10) || 14;
-        $$('.period-tab', $('statsContent')).forEach(b => b.classList.toggle('active', b === btn));
-        loadStats();
-      };
-    });
-  }
-
-  /* ---------- 카드 렌더링 ---------- */
-  function licenseBadge(a) {
-    const cls = LICENSE_CLASS[a.license] || 'license-free';
-    return '<span class="badge ' + cls + '">' + esc(LICENSE_LABEL[a.license] || a.license) + '</span>';
-  }
-
-  function categoryBadge(cat) {
-    return '<span class="badge category">' + esc(cat || '') + '</span>';
-  }
-
-  function langDot(lang) {
-    if (!lang) return '';
-    const key = lang.toLowerCase();
-    const color = LANG_COLORS[key] || LANG_COLORS.default;
-    return '<span class="lang-dot" style="--dot-color:' + color + '" aria-label="' + esc(lang) + '"></span>';
-  }
-
-  function newDot(isNew) {
-    return isNew ? '<span class="new-dot" aria-label="NEW"></span>' : '';
-  }
-
-  function iconHtml(a) {
-    if (a.iconUrl) {
-      return '<img class="app-icon" src="' + esc(a.iconUrl) + '" alt="" loading="lazy" width="48" height="48">';
-    }
-    const ch = (a.name || '?').trim().charAt(0).toUpperCase();
-    return '<span class="app-icon" style="display:flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:20px;font-weight:700;" aria-hidden="true">' + esc(ch) + '</span>';
-  }
-
-  function cardHtml(a) {
-    const notes = pick(a.releaseNotesKo, a.releaseNotesSummary);
-    const notesText = notes.text || pick(a.descriptionKo, a.descriptionSnippet).text || '';
-    const notesHtml = notesText ? '<p class="card-desc line-clamp-2">' + esc(stripMd(notesText)) + '</p>' : '';
-
-    const metaParts = [];
-    if (a.stars != null) metaParts.push('<span class="stars" aria-label="GitHub 스타 ' + a.stars + '">★ ' + a.stars + '</span>');
-    if (a.averageRating != null) metaParts.push('<span class="rating" aria-label="평점 ' + a.averageRating + '">⭐ ' + a.averageRating + '</span>');
-    if (a.primaryLanguage) metaParts.push('<span class="lang" aria-label="언어 ' + esc(a.primaryLanguage) + '">' + esc(a.primaryLanguage) + '</span>');
-    if (a.forks != null) metaParts.push('<span class="forks" aria-label="포크 ' + a.forks + '">⑂ ' + a.forks + '</span>');
-    if (a.fileSize) metaParts.push('<span class="size">' + fmtSize(a.fileSize) + '</span>');
-
-    const verHtml = a.version
-      ? '<span class="version">' + (a.prevVersion ? '<s>' + esc(a.prevVersion) + '</s> ' : '') + esc(a.version) + '</span>'
-      : '<span class="version">포착 ' + fmtDate(a.releaseDate || a.firstSeenAt) + '</span>';
-
-    const sourceHtml = a.sourceUrl
-      ? '<a class="source-link" href="' + esc(a.sourceUrl) + '" target="_blank" rel="noopener" aria-label="출처에서 보기: ' + esc(a.sourceName || '원문') + '">' + esc(a.sourceName || '원문') + '</a>'
-      : '';
-
-    return '<article class="app-card" role="listitem" data-id="' + esc(a.id) + '" tabindex="0">' +
-      '<div class="card-head">' + iconHtml(a) +
-      '<div class="card-title-row">' +
-      '<h3 class="app-name">' + esc(a.name) + '</h3>' +
-      langDot(a.primaryLanguage) + newDot(a.isNew) +
-      '</div>' +
-      '<p class="app-dev">' + esc(a.developer || '') + '</p>' +
-      '</div>' +
-      '<div class="card-badges">' + licenseBadge(a) + categoryBadge(a.category) + '</div>' +
-      notesHtml +
-      '<div class="card-meta">' + metaParts.join('') + verHtml + sourceHtml + '</div>' +
-      '</article>';
-  }
-
-  function renderCards(container, apps) {
-    container.innerHTML = apps.map(cardHtml).join('');
-    bindCards(container);
-  }
-
-  function bindCards(container) {
-    $$('.app-card', container).forEach(el => {
-      el.onclick = () => openModal(el.dataset.id);
-      el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(el.dataset.id); } };
-      $$('a[target="_blank"]', el).forEach(a => {
-        a.onclick = e => e.stopPropagation();
-        a.onkeydown = e => e.stopPropagation();
-      });
-    });
-  }
-
-  /* ---------- 타임라인 ---------- */
-  function buildTimelineQuery() {
-    const p = new URLSearchParams({ sort: state.filters.sort, page: state.filters.page, pageSize: PAGE_SIZE });
-    if (state.filters.licenseType) p.set('license', state.filters.licenseType);
-    if (state.filters.category) p.set('category', state.filters.category);
-    if (state.filters.q) p.set('q', state.filters.q);
-    if (state.filters.sources.length) p.set('sourceIds', state.filters.sources.join(','));
-    return '/api/apps?' + p.toString();
-  }
-
-  let timelineSeq = 0;
-  function loadTimeline() {
-    const grid = $('appGrid');
-    const empty = $('emptyTimeline');
-    const seq = ++timelineSeq;
-    grid.innerHTML = '';
-    empty.hidden = true;
-    grid.hidden = true;
-
-    api(buildTimelineQuery()).then(d => {
-      if (seq !== timelineSeq) return;
-      $('visibleCount').textContent = '검색 결과 ' + d.total + '개';
-      if (!d.apps.length) {
-        grid.hidden = true;
-        empty.hidden = false;
-        $('pagination').innerHTML = '';
-        return;
-      }
-      grid.hidden = false;
-      renderCards(grid, d.apps);
-      renderPagination($('pagination'), d.page, d.pageSize, d.total, p => { state.filters.page = p; loadTimeline(); window.scrollTo(0, 0); });
-    }).catch(() => {
-      if (seq !== timelineSeq) return;
-      grid.hidden = true;
-      empty.querySelector('.empty-state-title').textContent = '데이터를 불러오는데 실패했습니다';
-      empty.querySelector('.empty-state-desc').textContent = '서버가 실행 중인지 확인해주세요.';
-      empty.hidden = false;
-    });
-  }
-
-  /* ---------- Watchlist ---------- */
-  function buildWatchlistQuery() {
-    const p = new URLSearchParams({ sort: state.filters.sort, page: state.filters.page, pageSize: PAGE_SIZE, bumped: 'true' });
-    if (state.filters.watchMode === 'updated') p.set('updatedOnly', 'true');
-    if (state.filters.licenseType) p.set('license', state.filters.licenseType);
-    if (state.filters.category) p.set('category', state.filters.category);
-    if (state.filters.q) p.set('q', state.filters.q);
-    if (state.filters.sources.length) p.set('sourceIds', state.filters.sources.join(','));
-    return '/api/apps?' + p.toString();
-  }
-
-  function loadWatchlist() {
-    const grid = $('watchGrid');
-    const empty = $('emptyWatchlist');
-    grid.innerHTML = '';
-    empty.hidden = true;
-    grid.hidden = true;
-
-    api(buildWatchlistQuery()).then(d => {
-      $('visibleCount').textContent = '검색 결과 ' + d.total + '개';
-      if (!d.apps.length) {
-        grid.hidden = true;
-        empty.hidden = false;
-        $('watchPagination').innerHTML = '';
-        return;
-      }
-      grid.hidden = false;
-      renderCards(grid, d.apps);
-      renderPagination($('watchPagination'), d.page, d.pageSize, d.total, p => { state.filters.page = p; loadWatchlist(); window.scrollTo(0, 0); });
-    }).catch(() => {
-      grid.hidden = true;
-      empty.querySelector('.empty-state-title').textContent = '데이터를 불러오는데 실패했습니다';
-      empty.hidden = false;
-    });
-  }
-
-  function renderPagination(box, page, pageSize, total, go) {
-    const pages = Math.max(1, Math.ceil(total / pageSize));
-    if (pages <= 1) { box.innerHTML = ''; return; }
-    let html = '<button type="button" data-p="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + ' aria-label="이전">‹</button>';
-    const nums = pageNums(page, pages);
-    nums.forEach(n => {
-      if (n === '…') { html += '<button type="button" disabled aria-hidden="true">…</button>'; return; }
-      html += '<button type="button" data-p="' + n + '"' + (n === page ? ' class="active" aria-current="page"' : '') + '>' + n + '</button>';
-    });
-    html += '<button type="button" data-p="' + (page + 1) + '"' + (page >= pages ? ' disabled' : '') + ' aria-label="다음">›</button>';
-    box.innerHTML = html;
-    $$('button[data-p]', box).forEach(b => {
-      if (b.disabled) return;
-      b.onclick = () => go(parseInt(b.dataset.p, 10));
-    });
-  }
-
-  function pageNums(page, pages) {
-    const set = {};
-    [1, 2, page - 1, page, page + 1, pages - 1, pages].forEach(n => { if (n >= 1 && n <= pages) set[n] = true; });
-    const arr = Object.keys(set).map(Number).sort((a, b) => a - b);
-    const out = [];
-    let prev = 0;
-    arr.forEach(n => { if (n - prev > 1) out.push('…'); out.push(n); prev = n; });
-    return out;
-  }
-
-  /* ---------- 통계 ---------- */
-  function loadStats() {
-    const box = $('statsContent');
-    box.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p class="empty-state-title">통계 불러오는 중…</p></div>';
-
-    api('/api/stats').then(s => api('/api/stats/trends').then(t => ({ s, t }))).then(r => {
-      box.innerHTML = baseStatsHtml(r.s, r.t) + '<div id="collectBox"></div>';
-      loadInsightsBox();
-      loadCollectBox();
-    }).catch(() => {
-      box.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p class="empty-state-title">통계를 불러오는데 실패했습니다</p></div>';
-    });
-  }
-
-  function baseStatsHtml(s, t) {
-    const cats = Object.keys(t.byCategory || {}).sort((a, b) => t.byCategory[b] - t.byCategory[a]);
-    const maxCat = cats.length ? t.byCategory[cats[0]] : 1;
-    const lic = t.byLicense || {};
-
-    let html = '<div class="kpi-grid">' +
-      kpi(s.totalApps, '수집 앱') + kpi(s.activeSources, '활성 소스') +
-      kpi(t.newLast7d, '최근 7일 신규') + kpi(t.versionBumpsLast7d, '최근 7일 버전업') +
-      kpi(t.aiTagCount, 'AI-Agent') + kpi(t.menuBarTagCount, 'MenuBar') +
-      '</div>';
-
-    html += '<h3 class="stats-section-title">카테고리 분포</h3>';
-    cats.forEach(c => {
-      const v = t.byCategory[c];
-      html += '<div class="bar-row"><span class="bar-name">' + esc(c) + '</span>' +
-        '<span class="bar-track"><span class="bar-fill" style="width:' + Math.round(v / maxCat * 100) + '%"></span></span>' +
-        '<span class="bar-count">' + v + '</span></div>';
-    });
-
-    html += '<h3 class="stats-section-title">라이선스 분포</h3>' +
-      '<div class="bar-row"><span class="bar-name">오픈소스</span>' + bar(lic.OSS || 0, s.totalApps) + '</div>' +
-      '<div class="bar-row"><span class="bar-name">프리</span>' + bar(lic.FREE || 0, s.totalApps) + '</div>' +
-      '<div class="bar-row"><span class="bar-name">유료</span>' + bar(lic.PAID || 0, s.totalApps) + '</div>';
-
-    return html;
-  }
-
-  function loadInsightsBox() {
-    const box = $('insightBox');
-    if (!box) return;
-    api('/api/stats/insights').then(ins => {
-      if (!ins.insights || !ins.insights.length) return;
-      box.innerHTML = '<h3 class="stats-section-title">💡 인사이트</h3><div class="insight-grid">' + ins.insights.map(n =>
-        '<div class="insight-card"><div class="insight-icon">' + esc(n.icon) + '</div>' +
-        '<div><b>' + esc(n.title) + '</b><p>' + esc(n.body) + '</p></div></div>'
-      ).join('') + '</div>';
-    }).catch(() => {});
-  }
-
-  var collectCache = [];
-  function loadCollectBox() {
-    const box = $('collectBox');
-    if (!box) return;
-    api('/api/stats/collect?days=' + state.stats.collectDays).then(c => {
-      collectCache = c.days || [];
-      box.innerHTML = '<h3 class="stats-section-title">📥 수집처별 일별 수집량 (' + state.stats.collectDays + '일)</h3>' + collectSectionHtml();
-      bindCollectSection(box);
-    }).catch(() => {});
-  }
-
-  function collectSources() {
-    const map = {};
-    collectCache.forEach(d => (d.bySource || []).forEach(s => {
-      if (!map[s.sourceId]) map[s.sourceId] = { sourceId: s.sourceId, sourceName: s.sourceName, found: 0, newCount: 0, updated: 0 };
-      map[s.sourceId].found += s.found;
-      map[s.sourceId].newCount += s['new'] || 0;
-      map[s.sourceId].updated += s.updated;
-    }));
-    return Object.keys(map).map(k => map[k]).sort((a, b) => b.found - a.found);
-  }
-
-  function collectScope(day) {
-    if (!state.stats.collectSource) return { found: day.found, newCount: day['new'] || 0, updated: day.updated, name: '전체' };
-    const hit = (day.bySource || []).find(s => s.sourceId === state.stats.collectSource);
-    return hit ? { found: hit.found, newCount: hit['new'] || 0, updated: hit.updated, name: hit.sourceName } : { found: 0, newCount: 0, updated: 0, name: '' };
-  }
-
-  function collectSectionHtml() {
-    const srcs = collectSources();
-    const chips = '<button type="button" class="source-chip' + (!state.stats.collectSource ? ' active' : '') + '" data-src="">전체</button>' +
-      srcs.map(s => '<button type="button" class="source-chip' + (state.stats.collectSource === s.sourceId ? ' active' : '') + '" data-src="' + esc(s.sourceId) + '">' + esc(s.sourceName) + '</button>').join('');
-    const table = '<table class="collect-table"><tr><th>수집처</th><th>발견</th><th>신규</th><th>갱신</th></tr>' +
-      srcs.map(s => '<tr data-src="' + esc(s.sourceId) + '"><td>' + esc(s.sourceName) + '</td><td class="count">' + s.found + '</td><td class="count">' + s.newCount + '</td><td class="count">' + s.updated + '</td></tr>').join('') + '</table>';
-    return '<div class="source-chips" id="collectSources">' + chips + '</div>' + collectChart(collectCache) + table;
-  }
-
-  function bindCollectSection(box) {
-    $$('#collectSources .source-chip', box).forEach(b => {
-      b.onclick = () => { state.stats.collectSource = b.dataset.src || ''; loadStats(); };
-    });
-    $$('.collect-table tr[data-src]', box).forEach(tr => {
-      tr.onclick = () => { state.stats.collectSource = tr.dataset.src; loadStats(); };
-    });
-  }
-
-  function collectChart(days) {
-    if (!days.length) return '<div class="empty-state">수집 기록이 없습니다</div>';
-    const scoped = days.map(d => { const sc = collectScope(d); return { day: d.day, found: sc.found, newCount: sc.newCount, name: sc.name }; });
-    const max = Math.max(1, ...scoped.map(d => d.found));
-    const cols = scoped.map(d => {
-      const hf = Math.max(2, Math.round(d.found / max * 100));
-      const hn = d.newCount ? Math.max(2, Math.round(d.newCount / max * 100)) : 0;
-      const label = String(d.day).slice(5);
-      const title = d.day + ' ' + d.name + ' — 발견 ' + d.found + ' · 신규 ' + d.newCount;
-      return '<div class="collect-day" title="' + esc(title) + '">' +
-        '<div class="collect-bars"><span class="collect-bar-new" style="height:' + hn + '%"></span>' +
-        '<span class="collect-bar-found" style="height:' + hf + '%"></span></div>' +
-        '<span class="collect-label">' + esc(label) + '</span></div>';
-    }).join('');
-    return '<div class="collect-legend"><span class="legend-item"><span class="legend-swatch sw-found"></span>발견</span> <span class="legend-item"><span class="legend-swatch sw-new"></span>신규</span></div>' +
-      '<div class="collect-chart">' + cols + '</div>';
-  }
-
-  function kpi(n, l) { return '<div class="kpi"><div class="kpi-value">' + n + '</div><div class="kpi-label">' + l + '</div></div>'; }
-  function bar(v, total) {
-    const pct = total ? Math.round(v / total * 100) : 0;
-    return '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%"></span></span><span class="bar-count">' + v + '</span>';
-  }
-
-  /* ---------- 마크다운 렌더러 (기존 T-142) ---------- */
+  /* ---------- 마크다운 렌더러 ---------- */
   function mdInline(s) {
     s = s.replace(/`([^`]+?)`/g, '<code>$1</code>');
     s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
@@ -587,9 +94,7 @@
     s = s.replace(/\[([^\]]+?)\]\((https?:\/\/[^)\s]+?)\)/g, '<a target="_blank" rel="noopener" href="$2">$1</a>');
     return s;
   }
-
   function stripHtml(s) { return String(s == null ? '' : s).replace(/<\/?[a-zA-Z][^>\n]*>/g, ''); }
-
   function md(src) {
     const lines = esc(stripHtml(src)).split('\n');
     let html = '', inCode = false, codeBuf = [], listBuf = [], listTag = '';
@@ -615,7 +120,6 @@
     if (inCode && codeBuf.length) html += '<pre><code>' + codeBuf.join('\n') + '</code></pre>';
     return html;
   }
-
   function stripMd(src) {
     return stripHtml(src)
       .replace(/```[\s\S]*?```/g, ' ')
@@ -629,287 +133,1075 @@
       .replace(/^\s*\d+[.)]\s+/gm, '')
       .replace(/\s+/g, ' ').trim();
   }
-
   var mdStore = {}, mdSeq = 0;
+  const README_MARKER = '— README —';
+  function splitBody(full) {
+    if (!full) return '';
+    const i = full.indexOf(README_MARKER);
+    if (i >= 0) return full.slice(i + README_MARKER.length).trim() || full.slice(0, i).trim();
+    return full;
+  }
+  function excerpt(full) {
+    if (!full) return '';
+    const i = full.indexOf(README_MARKER);
+    if (i >= 0) return full.slice(0, i).trim();
+    return full.trim();
+  }
   function mdBlock(koText, enText) {
     const show = koText || enText || '';
     if (!show) return '';
     if (koText && enText && koText !== enText) {
       const key = 'm' + (++mdSeq);
-      mdStore[key] = { ko: koText, en: enText, showing: 'ko' };
-      return '<div class="md-body" data-mdtext data-key="' + key + '">' + md(koText) + '</div>' +
-        '<button class="badge" type="button" data-mdkey="' + key + '" style="margin-top:8px;padding:4px 10px;font-size:11px;">원문보기</button>';
+      mdStore[key] = { ko: koText, en: enText, showing: state.lang };
+      const first = state.lang === 'ko' ? koText : enText;
+      return '<div class="md-body" data-mdtext data-key="' + key + '">' + md(first) + '</div>' +
+        '<button class="badge" type="button" data-mdkey="' + key + '" style="margin-top:8px;padding:4px 10px;font-size:11px;">' + (state.lang === 'ko' ? '원문보기' : '번역 보기') + '</button>';
     }
     return '<div class="md-body">' + md(show) + '</div>';
   }
+  function fmtTime(ts) {
+    if (!ts) return '';
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return '방금 전';
+    if (m < 60) return m + '분 전';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + '시간 전';
+    return Math.floor(h / 24) + '일 전';
+  }
+  function api(path) {
+    return fetch(path).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.hidden = false;
+    t.classList.add('show');
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.hidden = true, 200); }, 2200);
+  }
+  function iconBg(name) {
+    let h = 0;
+    for (const c of String(name || '?')) h = (h * 31 + c.charCodeAt(0)) % 997;
+    return ICON_BG[h % ICON_BG.length];
+  }
+  function appIcon(a, cls) {
+    if (a.iconUrl) return '<img class="' + cls + '" src="' + esc(a.iconUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">';
+    const ch = (a.name || '?').trim().charAt(0).toUpperCase();
+    return '<span class="' + cls + '" style="background:' + iconBg(a.name) + ';display:flex;align-items:center;justify-content:center;color:#fff;" aria-hidden="true">' + esc(ch) + '</span>';
+  }
+  function priceText(a) {
+    if (a.license === 'FREE' || a.price === 0) return '<span class="hprice free">무료</span>';
+    if (a.price > 0) return '<span class="hprice">₩' + Number(a.price).toLocaleString() + '</span>';
+    if (a.license === 'PAID') return '<span class="hprice">유료</span>';
+    return '<span class="hprice free">무료</span>';
+  }
+  /* 버전 표시 (비정상 값은 빈값) */
+  function verText(a) {
+    const v = (a.version || '').trim();
+    if (/^[vV]?\d/.test(v)) return 'v' + v.replace(/^[vV]/, '');
+    return '';
+  }
+  /* 제목에서 키워드 추출 (인기 태그용): 영문 4자+·숫자 포함·한글 3자+ */
+  const TAG_STOP = new Set(['THE', 'AND', 'FOR', 'WITH', 'FROM', 'NEW', 'APP', 'MAC', 'PRO', 'YOU', 'YOUR',
+    'WILL', 'NEXT', 'COME', 'USING', 'MAKE', 'WITH', 'SHOULD', 'GUIDE', 'BUYER', 'UPGRADE', 'RELEASE',
+    'UPDATE', 'MONDAY', 'STARTING', 'BREAKOUT', 'STARTUP', 'ACCOUNTANT', 'BLOCKED', 'SAYS', 'SAY', 'GET',
+    'BETTER', 'AFTER', 'ABOUT', 'INTO', 'OVER', 'UNDER', 'BETWEEN', 'AFTER', 'BEFORE', 'WHILE', 'AFTER']);
+  const TAG_KEEP_SHORT = new Set(['Arc', 'M3', 'M4', 'iOS']);
+  function extractTags(items) {
+    const freq = {};
+    items.forEach(n => {
+      const words = String(n.title || '').match(/[A-Za-z][A-Za-z0-9+_.-]{1,}|[가-힣]{2,}/g) || [];
+      const seen = new Set();
+      words.forEach(w => {
+        if (/[가-힣]/.test(w)) {
+          if (w.length < 3 || seen.has(w)) return;
+          seen.add(w);
+          freq[w] = (freq[w] || 0) + 1;
+          return;
+        }
+        const up = w.toUpperCase();
+        if (TAG_STOP.has(up) || seen.has(w)) return;
+        // 영문은 대문자·숫자 포함만 (소문자 일반동사 제외), 4자+ (짧은 고유명사는 예외)
+        if (!/[A-Z0-9]/.test(w)) return;
+        if (w.length < 4 && !/\d/.test(w) && !TAG_KEEP_SHORT.has(w)) return;
+        seen.add(w);
+        freq[w] = (freq[w] || 0) + 1;
+      });
+    });
+    return Object.keys(freq).sort((a, b) => freq[b] - freq[a]).slice(0, 10).map(k => ({ tag: k, count: freq[k] }));
+  }
 
-  /* ---------- 모달 ---------- */
-  function openModal(id) {
-    const modal = $('appModal');
-    ensureModalTabs();
-    $('modalTitle').textContent = '불러오는 중…';
-    $('modalIcon').style.display = '';
-    $('modalIcon').removeAttribute('src');
-    $('modalIcon').alt = '';
-    $('modalDev').textContent = '';
-    $('modalMetaPills').innerHTML = '';
-    $('modalCta').innerHTML = '';
-    $('panelIntro').innerHTML = '';
-    $('panelFeatures').innerHTML = '';
-    $('panelChangelog').innerHTML = '';
-    setActiveTab('intro');
-    state.modal.currentId = id;
-    if (typeof modal.showModal === 'function') modal.showModal();
-    // showModal이 첫 포커스 요소(소개 탭)에 포커스를 주어 파란 링이 생기므로 닫기 버튼으로 이동
-    if (typeof $('modalClose').focus === 'function') $('modalClose').focus({ preventScroll: true });
+  /* ---------- 북마크 (로컬, R33) ---------- */
+  const BM_KEY = 'macjupjup_bm';
+  function getBm() {
+    try { return JSON.parse(localStorage.getItem(BM_KEY) || '{}'); }
+    catch (e) { return {}; }
+  }
+  function setBm(o) { try { localStorage.setItem(BM_KEY, JSON.stringify(o)); } catch (e) {} }
+  function isBm(id) { return !!getBm()[id]; }
+  function toggleBm(n) {
+    const bm = getBm();
+    if (bm[n.id]) { delete bm[n.id]; toast('북마크 해제'); }
+    else {
+      bm[n.id] = { id: n.id, title: n.title, sourceName: n.sourceName, main: n.main, sub: n.sub, publishedAt: n.publishedAt, thumbnailUrl: n.thumbnailUrl || null };
+      toast('북마크 저장');
+    }
+    setBm(bm);
+    updateBmCount();
+    return !!bm[n.id];
+  }
+  function updateBmCount() {
+    const c = Object.keys(getBm()).length;
+    $('topBmCount').textContent = c;
+  }
 
-    api('/api/apps/' + encodeURIComponent(id)).then(a => {
-      renderModal(a);
-    }).catch(() => {
-      $('modalTitle').textContent = '불러오기 실패';
+  /* ---------- 뷰 전환 ---------- */
+  function switchView(view) {
+    state.view = view;
+    $$('#mainNav .navpill, #mobileNav .navpill').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    ['dashboard', 'appstore', 'news'].forEach(v => {
+      const el = v === 'dashboard' ? $('view-dashboard') : (v === 'appstore' ? $('view-appstore') : $('view-news'));
+      const on = v === view;
+      el.classList.toggle('active', on);
+      el.hidden = !on;
+    });
+    if (view === 'dashboard') loadDashboard();
+    else if (view === 'appstore') loadStore();
+    else loadNews();
+    window.scrollTo(0, 0);
+  }
+
+  /* ================= 대시보드 ================= */
+  let dashSeq = 0;
+  function loadDashboard() {
+    const seq = ++dashSeq;
+    renderMainFilters();
+    Promise.all([
+      api('/api/main').catch(e => { console.error('[대시보드] /api/main 실패', e); return null; }),
+      api('/api/watchlist').catch(e => { console.error('[대시보드] 소스 상태 실패', e); return []; }),
+      api('/api/stats/trends').catch(e => { console.error('[대시보드] 트렌드 실패', e); return null; })
+    ]).then(([main, sources, trends]) => {
+      if (seq !== dashSeq) return;
+      if (main) renderDashboard(main, sources || [], trends);
+      else $('dashHeroStats').textContent = '불러오기 실패';
     });
   }
 
+  function renderMainFilters() {
+    $('mainFilterChips').innerHTML = MAIN_FILTERS.map((f, i) =>
+      '<button type="button" class="chip' + (state.mainFilter.main === f.main && state.mainFilter.category === f.category ? ' active' : '') +
+      '" data-i="' + i + '">' + esc(f.label) + '</button>'
+    ).join('') + '<span class="chipnote">필터는 아래 섹션에 동시 적용</span>';
+    $$('#mainFilterChips .chip').forEach(b => {
+      b.onclick = () => {
+        const f = MAIN_FILTERS[parseInt(b.dataset.i, 10)];
+        state.mainFilter = { main: f.main, category: f.category };
+        state.dashPage = 1;
+        renderMainFilters();
+        loadDashboardGroups();
+      };
+    });
+  }
+
+  let dashCache = null;
+  function renderDashboard(d, sources, trends) {
+    dashCache = { main: d, sources, trends };
+    const c = d.counts || {};
+    const totalNews = (c.mac || 0) + (c.ai || 0) + (c.sec || 0);
+    $('dashHeroStats').innerHTML = '오늘 수집된 앱 <b>' + (d.totalApps || 0) + '개</b> · 업데이트 <b>' +
+      (d.updatedApps ? d.updatedApps.length : 0) + '개</b> · 뉴스 <b>' + totalNews + '개</b> · 맥 ' + (c.mac || 0) +
+      ' / AI ' + (c.ai || 0) + ' / 보안 ' + (c.sec || 0);
+    $('dashUpdatedAt').textContent = d.generatedAt ? ('마지막 업데이트: ' + new Date(d.generatedAt).toLocaleString('ko-KR')) : '';
+
+    // 하이라이트 3카드: 최신 맥뉴스 / 최신 앱 / 최신 보안뉴스
+    const topMac = (d.mac || [])[0], topApp = (d.updatedApps || [])[0], topSec = (d.sec || [])[0];
+    let hl = '';
+    if (topMac) {
+      hl += '<article class="hl-card"><div>' +
+        (topMac.thumbnailUrl ? '<img class="hl-thumb" src="' + esc(topMac.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+        '</div><div class="hl-body"><div class="hl-top"><span class="hot">HOT</span><span>' +
+        esc(topMac.sourceName) + ' · ' + fmtTime(topMac.publishedAt) + '</span></div>' +
+        '<h3 class="hl-title">' + esc(topMac.title) + '</h3>' +
+        '<p class="hl-desc">' + esc(topMac.summary || '') + '</p></div></article>';
+    }
+    if (topApp) {
+      hl += '<article class="hl-card glow"><div class="hl-body"><div class="hl-top">' +
+        appIcon(topApp, 'hl-icon') +
+        '<b style="font-size:14px;color:var(--text)">' + esc(topApp.name) + '</b>' +
+        (topApp.isNew ? '<span class="newpill">NEW</span>' : '') + '</div>' +
+        '<div class="hl-top">' + esc([verText(topApp), topApp.category].filter(Boolean).join(' · ')) + '</div>' +
+        '<p class="hl-desc">' + esc(topApp.category || '') + ' 앱 최신 소식을 확인하세요</p></div>' +
+        '<span class="hl-price">' + (topApp.license === 'FREE' ? '무료' : '유료') + '</span></article>';
+    }
+    if (topSec) {
+      hl += '<article class="hl-card"><div class="hl-body"><div class="hl-top">⚠️ <b style="color:var(--text)">보안 긴급</b><span> · ' +
+        fmtTime(topSec.publishedAt) + '</span></div>' +
+        '<h3 class="hl-title">' + esc(topSec.title) + '</h3>' +
+        '<p class="hl-desc">' + esc(topSec.summary || '') + '</p>' +
+        '<a class="hl-cta" href="' + esc(topSec.originalUrl) + '" target="_blank" rel="noopener">즉시 업데이트</a>' +
+        '<div class="hl-src">' + esc(topSec.sourceName) + '</div></div></article>';
+    }
+    $('dashHighlights').innerHTML = hl || '<div class="empty-state">하이라이트 없음</div>';
+
+    renderDashApps(d.updatedApps || []);
+    loadDashboardGroups();
+    renderSidebar(sources, trends, d);
+  }
+
+  function renderDashApps(apps) {
+    const f = state.mainFilter;
+    const list = f.category ? apps.filter(a => a.category === f.category) : apps;
+    $('dashAppCount').textContent = list.length + '개';
+    $('dashApps').innerHTML = list.map(a => {
+      const ver = [verText(a), fmtTime(a.lastUpdatedAt)].filter(Boolean).join(' · ');
+      return '<button type="button" class="hcard" data-id="' + esc(a.id) + '" role="listitem">' +
+      '<div class="hcard-top">' + appIcon(a, 'hicon') +
+      '<span class="catpill">' + esc(a.category || '') + '</span></div>' +
+      '<b>' + esc(a.name) + '</b><div class="ver">' + esc(ver) + '</div>' +
+      priceText(a) + '</button>';
+    }).join('') || '<div class="empty-state">앱 없음</div>';
+    $$('#dashApps .hcard').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
+  }
+
+  function loadDashboardGroups() {
+    if (!dashCache) return;
+    const d = dashCache.main;
+    const f = state.mainFilter;
+    const groups = [
+      { main: 'mac', icon: '🍎', label: '맥 소식', items: d.mac || [], src: 'MacRumors · 9to5Mac · The Verge' },
+      { main: 'ai', icon: '✦', label: 'AI 소식', items: d.ai || [], src: 'trawling.dev · Product Hunt · GeekNews' },
+      { main: 'sec', icon: '🛡', label: '보안 소식', items: d.sec || [], src: 'BleepingComputer · The Hacker News' }
+    ];
+    const show = groups.filter(g => !f.main || g.main === f.main);
+    ['mac', 'ai', 'sec'].forEach(m => { $('group-' + m).style.display = (!f.main || f.main === m) ? '' : 'none'; });
+    show.forEach(g => {
+      $('gsrc-' + g.main).textContent = g.src;
+      $('gcount-' + g.main).textContent = g.items.length + '개';
+      $('grows-' + g.main).innerHTML = g.items.map(n => newsRowHtml(n)).join('') || '<div class="empty-state">뉴스 없음</div>';
+    });
+    $$('#view-dashboard .nrow').forEach(el => {
+      el.onclick = () => { state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id; switchView('news'); };
+    });
+  }
+
+  function newsRowHtml(n) {
+    const fresh = Date.now() - (n.publishedAt || 0) < 24 * 3600 * 1000;
+    return '<button type="button" class="nrow" data-id="' + esc(n.id) + '" data-main="' + esc(n.main) + '">' +
+      (n.thumbnailUrl ? '<img class="nthumb" src="' + esc(n.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+      '<span class="nbody"><span class="nmeta"><span class="subpill">' + esc(n.sub) + '</span>' +
+      '<span>' + esc(n.sourceName) + ' · ' + fmtTime(n.publishedAt) + '</span>' +
+      (fresh ? '<span class="hot">HOT</span>' : '') + '</span>' +
+      '<span class="ntitle">' + esc(n.title) + '</span>' +
+      (n.summary ? '<span class="ndesc">' + esc(n.summary) + '</span>' : '') + '</span>' +
+      '<span class="narrow" aria-hidden="true">↗</span></button>';
+  }
+
+  function renderSidebar(sources, trends, d) {
+    // 실시간 크롤링 (뉴스 소스 우선 최대 5)
+    const news = (sources || []).filter(s => s.type === 'NEWS_RSS').slice(0, 5);
+    const rows = (news.length ? news : (sources || []).slice(0, 5)).map(s => {
+      const st = s.lastStatus === 'SUCCESS' ? ['ok', '수집 중'] : (s.lastStatus === 'FAILED' ? ['fail', '오류'] : ['wait', '대기']);
+      return '<div class="srcrow"><span class="dot ' + st[0] + '"></span><span>' + esc(s.name) + '</span>' +
+        '<span class="cnt">' + fmtTime(s.lastRunAt) + '</span><span class="st ' + st[0] + '">' + st[1] + '</span></div>';
+    }).join('');
+    $('sideSources').innerHTML = rows || '<div class="mini-empty">소스 없음</div>';
+    $('sideToday').textContent = '오늘 총 ' + (d.todayNews || 0) + '개 수집';
+
+    // 인기 태그 (제목 키워드 추출)
+    const allNews = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])];
+    const tags = extractTags(allNews);
+    $('sideTags').innerHTML = tags.map(t => '<button type="button" class="tag" data-tag="' + esc(t.tag) + '">#' + esc(t.tag) + '<span class="mono">' + t.count + '</span></button>').join('') || '<span class="muted sm">태그 없음</span>';
+    $$('#sideTags .tag').forEach(b => {
+      b.onclick = () => {
+        state.news.q = b.dataset.tag;
+        state.news.page = 1;
+        switchView('news');
+      };
+    });
+
+    // 세일 중인 앱 (업데이트 목록에 유료가 없으면 유료 목록 조회)
+    const renderSale = (paid) => {
+      $('sideSaleCount').textContent = paid.length + '개';
+      $('sideSale').innerHTML = paid.map(a =>
+        '<button type="button" class="salerow" data-id="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
+        '<span><b>' + esc(a.name) + '</b><small>' + esc(a.category || '') + ' · ' + fmtTime(a.lastUpdatedAt) + '</small></span>' +
+        '<span class="saleprice">' + priceText(a) + '</span></button>'
+      ).join('') || '<div class="mini-empty">세일 앱 없음</div>';
+      $$('#sideSale .salerow').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
+    };
+    const paid = (d.updatedApps || []).filter(a => a.license === 'PAID').slice(0, 3);
+    if (paid.length) renderSale(paid);
+    else api('/api/apps?license=PAID&page=1&pageSize=3').then(r => renderSale(r.apps || [])).catch(() => renderSale([]));
+
+    // 카테고리 바로가기 (실측 카운트)
+    const byCat = ((trends || {}).byCategory) || {};
+    const tiles = [
+      { icon: '⚡', label: '생산성', cat: '생산성' },
+      { icon: '⬛', label: '개발자 도구', cat: '개발' },
+      { icon: '🔧', label: '유틸리티', cat: '유틸리티' },
+      { icon: '🎨', label: '크리에이티브', cat: '디자인·크리에이티브' },
+      { icon: '🌿', label: '라이프스타일', cat: '미디어·엔터' },
+      { icon: '✦', label: 'AI 도구', cat: '', tag: 'AI-Agent', count: (trends || {}).aiTagCount || 0 }
+    ];
+    $('sideCats').innerHTML = tiles.map((t, i) =>
+      '<button type="button" class="cattile" data-i="' + i + '"><span class="ci">' + t.icon + '</span>' +
+      '<span><b>' + esc(t.label) + '</b><small>' + (t.cat ? (byCat[t.cat] || 0) : t.count) + '개</small></span></button>'
+    ).join('');
+    $$('#sideCats .cattile').forEach(b => {
+      b.onclick = () => {
+        const t = tiles[parseInt(b.dataset.i, 10)];
+        state.filters.category = t.cat;
+        state.filters.tag = t.tag || '';
+        state.filters.page = 1;
+        switchView('appstore');
+      };
+    });
+  }
+
+  function subMainOf(sub) {
+    for (const m of NEWS_MAINS) { if ((NEWS_SUBS[m.id] || []).includes(sub)) return m.id; }
+    return 'mac';
+  }
+
+  /* ================= 앱 스토어 (목업 /apps) ================= */
+  function switchStoreSub(sub) {
+    state.storeSub = sub;
+    $$('#view-appstore .subpill').forEach(b => {
+      const on = b.dataset.sub === sub;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on);
+    });
+    if (sub === 'watchlist') applyChip('업데이트');
+    else if (sub === 'timeline') applyChip('전체');
+    else loadStore();
+  }
+
+  function loadStore() {
+    if (state.storeSub === 'stats') loadStatsPanel();
+    else loadStoreList();
+    loadStoreChrome();
+  }
+
+  function storeQueryFromFilters() {
+    const f = state.filters;
+    const p = new URLSearchParams({ sort: f.sort, page: f.page, pageSize: PAGE_SIZE });
+    if (f.license) p.set('license', f.license);
+    if (f.cat) p.set('category', f.cat);
+    if (f.q) p.set('q', f.q);
+    if (f.newOnly) p.set('newOnly', 'true');
+    if (f.updatedOnly) p.set('updatedOnly', 'true');
+    if (state.storeSub === 'watchlist') { p.set('bumped', 'true'); p.set('updatedOnly', 'true'); }
+    return '/api/apps?' + p.toString();
+  }
+
+  function buildStoreQuery() {
+    return storeQueryFromFilters();
+  }
+
+  function applyChip(label) {
+    const chip = APP_CHIPS.find(c => c.label === label) || APP_CHIPS[0];
+    const pa = chip.params || {};
+    const f = state.filters;
+    f.license = pa.license || '';
+    f.cat = pa.category || '';
+    f.sort = pa.sort || 'stars';
+    f.newOnly = !!pa.newOnly;
+    f.updatedOnly = !!pa.updatedOnly || chip.label === '업데이트';
+    f.page = 1;
+    if (state.storeSub === 'stats') state.storeSub = 'timeline';
+    syncStoreSub(chip.label);
+    renderStoreChips();
+    renderStoreSidebar();
+    // 업데이트 칩은 Watchlist 탭과 동일 의미 → 서브탭 연동
+    if (chip.label === '업데이트' && state.storeSub !== 'watchlist') {
+      state.storeSub = 'watchlist';
+      $$('#view-appstore .subpill').forEach(b => b.classList.toggle('active', b.dataset.sub === 'watchlist'));
+    } else if (chip.label !== '업데이트' && state.storeSub === 'watchlist') {
+      state.storeSub = 'timeline';
+      $$('#view-appstore .subpill').forEach(b => b.classList.toggle('active', b.dataset.sub === 'timeline'));
+    }
+    loadStoreList();
+  }
+
+  function syncStoreSub(label) {
+    const sub = label === '업데이트' ? 'watchlist' : (label && label !== '전체' ? 'timeline' : state.storeSub);
+    state.storeSub = sub;
+    $$('#view-appstore .subpill').forEach(b => {
+      const on = b.dataset.sub === sub;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on);
+    });
+  }
+
+  function renderStoreChips() {
+    const f = state.filters;
+    let active = '';
+    for (const chip of APP_CHIPS) {
+      const pa = chip.params || {};
+      const match = (pa.license || '') === f.license &&
+        (pa.category || '') === f.cat &&
+        (!!pa.newOnly) === f.newOnly &&
+        (!!pa.updatedOnly || chip.label === '업데이트') === (f.updatedOnly || state.storeSub === 'watchlist') &&
+        (!pa.sort || pa.sort === f.sort);
+      if (match) { active = chip.label; break; }
+    }
+    if (!active && !f.license && !f.cat && !f.newOnly && !f.updatedOnly && f.sort === 'stars') active = '전체';
+    $('storeChips').innerHTML = APP_CHIPS.map(c =>
+      '<button type="button" class="chip' + (c.label === active ? ' active' : '') + '" data-chip="' + esc(c.label) + '">' +
+      esc(c.label) + (c.approx ? '<span class="mono">*</span>' : '') + '</button>'
+    ).join('');
+    $$('#storeChips .chip').forEach(b => {
+      b.onclick = () => applyChip(b.dataset.chip);
+    });
+  }
+
+  function renderStoreSidebar() {
+    const f = state.filters;
+    // 카테고리
+    $('catChoices').innerHTML = CAT_CHOICES.map(c =>
+      '<button type="button" class="' + (c.cat === f.cat ? 'active' : '') + '" data-cat="' + esc(c.cat) + '">' + esc(c.label) + '</button>'
+    ).join('');
+    // 가격
+    const saleOn = f.license === 'PAID' && f.sort === 'updated';
+    $('priceChoices').innerHTML = PRICE_CHOICES.map(p =>
+      '<button type="button" class="' + (p.license === f.license && (p.sale ? saleOn : !p.sale) ? 'active' : '') + '" data-price="' + p.license + '">' + esc(p.label) + '</button>'
+    ).join('');
+    // 정렬
+    $('sortChoices').innerHTML = SORT_CHOICES.map(s =>
+      '<button type="button" class="' + (s.sort === f.sort ? 'active' : '') + '" data-sort="' + s.sort + '">' + esc(s.label) + '</button>'
+    ).join('');
+    $('catChoices').querySelectorAll('button').forEach(b => { b.onclick = () => setFilter({ cat: b.dataset.cat }, true); });
+    $('priceChoices').querySelectorAll('button').forEach(b => {
+      b.onclick = () => {
+        const p = PRICE_CHOICES.find(o => o.license === b.dataset.price) || PRICE_CHOICES[0];
+        setFilter(p.sale ? { license: p.license, sort: 'updated' } : { license: p.license });
+      };
+    });
+    $('sortChoices').querySelectorAll('button').forEach(b => { b.onclick = () => setFilter({ sort: b.dataset.sort }); });
+  }
+
+  function setFilter(patch, catClear) {
+    const f = state.filters;
+    if (catClear) f.newOnly = false;
+    Object.assign(f, patch, { page: 1 });
+    renderStoreChips();
+    renderStoreSidebar();
+    loadStoreList();
+  }
+
+  let storeSeq = 0;
+  let storeCache = null;
+  function loadStoreList() {
+    $('statsContent').innerHTML = '';
+    const grid = $('appGrid'), empty = $('emptyStore');
+    const seq = ++storeSeq;
+    grid.innerHTML = '';
+    empty.hidden = true;
+    renderStoreChips();
+    renderStoreSidebar();
+    api(storeQueryFromFilters()).then(d => {
+      if (seq !== storeSeq) return;
+      storeCache = d;
+      $('appsCountLabel').textContent = d.total;
+      $('storeActiveCat').textContent = state.filters.cat || '전체';
+      if (!d.apps.length) { empty.hidden = false; $('pagination').innerHTML = ''; return; }
+      grid.innerHTML = d.apps.map(cardHtml).join('');
+      bindCards(grid);
+      renderPagination($('pagination'), d.page, d.pageSize, d.total, p => { state.filters.page = p; loadStoreList(); window.scrollTo(0, 0); });
+    }).catch((e) => {
+      console.error('[스토어] 목록 실패', e);
+      if (seq !== storeSeq) return;
+      empty.querySelector('.empty-state-title').textContent = '데이터를 불러오는데 실패했습니다';
+      empty.hidden = false;
+    });
+  }
+
+  let storeChromeSeq = 0;
+  function loadStoreChrome() {
+    const seq = ++storeChromeSeq;
+    api('/api/main').then(d => {
+      if (seq !== storeChromeSeq) return;
+      const total = d.totalApps || 0;
+      $('storeAppsLive').textContent = total + ' apps · 본체';
+      // 티커 (최신 헤드라인)
+      const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
+      $('storeTicker').innerHTML = heads.map(n =>
+        '<span class="ticker-item"><b>' + esc(n.title) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
+      ).join('') + (heads.map(n =>
+        '<span class="ticker-item"><b>' + esc(n.title) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
+      ).join(''));
+      // 오늘의 픽 (업데이트 순 3건)
+      const picks = (d.updatedApps || []).slice(0, 3);
+      $('todayPicks').innerHTML = picks.length ? picks.map(a =>
+        '<button type="button" class="pickrow" data-id="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
+        '<span style="min-width:0"><b>' + esc(a.name) + '</b><small>' + esc(verText(a)) + ' 업데이트</small></span></button>'
+      ).join('') : '<div class="mini-empty">오늘 픽 없음</div>';
+      $$('#todayPicks .pickrow').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
+    }).catch((e) => { console.error('[스토어] 크롬 실패', e); });
+  }
+
+  const LICENSE_LABEL = { OSS: '오픈소스', FREE: '프리', PAID: '유료' };
+  const LICENSE_CLASS = { OSS: 'oss', FREE: 'free', PAID: 'paid' };
+
+  function cardDesc(a) {
+    const ko = a.descriptionKo || a.descriptionSnippet;
+    const en = a.descriptionSnippet || a.descriptionKo;
+    const raw = state.lang === 'ko' ? (ko || '') : (en || '');
+    return raw ? excerpt(raw) : '';
+  }
+  function cardPrice(a) {
+    if (a.license === 'FREE' || a.price === 0) return '<span class="ac-price free">무료</span>';
+    if (a.price > 0) return '<span class="ac-price">₩' + Number(a.price).toLocaleString() + '</span>';
+    if (a.license === 'PAID') return '<span class="ac-price">유료</span>';
+    return '<span class="ac-price free">무료</span>';
+  }
+  function cardTags(a) {
+    const arr = Array.isArray(a.tags) ? a.tags : (typeof a.tags === 'string' && a.tags ? a.tags.split(',') : []);
+    return arr.map(t => (t || '').trim()).filter(t => t.length > 1 && t.length < 16)[0] || '';
+  }
+
+  function cardHtml(a) {
+    const badges = (a.isNew ? '<span class="ac-badge new">NEW</span>' : '') +
+      (String(a.prevVersion || '').trim() ? '<span class="ac-badge upd">UPD</span>' : '');
+    const tag = cardTags(a);
+    return '<article class="app-card" role="listitem" data-id="' + esc(a.id) + '" tabindex="0">' +
+      '<div class="ac-top">' + appIcon(a, 'app-icon') +
+      '<div class="ac-badges">' + badges + '</div></div>' +
+      '<div class="app-name">' + esc(a.name) + '</div>' +
+      '<div class="ac-sub"><span class="badge">' + esc(a.category || '') + '</span>' +
+      (tag ? '<span class="tag">#' + esc(tag) + '</span>' : '') + '</div>' +
+      (cardDesc(a) ? '<p class="card-desc">' + esc(stripMd(cardDesc(a))) + '</p>' : '<p class="card-desc muted">정보 없음</p>') +
+      '<div class="ac-foot">' + cardPrice(a) +
+      '<span class="mono">v' + esc(a.version || '-') + '</span></div>' +
+      '<div class="ac-actions">' +
+      '<button type="button" class="ac-btn primary" data-open="' + esc(a.id) + '">자세히</button>' +
+      '<button type="button" class="ac-btn ghost" data-share="' + esc(a.id) + '">공유</button>' +
+      '</div></article>';
+  }
+
+  function bindCards(container) {
+    $$('.app-card', container).forEach(el => {
+      const id = el.dataset.id;
+      $$('[data-open]', el).forEach(b => { b.onclick = e => { e.stopPropagation(); openModal(id); }; });
+      $$('[data-share]', el).forEach(b => {
+        b.onclick = e => {
+          e.stopPropagation();
+          const item = storeCache && storeCache.apps.find(o => o.id === id);
+          const name = item ? item.name : id;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(id).then(() => toast(name + ' 링크 복사됨'));
+          } else { toast(name + ' · ' + id); }
+        };
+      });
+      el.onclick = () => openModal(id);
+      el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(id); } };
+    });
+  }
+
+  function renderPagination(box, page, pageSize, total, go) {
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    if (pages <= 1) { box.innerHTML = ''; return; }
+    let html = '<button type="button" data-p="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + ' aria-label="이전">‹</button>';
+    const set = {};
+    [1, 2, page - 1, page, page + 1, pages - 1, pages].forEach(n => { if (n >= 1 && n <= pages) set[n] = true; });
+    const arr = Object.keys(set).map(Number).sort((a, b) => a - b);
+    let prev = 0;
+    arr.forEach(n => {
+      if (n - prev > 1) html += '<button type="button" disabled>…</button>';
+      html += '<button type="button" data-p="' + n + '"' + (n === page ? ' class="active"' : '') + '>' + n + '</button>';
+      prev = n;
+    });
+    html += '<button type="button" data-p="' + (page + 1) + '"' + (page >= pages ? ' disabled' : '') + ' aria-label="다음">›</button>';
+    box.innerHTML = html;
+    $$('button[data-p]', box).forEach(b => {
+      if (b.disabled) return;
+      b.onclick = () => go(parseInt(b.dataset.p, 10));
+    });
+  }
+
+  function loadStatsPanel() {
+    $('appGrid').innerHTML = '';
+    $('pagination').innerHTML = '';
+    $('emptyStore').hidden = true;
+    const box = $('statsContent');
+    box.innerHTML = '<div class="empty-state">통계 불러오는 중…</div>';
+    api('/api/stats').then(s => api('/api/stats/trends').then(t => {
+      const cats = Object.keys(t.byCategory || {}).sort((a, b) => t.byCategory[b] - t.byCategory[a]);
+      const max = cats.length ? t.byCategory[cats[0]] : 1;
+      box.innerHTML = '<div class="kpi-grid">' +
+        kpi(s.totalApps, '수집 앱') + kpi(s.activeSources, '활성 소스') +
+        kpi(t.newLast7d, '최근 7일 신규') + kpi(t.versionBumpsLast7d, '최근 7일 버전업') + '</div>' +
+        '<h3 class="stats-section-title">카테고리 분포</h3>' +
+        cats.map(c => '<div class="bar-row"><span class="bar-name">' + esc(c) + '</span>' +
+          '<span class="bar-track"><span class="bar-fill" style="width:' + Math.round(t.byCategory[c] / max * 100) + '%"></span></span>' +
+          '<span class="bar-count">' + t.byCategory[c] + '</span></div>').join('');
+    })).catch((e) => {
+      console.error('[스토어] 통계 실패', e);
+      box.innerHTML = '<div class="empty-state">통계를 불러오는데 실패했습니다</div>';
+    });
+  }
+  function kpi(n, l) { return '<div class="kpi"><div class="kpi-value">' + n + '</div><div class="kpi-label">' + l + '</div></div>'; }
+
+  /* ---------- 앱 모달 (기존 유지) ---------- */
+  function openModal(id, silent) {
+    const modal = $('appModal');
+    ensureModalTabs();
+    state.modal.currentId = id;
+    if (!silent) {
+      $('modalTitle').textContent = '불러오는 중…';
+      $('modalIcon').removeAttribute('src');
+      $('modalDev').textContent = '';
+      $('modalMetaPills').innerHTML = '';
+      $('modalCta').innerHTML = '';
+      $('panelIntro').innerHTML = '';
+      $('panelFeatures').innerHTML = '';
+      $('panelChangelog').innerHTML = '';
+      setActiveTab('intro');
+    }
+    if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+    api('/api/apps/' + encodeURIComponent(id)).then(a => { renderModal(a); })
+      .catch((e) => { console.error('[모달] 실패', e); $('modalTitle').textContent = '불러오기 실패'; });
+  }
   function closeModal() {
     const modal = $('appModal');
     if (typeof modal.close === 'function') modal.close();
     state.modal.currentId = null;
   }
-
   function ensureModalTabs() {
     const tabsBox = $('modalTabs');
-    tabsBox.style.display = '';
     if (!$1('[role="tab"]', tabsBox)) {
       tabsBox.innerHTML =
-        '<button class="modal-tab" role="tab" aria-selected="true" data-tab="intro" type="button" id="tabIntro">소개</button>' +
+        '<button class="modal-tab active" role="tab" aria-selected="true" data-tab="intro" type="button" id="tabIntro">소개</button>' +
         '<button class="modal-tab" role="tab" aria-selected="false" data-tab="features" type="button" id="tabFeatures">특징</button>' +
         '<button class="modal-tab" role="tab" aria-selected="false" data-tab="changelog" type="button" id="tabChangelog">새 기능</button>';
-      $$('[role="tab"]', tabsBox).forEach(btn => {
-        btn.onclick = () => setActiveTab(btn.dataset.tab);
-      });
+      $$('[role="tab"]', tabsBox).forEach(btn => { btn.onclick = () => setActiveTab(btn.dataset.tab); });
     }
   }
-
   function setActiveTab(tab) {
     state.modal.activeTab = tab;
     $$('#modalTabs [role="tab"]').forEach(btn => {
-      const isActive = btn.dataset.tab === tab;
-      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      btn.classList.toggle('active', isActive);
+      const on = btn.dataset.tab === tab;
+      btn.setAttribute('aria-selected', on);
+      btn.classList.toggle('active', on);
     });
-    $$('#modalPanels [role="tabpanel"]').forEach(panel => {
-      const isActive = panel.id === 'panel' + tab.charAt(0).toUpperCase() + tab.slice(1);
-      panel.classList.toggle('active', isActive);
-      panel.hidden = !isActive;
+    $$('#modalPanels [role="tabpanel"]').forEach(p => {
+      const on = p.id === 'panel' + tab.charAt(0).toUpperCase() + tab.slice(1);
+      p.classList.toggle('active', on);
+      p.hidden = !on;
     });
   }
-
   function renderModal(a) {
     $('modalTitle').textContent = a.name || '앱 상세';
-    // 아이콘 없으면 img 자체를 숨김 (빈 src 깨짐 방지 — img는 void 요소라 텍스트 폴백 불가)
-    if (a.iconUrl) { $('modalIcon').style.display = ''; $('modalIcon').src = a.iconUrl; $('modalIcon').alt = ''; }
-    else { $('modalIcon').style.display = 'none'; $('modalIcon').removeAttribute('src'); $('modalIcon').alt = ''; }
+    if (a.iconUrl) { $('modalIcon').style.display = ''; $('modalIcon').src = a.iconUrl; }
+    else { $('modalIcon').style.display = 'none'; }
     $('modalDev').textContent = a.developer || '';
-
     const pills = [];
-    if (a.primaryLanguage) pills.push('<span class="pill lang" style="--dot-color:' + (LANG_COLORS[a.primaryLanguage.toLowerCase()] || LANG_COLORS.default) + '">' + esc(a.primaryLanguage) + '</span>');
-    if (a.license) pills.push('<span class="pill ' + LICENSE_CLASS[a.license] + '">' + esc(LICENSE_LABEL[a.license] || a.license) + '</span>');
-    if (a.stars != null) pills.push('<span class="pill stars">★ ' + a.stars + '</span>');
-    if (a.isNew) pills.push('<span class="pill new">NEW</span>');
+    if (a.license) pills.push('<span class="pill">' + esc(LICENSE_LABEL[a.license] || a.license) + '</span>');
+    if (a.category) pills.push('<span class="pill">' + esc(a.category) + '</span>');
+    if (a.stars != null) pills.push('<span class="pill">★ ' + a.stars + '</span>');
+    if (a.isNew) pills.push('<span class="pill">NEW</span>');
     $('modalMetaPills').innerHTML = pills.join('');
-
     const cta = [];
     if (a.homepageUrl) cta.push('<a class="btn-primary" href="' + esc(a.homepageUrl) + '" target="_blank" rel="noopener">홈페이지</a>');
-    if (a.repoFullName) cta.push('<a class="btn-secondary" href="https://github.com/' + esc(a.repoFullName) + '" target="_blank" rel="noopener">GitHub Repo</a>');
-    else if (a.sourceUrl) cta.push('<a class="btn-secondary" href="' + esc(a.sourceUrl) + '" target="_blank" rel="noopener">출처 보기</a>');
+    if (a.repoFullName) cta.push('<a class="btn-secondary" href="https://github.com/' + esc(a.repoFullName) + '" target="_blank" rel="noopener">GitHub</a>');
     if (a.trackId) cta.push('<a class="btn-secondary" href="https://apps.apple.com/us/app/id' + a.trackId + '" target="_blank" rel="noopener">App Store</a>');
     $('modalCta').innerHTML = cta.join('');
-
-    // ① 소개
-    const marker = '— README —';
-    function splitBody(full) { if (!full) return ''; if (full.indexOf(marker) >= 0) { const p = full.split(marker); return p.slice(1).join(marker).trim() || p[0].trim(); } return full; }
-    function excerpt(full) { if (!full) return ''; if (full.indexOf(marker) >= 0) return full.split(marker)[0].trim().slice(0, 300); return full.length > 300 ? full.slice(0, 300) + '…' : full; }
     const koFull = a.descriptionKo || '';
     const enFull = a.descriptionSnippet || '';
-    const introKo = excerpt(koFull);
-    const introEn = excerpt(enFull);
+    const introKo = excerpt(koFull) || excerpt(enFull);
+    const introEn = excerpt(enFull) || excerpt(koFull);
     const funcKo = splitBody(koFull);
     const funcEn = splitBody(enFull);
     const funcShow = funcKo || funcEn;
-    const introHtml = (introKo || introEn) ? mdBlock(introKo, introEn) : '<p style="color:var(--secondary);">소개 정보가 없습니다.</p>';
+    const introHtml = (introKo || introEn) ? mdBlock(introKo, introEn) : '<p>소개 정보가 없습니다.</p>';
     const funcHtml = (funcShow && funcShow !== (introKo || introEn)) ? mdBlock(funcKo, funcEn) : '';
-
-    // ③ 특징
+    $('panelIntro').innerHTML = '<h4>소개</h4>' + introHtml + (funcHtml ? '<h4 style="margin-top:18px;">세부 설명</h4>' + funcHtml : '');
     const feats = [];
-    if (a.sellerName) feats.push('<div class="feature-item">판매: ' + esc(a.sellerName) + '</div>');
-    if (a.averageRating != null) feats.push('<div class="feature-item">평점 ' + a.averageRating + (a.ratingCount != null ? ' (' + a.ratingCount + '개)' : '') + '</div>');
-    if (a.stars != null) feats.push('<div class="feature-item">★ ' + a.stars + (a.forks != null ? ' · ⑂ ' + a.forks : '') + (a.issues != null ? ' · 이슈 ' + a.issues : '') + '</div>');
-    if (a.primaryLanguage) feats.push('<div class="feature-item">' + esc(a.primaryLanguage) + '</div>');
-    if (a.licenseName) feats.push('<div class="feature-item">라이선스: ' + esc(a.licenseName) + '</div>');
-    if (a.fileSize) feats.push('<div class="feature-item">용량: ' + fmtSize(a.fileSize) + '</div>');
-    if (a.minOs) feats.push('<div class="feature-item">최소 OS: ' + esc(a.minOs) + '</div>');
-    if (a.contentRating) feats.push('<div class="feature-item">연령 등급: ' + esc(a.contentRating) + '</div>');
-    if (a.category) feats.push('<div class="feature-item">' + esc(a.category) + '</div>');
-    if (a.tags) feats.push('<div class="feature-item">태그: ' + esc(a.tags) + '</div>');
-    const featHtml = feats.length ? '<div class="features-grid">' + feats.join('') + '</div>' : '<p style="color:var(--secondary);">특징 정보가 없습니다.</p>';
-
-    // ⑤ 새 기능
-    const newsPick = pick(a.releaseNotesKo, a.releaseNotes || a.releaseNotesSummary);
+    if (a.averageRating != null) feats.push('평점 ' + a.averageRating + (a.ratingCount != null ? ' (' + a.ratingCount + '개)' : ''));
+    if (a.version) feats.push('버전 ' + esc(a.version));
+    if (a.sellerName) feats.push('판매: ' + esc(a.sellerName));
+    $('panelFeatures').innerHTML = '<h4>특징</h4>' + (feats.length ? feats.map(f => '<p>' + f + '</p>').join('') : '<p>특징 정보가 없습니다.</p>');
+    const notesKo = (a.releaseNotesKo || a.releaseNotesSummary) || '';
+    const notesEn = (a.releaseNotesSummary || a.releaseNotesKo) || '';
+    const notesShow = notesKo || notesEn;
     let newsHtml = '';
-    const hasHistory = a.version || (a.versions && a.versions.length) || newsPick.text;
-    if (hasHistory) {
-      const rows = (a.versions || []).slice(0, 10).map(v => {
-        const vlink = v.sourceUrl ? ' <a target="_blank" rel="noopener" href="' + esc(v.sourceUrl) + '">열기</a>' : '';
-        return '<tr><td>' + esc(v.version) + '</td><td class="notes">' + md(v.notesSummary || '') + '</td><td class="link-cell">' + vlink + '</td></tr>';
-      }).join('');
-      const newsKo = newsPick.isKo ? newsPick.text : '';
-      const newsEn = newsPick.isKo ? (a.releaseNotes || a.releaseNotesSummary || '') : newsPick.text;
-      newsHtml = (newsPick.text ? mdBlock(newsKo, newsEn) : '') +
-        '<table class="version-table"><tr><th>버전</th><th>새 기능</th><th>링크</th></tr>' +
-        (a.version ? '<tr><td class="version-current"><b>' + esc(a.version) + '</b> (현재)' + (a.prevVersion ? ' ← ' + esc(a.prevVersion) + ' 화' : '') + '</td><td class="notes">' + md(a.releaseNotesSummary || '') + '</td><td></td></tr>' : '') + rows + '</table>';
-    } else {
-      newsHtml = '<p style="color:var(--secondary);">버전 기록 없음 — ' + fmtDate(a.firstSeenAt) + ' 첫 포착, 다음 업데이트부터 기록됩니다.</p>';
-    }
-
-    $('panelIntro').innerHTML = '<div class="panel-section"><h4 class="panel-section-title">소개</h4><div class="panel-text">' + introHtml + '</div></div>' +
-      (funcHtml ? '<div class="panel-section"><h4 class="panel-section-title">세부 설명</h4><div class="panel-text">' + funcHtml + '</div></div>' : '');
-
-    $('panelFeatures').innerHTML = '<div class="panel-section"><h4 class="panel-section-title">특징</h4>' + featHtml + '</div>' +
-      (a.screenshotUrls ? '<div class="panel-section"><h4 class="panel-section-title">스크린샷</h4><div class="shot-row">' + a.screenshotUrls.split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(u => '<img src="' + esc(u) + '" alt="스크린샷" loading="lazy">').join('') + '</div></div>' : '');
-
-    $('panelChangelog').innerHTML = '<div class="panel-section"><h4 class="panel-section-title">새 기능</h4>' + newsHtml + '</div>';
-  }
-
-  function initModalTabs() {
-    ensureModalTabs();
-    $$('#modalTabs [role="tab"]').forEach(btn => {
-      btn.onclick = () => setActiveTab(btn.dataset.tab);
-    });
-    $('modalClose').onclick = closeModal;
-    $('appModal').addEventListener('click', e => { if (e.target === $('appModal')) closeModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('appModal').hidden) closeModal(); });
-
-    document.addEventListener('click', e => {
-      const btn = e.target.closest('[data-mdkey]');
-      if (!btn) return;
-      const t = mdStore[btn.dataset.mdkey];
-      if (!t) return;
-      const showingKo = t.showing === 'ko';
-      t.showing = showingKo ? 'en' : 'ko';
-      const box = btn.parentElement.querySelector('[data-mdtext][data-key="' + btn.dataset.mdkey + '"]');
-      if (box) box.innerHTML = md(showingKo ? t.en : t.ko);
-      btn.textContent = showingKo ? '한국어보기' : '원문보기';
-    });
-  }
-
-  /* ---------- 헤더 ---------- */
-  function loadHeader() {
-    api('/api/stats').then(s => {
-      $('totalCount') && ($('totalCount').textContent = '총 ' + s.totalApps + '개');
-      if (s.lastCollectedAt) {
-        const el = $('lastUpdated');
-        if (el) el.textContent = '마지막 업데이트: ' + new Date(s.lastCollectedAt).toLocaleString();
+    if (notesShow) {
+      newsHtml = mdBlock(notesKo, notesEn);
+      if (a.version || (a.versions && a.versions.length)) {
+        const rows = (a.versions || []).slice(0, 10).map(v => {
+          const vlink = v.sourceUrl ? ' <a target="_blank" rel="noopener" href="' + esc(v.sourceUrl) + '">열기</a>' : '';
+          return '<tr><td>' + esc(v.version) + '</td><td class="notes">' + md(v.notesSummary || '') + '</td><td>' + vlink + '</td></tr>';
+        }).join('');
+        newsHtml += '<table class="version-table"><tr><th>버전</th><th>새 기능</th><th>링크</th></tr>' +
+          (a.version ? '<tr><td><b>' + esc(a.version) + '</b> (현재)' + (a.prevVersion ? ' ← ' + esc(a.prevVersion) + ' 화' : '') + '</td><td class="notes">' + md(a.releaseNotesSummary || '') + '</td><td></td></tr>' : '') + rows + '</table>';
       }
-      loadNavCounts();
-    }).catch(() => {});
-    api('/api/stats/trends').then(t => {
-      renderSourceFilters(t.bySource || []);
-    }).catch(() => {
-      $('sourceFilters').innerHTML = '<div class="empty-state" style="padding:12px 0;font-size:12px;">불러오기 실패</div>';
+    } else {
+      newsHtml = '<p>버전 기록이 없습니다.</p>';
+    }
+    $('panelChangelog').innerHTML = '<h4>새 기능</h4>' + newsHtml;
+  }
+
+  /* ================= 뉴스 ================= */
+  function switchNewsTop(tab) {
+    state.news.topTab = tab;
+    $$('#topTabs .toptab').forEach(b => {
+      const on = b.dataset.top === tab;
+      b.classList.toggle('active', on);
+      if (on) b.setAttribute('aria-selected', 'true'); else b.removeAttribute('aria-selected');
+    });
+    if (tab === 'appstore') { switchView('appstore'); return; }
+    if (tab === 'bookmarks') loadBookmarks();
+    else loadNews();
+  }
+
+  function switchNewsMain(main) {
+    state.news.main = main;
+    state.news.sub = '';
+    state.news.page = 1;
+    state.news.detailId = null;
+    syncNewsMains();
+    loadNews();
+  }
+
+  function syncNewsMains() {
+    $$('#newsMains .mainpill').forEach(b => {
+      const on = b.dataset.main === state.news.main;
+      b.classList.toggle('active', on);
+      if (on) b.setAttribute('aria-selected', 'true'); else b.removeAttribute('aria-selected');
+    });
+    $('newsCrumb').textContent = '/news / ' + state.news.main;
+    const subs = NEWS_SUBS[state.news.main] || ['전체'];
+    const html = subs.map(s =>
+      '<button type="button" class="chip' + ((state.news.sub || '전체') === s ? ' active' : '') +
+      '" data-sub="' + esc(s) + '">' + esc(s) + '</button>'
+    ).join('');
+    $('newsSubChips').innerHTML = html;
+    $('newsSubChips2').innerHTML = html;
+    $$('#newsSubChips .chip, #newsSubChips2 .chip').forEach(b => {
+      b.onclick = () => {
+        state.news.sub = b.dataset.sub === '전체' ? '' : b.dataset.sub;
+        state.news.page = 1;
+        state.news.detailId = null;
+        syncNewsMains();
+        loadNews();
+      };
+    });
+    const label = NEWS_MAINS.find(m => m.id === state.news.main);
+    $('nlistTitle').textContent = state.news.main.toUpperCase() + ' / ' + ((label && label.label) || '');
+  }
+
+  let newsSeq = 0;
+  function loadNews() {
+    syncNewsMains();
+    const seq = ++newsSeq;
+    Promise.all([
+      api('/api/main').catch(e => { console.error('[뉴스] /api/main 실패', e); return null; }),
+      api(buildNewsQuery()).catch(e => { console.error('[뉴스] 목록 실패', e); return null; })
+    ]).then(([main, list]) => {
+      if (seq !== newsSeq) return;
+      if (main) renderNewsChrome(main);
+      if (list) renderNewsList(list);
     });
   }
 
-  /* ---------- 헤더 액션 ---------- */
-  function bindHeaderActions() {
-    // 로고 클릭 = 전체 초기화
-    const logoLink = $('sidebar').querySelector('.sidebar-logo') || $('top-bar-title');
-    if (logoLink) logoLink.onclick = () => {
-      state.filters = { sources: [], allSources: state.filters.allSources, licenseType: '', category: '', q: '', sort: 'newest', page: 1, watchMode: 'updated' };
-      $$('#sourceFilters input[type="checkbox"]').forEach(cb => cb.checked = true);
-      $$('#typeFilters input[type="radio"]')[0].checked = true;
-      $$('#categorySubnav input[type="radio"]')[0].checked = true;
-      $('globalSearch').value = '';
-      $('sortSelect').value = 'newest';
-      switchView('timeline');
+  function renderNewsChrome(d) {
+    const c = d.counts || {};
+    $('ncount-mac').textContent = c.mac || 0;
+    $('ncount-ai').textContent = c.ai || 0;
+    $('ncount-sec').textContent = c.sec || 0;
+    const total = (c.mac || 0) + (c.ai || 0) + (c.sec || 0);
+    $('topNewsCount').textContent = total;
+    // 티커 (최신 헤드라인)
+    const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
+    const items = heads.map(n =>
+      '<span class="ticker-item"><b>' + esc(n.title) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
+    ).join('');
+    $('tickerMove').innerHTML = items + items;
+    // 우측 레일
+    $('railSources').textContent = 12;
+    $('railNew').textContent = d.todayNews || 0;
+    $('railNewTime').textContent = '15분 전 갱신';
+    api('/api/watchlist').then(srcs => {
+      const rows = (srcs || []).filter(s => s.type === 'NEWS_RSS').slice(0, 6).map(s =>
+        '<div class="railrow"><span class="dot' + (s.lastStatus === 'FAILED' ? ' wait' : '') + '"></span>' +
+        '<span>' + esc(s.name) + '</span><span class="mono">' + fmtTime(s.lastRunAt) + '</span></div>'
+      ).join('');
+      $('railSrcRows').innerHTML = rows;
+    }).catch(() => {});
+    // 카테고리 구성안
+    $('railCats').innerHTML = '<div class="railcats">' + NEWS_MAINS.map(m =>
+      '<h5>' + esc(m.label) + '</h5><div class="chiprow">' + (NEWS_SUBS[m.id] || []).slice(1).map(s =>
+        '<button type="button" class="chip" data-main="' + m.id + '" data-sub="' + esc(s) + '">' + esc(s) + '</button>'
+      ).join('') + '</div>'
+    ).join('') + '</div>';
+    $$('#railCats .chip').forEach(b => {
+      b.onclick = () => {
+        state.news.main = b.dataset.main;
+        state.news.sub = b.dataset.sub;
+        state.news.page = 1;
+        syncNewsMains();
+        loadNews();
+        window.scrollTo(0, 0);
+      };
+    });
+  }
+
+  function buildNewsQuery() {
+    const p = new URLSearchParams({ page: state.news.page, pageSize: NEWS_PAGE_SIZE });
+    if (state.news.main) p.set('main', state.news.main);
+    if (state.news.sub) p.set('sub', state.news.sub);
+    if (state.news.q) p.set('q', state.news.q);
+    return '/api/news?' + p.toString();
+  }
+
+  function logoText(src) {
+    const m = { '9to5Mac': '9t5', 'MacRumors': 'MR', 'The Verge': 'VG', 'BleepingComputer': 'BC', 'The Hacker News': 'HN', '보안뉴스': '보안', '데일리시큐': '시큐', 'TechCrunch': 'TC', 'MarkTechPost': 'MT', 'OpenAI': 'AI' };
+    for (const k of Object.keys(m)) { if ((src || '').includes(k)) return m[k]; }
+    return (src || '?').slice(0, 2);
+  }
+
+  function renderNewsList(d) {
+    const box = $('newsList');
+    $('nlistTitle').textContent = state.news.main.toUpperCase() + ' / ' + d.total;
+    if (!d.news.length) {
+      box.innerHTML = '<div class="empty-state"><p class="empty-state-title">뉴스가 없습니다</p></div>';
+      $('newsPagination').innerHTML = '';
+      return;
+    }
+    state.news.listIds = d.news.map(x => x.id);
+    state.news.total = d.total || 0;
+    box.innerHTML = d.news.map(n =>
+      '<button type="button" class="ncard' + (state.news.detailId === n.id ? ' sel' : '') + '" data-id="' + esc(n.id) + '">' +
+      '<span class="ncard-top"><i class="srclogo">' + esc(logoText(n.sourceName)) + '</i>' +
+      '<span>' + esc(n.sourceName) + '</span>' +
+      ((Date.now() - (n.publishedAt || 0) < 6 * 3600 * 1000) ? '<span class="newtag">NEW</span>' : '') +
+      '<time>' + fmtTime(n.publishedAt) + '</time></span>' +
+      '<span class="ncard-main"><span class="ncard-txt"><b>' + esc(n.title) + '</b>' +
+      (n.summary ? '<p>' + esc(n.summary) + '</p>' : '') + '</span>' +
+      (n.thumbnailUrl ? '<img class="ncard-thumb" src="' + esc(n.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+      '</span><span class="ncard-foot"><span class="subpill">' + esc(n.sub) + '</span>' +
+      '<span class="star">☆</span></span></button>'
+    ).join('');
+    $$('#newsList .ncard').forEach(el => { el.onclick = () => openNewsDetail(el.dataset.id); });
+    renderPagination($('newsPagination'), d.page, d.pageSize, d.total, p => { state.news.page = p; state.news.detailId = null; loadNews(); window.scrollTo(0, 0); });
+    // 상세 유지/자동 선택
+    if (pendingEdge) {
+      const pick = pendingEdge === 'first' ? state.news.listIds[0] : state.news.listIds[state.news.listIds.length - 1];
+      pendingEdge = null;
+      if (pick) openNewsDetail(pick);
+    }
+    else if (state.news.detailId) openNewsDetail(state.news.detailId, true);
+    else if (d.news.length && window.innerWidth > 1200) openNewsDetail(d.news[0].id, true);
+  }
+
+  let pendingEdge = null;
+  function goNewsPage(target, edge) {
+    const pages = Math.max(1, Math.ceil((state.news.total || 0) / NEWS_PAGE_SIZE));
+    if (target < 1 || target > pages) return;
+    state.news.page = target;
+    pendingEdge = edge || null;
+    state.news.detailId = null;
+    loadNews();
+    window.scrollTo(0, 0);
+  }
+
+  function openNewsDetail(id, silent) {
+    state.news.detailId = id;
+    $$('#newsList .ncard').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+    const box = $('newsDetail');
+    if (!silent) box.scrollIntoView({ block: 'nearest' });
+    api('/api/news/' + encodeURIComponent(id)).then(n => {
+      if (state.news.detailId !== id) return;
+      renderNewsDetail(n);
+      renderRailApps(n);
+    }).catch((e) => {
+      console.error('[뉴스] 상세 실패', e);
+      box.innerHTML = '<div class="empty-state"><p class="empty-state-title">불러오기 실패</p></div>';
+    });
+  }
+
+  function renderNewsDetail(n) {
+    const box = $('newsDetail');
+    const domain = (() => { try { return new URL(n.originalUrl).hostname; } catch (e) { return n.sourceName; } })();
+    const on = isBm(n.id);
+    const idx = state.news.listIds.indexOf(n.id);
+    const lastOnPage = idx >= 0 && idx === state.news.listIds.length - 1;
+    const firstOnPage = idx === 0;
+    const totalPages = Math.max(1, Math.ceil((state.news.total || 0) / NEWS_PAGE_SIZE));
+    const hasPrev = idx > 0 || (firstOnPage && state.news.page > 1);
+    const hasNext = (idx >= 0 && idx < state.news.listIds.length - 1) || (lastOnPage && state.news.page < totalPages);
+    box.innerHTML =
+      '<span class="nd-crumb">' + esc(n.main.toUpperCase()) + ' / ' + esc(n.sub) + '</span>' +
+      '<div class="hl-top"><span>' + esc(n.sourceName) + ' · ' + fmtTime(n.publishedAt) + '</span></div>' +
+      '<h1 class="nd-title">' + esc(n.title) + '</h1>' +
+      (n.summary ? '<p class="nd-desc">' + esc(n.summary) + '</p>' : '') +
+      '<div class="nd-actions">' +
+      '<a class="btn-white" href="' + esc(n.originalUrl) + '" target="_blank" rel="noopener">원문 보기 ↗ <span class="mono">' + esc(domain) + '</span></a>' +
+      '<button type="button" class="btn-ghost' + (on ? ' on' : '') + '" id="ndBm">' + (on ? '★ 북마크됨' : '☆ 북마크 저장') + '</button></div>' +
+      (n.thumbnailUrl ? '<div class="nd-hero"><img src="' + esc(n.thumbnailUrl) + '" alt="" referrerpolicy="no-referrer">' +
+        '<div class="nd-cap">THUMBNAIL · 원본 URL 표시&nbsp;&nbsp;&nbsp;' + esc(n.thumbnailUrl) + '</div></div>' : '') +
+      '<div class="nd-body">' + (n.contentHtml || '<p>본문이 없습니다. 원문에서 확인해주세요.</p>') + '</div>' +
+      '<div class="policybox"><h4>본문 크롤링 정책</h4><ul>' +
+      '<li>제목, 본문 텍스트, 원본 링크, 카테고리는 크롤링하여 표시</li>' +
+      '<li>본문 이미지는 원본 서버 URL을 그대로 img src로 사용</li>' +
+      '<li>출처: ' + esc(n.sourceName) + ' · robots.txt 준수</li></ul></div>' +
+      '<nav class="nd-nav" aria-label="기사 이전/다음">' +
+      '<button type="button" class="nd-prev' + (hasPrev ? '' : ' disabled') + '" data-dir="-1"' + (hasPrev ? '' : ' disabled') + '>‹ 이전 기사</button>' +
+      '<span class="nd-navpos mono">' + (idx >= 0 ? (idx + 1) + ' / ' + state.news.listIds.length : '') + '</span>' +
+      '<button type="button" class="nd-next' + (hasNext ? '' : ' disabled') + '" data-dir="1"' + (hasNext ? '' : ' disabled') + '>다음 기사 ›</button></nav>';
+    $('ndBm').onclick = () => {
+      const now = toggleBm(n);
+      $('ndBm').textContent = now ? '★ 북마크됨' : '☆ 북마크 저장';
+      $('ndBm').classList.toggle('on', now);
     };
+    $$('.nd-nav [data-dir]', box).forEach(b => {
+      b.onclick = () => {
+        const i = state.news.listIds.indexOf(n.id) + (b.dataset.dir === '1' ? 1 : -1);
+        if (i >= 0 && i < state.news.listIds.length) openNewsDetail(state.news.listIds[i]);
+        else if (i < 0) { goNewsPage(state.news.page - 1, 'last'); }
+        else { goNewsPage(state.news.page + 1, 'first'); }
+      };
+    });
+  }
 
-    // 수집 버튼 (헤더에 없으므로 stats에서 처리)
-    // 번역 버튼 (헤더에 없으므로 stats에서 처리)
+  function renderRailApps(n) {
+    const box = $('railApps');
+    const apps = n.relatedApps || [];
+    box.innerHTML = apps.length ? apps.map(a =>
+      '<button type="button" class="railapp" data-id="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
+      '<span><b>' + esc(a.name) + '</b><small>' + esc((a.category || '') + ' · ' + (a.version || '')) + '</small></span></button>'
+    ).join('') : '<p class="muted sm">연동된 앱이 없습니다.</p>';
+    $$('#railApps .railapp').forEach(b => { b.onclick = () => openModal(b.dataset.id); });
+  }
 
-    // 알림
-    $('notifBell').onclick = () => { notifPage = 1; openNotifCenter(); };
+  function loadBookmarks() {
+    const bm = getBm();
+    const list = Object.values(bm).sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
+    $('nlistTitle').textContent = 'BOOKMARKS / ' + list.length;
+    $('newsSubChips').innerHTML = '';
+    $('newsSubChips2').innerHTML = '';
+    const box = $('newsList');
+    if (!list.length) {
+      box.innerHTML = '<div class="empty-state"><p class="empty-state-title">북마크가 없습니다</p><p class="empty-state-desc">뉴스 상세에서 ☆ 북마크 저장을 눌러보세요.</p></div>';
+      $('newsPagination').innerHTML = '';
+      $('newsDetail').innerHTML = '<div class="empty-state"><p class="empty-state-title">상세 없음</p></div>';
+      return;
+    }
+    box.innerHTML = list.map(n =>
+      '<button type="button" class="ncard" data-id="' + esc(n.id) + '">' +
+      '<span class="ncard-top"><i class="srclogo">' + esc(logoText(n.sourceName)) + '</i>' +
+      '<span>' + esc(n.sourceName) + '</span><time>' + fmtTime(n.publishedAt) + '</time></span>' +
+      '<span class="ncard-main"><span class="ncard-txt"><b>' + esc(n.title) + '</b></span>' +
+      (n.thumbnailUrl ? '<img class="ncard-thumb" src="' + esc(n.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+      '</span></button>'
+    ).join('');
+    $('newsPagination').innerHTML = '';
+    $$('#newsList .ncard').forEach(el => { el.onclick = () => openNewsDetail(el.dataset.id); });
+    if (list.length) openNewsDetail(list[0].id, true);
   }
 
   /* ---------- 알림 센터 (기존 유지) ---------- */
-  var notifPage = 1;
-  const NOTIF_PAGE_SIZE = 20;
   function openNotifCenter() {
     const modal = $('appModal');
+    ensureModalTabs();
     $('modalTitle').textContent = '알림 센터';
     $('modalIcon').style.display = 'none';
-    $('modalIcon').removeAttribute('src');
     $('modalDev').textContent = '';
     $('modalMetaPills').innerHTML = '';
     $('modalCta').innerHTML = '';
-    $('modalTabs').style.display = 'none';
     $('panelIntro').innerHTML = '<div class="empty-state">불러오는 중…</div>';
     $('panelFeatures').hidden = true;
     $('panelChangelog').hidden = true;
     setActiveTab('intro');
     if (typeof modal.showModal === 'function') modal.showModal();
-    if (typeof $('modalClose').focus === 'function') $('modalClose').focus({ preventScroll: true });
-    api('/api/notifications?page=' + notifPage + '&pageSize=' + NOTIF_PAGE_SIZE).then(d => renderNotifList(d)).catch(() => { $('panelIntro').innerHTML = '<div class="empty-state">불러오기 실패</div>'; });
-  }
-  function renderNotifList(d) {
-    if (!d.notifications.length) { $('panelIntro').innerHTML = '<div class="empty-state">알림이 없습니다</div>'; return; }
-    let html = d.notifications.map(n => '<section class="detail-sec" data-notif="' + n.id + '" style="cursor:pointer;padding:12px;border-bottom:1px solid var(--border)"><h3 style="font-size:14px;margin:0 0 4px;">' + esc(n.type) + '</h3><p style="font-size:13px;color:var(--secondary);margin:0;">' + esc(n.summary) + '</p><small style="color:var(--secondary);">' + fmtDate(n.createdAt) + '</small></section>').join('');
-    const pages = Math.max(1, Math.ceil((d.total || 0) / (d.pageSize || NOTIF_PAGE_SIZE)));
-    if (pages > 1) {
-      html += '<div class="pagination"><button type="button" id="notifPrev"' + (notifPage <= 1 ? ' disabled' : '') + '>‹ 이전</button>' +
-        '<span> ' + notifPage + ' / ' + pages + ' </span>' +
-        '<button type="button" id="notifNext"' + (notifPage >= pages ? ' disabled' : '') + '>다음 ›</button></div>';
-    }
-    $('panelIntro').innerHTML = html;
-    const prev = $('notifPrev'), next = $('notifNext');
-    if (prev) prev.onclick = () => { if (notifPage > 1) { notifPage--; openNotifCenter(); } };
-    if (next) next.onclick = () => { notifPage++; openNotifCenter(); };
-    $$('[data-notif]', $('panelIntro')).forEach(el => {
-      el.onclick = () => {
-        api('/api/notifications/' + el.dataset.notif).then(dd => {
-          const t = dd.detail || {};
-          let timeHtml = '';
-          if (t.startedAt && t.finishedAt) {
-            timeHtml = '<p><small>수집 시작 ' + fmtDateTime(t.startedAt) + ' → 완료 ' + fmtDateTime(t.finishedAt) +
-              ' (소요 ' + fmtDuration((t.finishedAt - t.startedAt) / 1000) + ')</small></p>';
-          } else { timeHtml = '<p><small>발견 시각 ' + fmtDateTime(dd.notification.createdAt) + '</small></p>'; }
-          el.innerHTML = '<h3 style="font-size:14px;margin:0 0 4px;">' + esc(dd.notification.type) + '</h3><p style="font-size:13px;color:var(--secondary);margin:0;">' + esc(dd.notification.summary) + '</p>' + timeHtml;
-        });
-      };
-    });
-  }
-
-  /* ---------- 언어 토글 ---------- */
-  function bindLangToggle() {
-    $('langToggle').onclick = () => {
-      state.lang = state.lang === 'ko' ? 'en' : 'ko';
-      $('langToggle').textContent = state.lang === 'ko' ? '한국어' : '원문';
-      reloadCurrentView();
-      if (state.modal.currentId) openModal(state.modal.currentId);
-    };
+    api('/api/notifications?page=1&pageSize=20').then(d => {
+      if (!d.notifications || !d.notifications.length) { $('panelIntro').innerHTML = '<div class="empty-state">알림이 없습니다</div>'; return; }
+      $('panelIntro').innerHTML = d.notifications.map(n =>
+        '<p><b>' + esc(n.type) + '</b><br>' + esc(n.summary) + '<br><small class="muted">' + fmtDate(n.createdAt) + '</small></p>'
+      ).join('');
+    }).catch(() => { $('panelIntro').innerHTML = '<div class="empty-state">불러오기 실패</div>'; });
   }
 
   /* ---------- 초기화 ---------- */
   function init() {
-    initSidebar();
-    bindSearchSort();
-    initModalTabs();
-    bindHeaderActions();
-    bindLangToggle();
-    loadHeader();
-    loadTimeline();
-
-    // 디버그 로그
-    console.log('[INFO] [FEATURE] 맥줍줍-리디자인 로드 완료');
+    // 메인 nav
+    $$('#mainNav .navpill').forEach(b => { b.onclick = () => switchView(b.dataset.view); });
+    $$('#mobileNav .navpill').forEach(b => { b.onclick = () => switchView(b.dataset.view); });
+    $('brandLink').onclick = e => { e.preventDefault(); switchView('dashboard'); };
+    // 앱스토어 서브탭
+    $$('#view-appstore .subpill').forEach(b => { b.onclick = () => switchStoreSub(b.dataset.sub); });
+    // 뉴스 TopTab
+    $$('#topTabs .toptab').forEach(b => { b.onclick = () => switchNewsTop(b.dataset.top); });
+    // 뉴스 main 탭
+    $$('#newsMains .mainpill').forEach(b => { b.onclick = () => switchNewsMain(b.dataset.main); });
+    // 메인 더보기
+    $('dashAppsMore').onclick = () => switchView('appstore');
+    $('dashLoadMore').onclick = () => {
+      state.dashPage++;
+      const f = state.mainFilter;
+      ['mac', 'ai', 'sec'].forEach(m => {
+        if (f.main && f.main !== m) return;
+        const p = new URLSearchParams({ main: m, page: state.dashPage, pageSize: 4 });
+        api('/api/news?' + p.toString()).then(d => {
+          const box = $('grows-' + m);
+          box.innerHTML += (d.news || []).map(n => newsRowHtml(n)).join('');
+          $$('.nrow', box).forEach(el => {
+            el.onclick = () => { state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id; switchView('news'); };
+          });
+        }).catch((e) => { console.error('[대시보드] 더보기 실패', e); });
+      });
+    };
+    // 검색
+    let searchTimer = null;
+    $('globalSearch').addEventListener('input', e => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        const q = e.target.value.trim();
+        if (state.view === 'news') { state.news.q = q; state.news.page = 1; loadNews(); }
+        else if (state.view === 'appstore') { state.filters.q = q; state.filters.page = 1; loadStoreList(); }
+        else if (q) { state.filters.q = q; switchView('appstore'); }
+      }, 300);
+    });
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('globalSearch').focus(); }
+    });
+    // 정렬/필터 (앱 스토어 — 사이드바·칩은 renderStoreSidebar/renderStoreChips에서 배선)
+    // 헤더
+    $('notifBell').onclick = openNotifCenter;
+    $('langToggle').onclick = () => {
+      state.lang = state.lang === 'ko' ? 'en' : 'ko';
+      $('langToggle').textContent = state.lang === 'ko' ? '한' : 'EN';
+      toast(state.lang === 'ko' ? '한국어' : '원문');
+      // 현재 보기 즉시 반영
+      if (state.view === 'appstore') {
+        if (state.storeSub === 'timeline' || state.storeSub === 'watchlist') loadStoreList();
+        else loadStatsPanel();
+      } else if (state.view === 'news') {
+        if (state.news.detailId) openNewsDetail(state.news.detailId, true);
+        else loadNews();
+      }
+      if (state.modal.currentId) openModal(state.modal.currentId, true);
+    };
+    $('modalClose').onclick = () => { if (typeof $('appModal').close === 'function') $('appModal').close(); };
+    $('appModal').addEventListener('click', e => { if (e.target === $('appModal')) $('appModal').close(); });
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('[data-mdkey]');
+      if (!btn) return;
+      const t = mdStore[btn.dataset.mdkey];
+      if (!t) return;
+      t.showing = t.showing === 'ko' ? 'en' : 'ko';
+      const box = btn.parentElement.querySelector('[data-mdtext][data-key="' + btn.dataset.mdkey + '"]');
+      if (box) box.innerHTML = md(t.showing === 'ko' ? t.ko : t.en);
+      btn.textContent = t.showing === 'ko' ? '원문보기' : '번역 보기';
+    });
+    // 카운트
+    api('/api/apps?page=1&pageSize=1').then(d => { $('topAppCount').textContent = d.total; }).catch(() => {});
+    updateBmCount();
+    switchView('dashboard');
+    console.log('[INFO] [FEATURE] 맥줍줍 포털 로드 완료');
   }
 
   if (document.readyState === 'loading') {
