@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### R37 수집예의 공용화 (R30 부분)
+- `HostThrottler`+`parallelFetch`를 `:services:common`으로 승격, community/mac 중복분 삭제
+- 테스트 common 통합 (ThrottlerTest 4건), 전 모듈 unit·빌드·lint 성공
+
 ### R36 R32 2단계 상세 병렬화 (PLAN_v17 유예분)
 - **상세 병렬**: `crawlNews` 순차+1s delay → `parallelNews` (Semaphore 3 + `HostThrottler` 호스트별 1초 예의, R35 패턴 이식)
 - **검증**: 단위 2건 신규·전 모듈 unit·assembleDebug+설치 성공, 실기 E2E 생략(사용자 공존)

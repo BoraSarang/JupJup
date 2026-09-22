@@ -1,4 +1,4 @@
-package com.borasarang.communityjupjup.crawler
+package com.borasarang.common.util
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -42,7 +42,7 @@ class ThrottlerTest {
         val live = AtomicInteger(0)
         val peak = AtomicInteger(0)
         val urls = (1..9).map { "https://h$it.example.com/$it" }
-        val out = parallelFetch(urls, throttler, 3) { url ->
+        val out = parallelFetch(urls, throttler, 3, { it }) { url ->
             val cur = live.incrementAndGet()
             peak.updateAndGet { prev -> maxOf(prev, cur) }
             try {

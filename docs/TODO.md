@@ -2,6 +2,11 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R37 수집예의 공용화 (R30 부분)
+- [x] `HostThrottler`+`parallelFetch` common 승격 (`common.util.Throttler`)
+- [x] community/mac 중복분 삭제, 테스트 common 통합 (ThrottlerTest 4건)
+- [x] 검증: 전 모듈 unit·assembleDebug+설치·lint 성공
+
 ## R36 R32 2단계 상세 병렬화 (PLAN_v17 유예분)
 - [x] `parallelNews` + `HostThrottler` (Semaphore 3, 호스트별 1초 예의, R35 패턴 이식)
 - [x] `crawlNews` 상세 순차 → 병렬 (실패 건 스킵 유지, DB 반영은 기존 트랜잭션 그대로)

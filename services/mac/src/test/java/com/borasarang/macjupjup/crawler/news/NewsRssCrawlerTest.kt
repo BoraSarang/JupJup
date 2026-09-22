@@ -1,15 +1,12 @@
 package com.borasarang.macjupjup.crawler.news
 
 import com.borasarang.macjupjup.util.NewsCategories
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicInteger
 
 class NewsRssCrawlerTest {
 
@@ -177,34 +174,5 @@ class NewsRssCrawlerTest {
     fun `단락화_이스케이프`() {
         val html = NewsRssCrawler.paragraphize("a & b <c>")
         assertTrue(html.contains("a &amp; b &lt;c&gt;"))
-    }
-
-    @Test
-    fun `스로틀러_같은호스트_대기`() = runBlocking {
-        val throttler = HostThrottler(minGapMs = 300L)
-        throttler.waitFor("https://a.example.com/1")
-        val start = System.currentTimeMillis()
-        throttler.waitFor("https://a.example.com/2")
-        assertTrue(System.currentTimeMillis() - start >= 200L)
-    }
-
-    @Test
-    fun `병렬수집_동시성상한_순서보장`() = runBlocking {
-        val throttler = HostThrottler(minGapMs = 0L)
-        val live = AtomicInteger(0)
-        val peak = AtomicInteger(0)
-        val items = (1..9).map { "https://h$it.example.com/$it" }
-        val out = parallelNews(items, throttler, 3, { it }) { url ->
-            val cur = live.incrementAndGet()
-            peak.updateAndGet { prev -> maxOf(prev, cur) }
-            try {
-                delay(50L)
-                url
-            } finally {
-                live.decrementAndGet()
-            }
-        }
-        assertEquals(items, out)
-        assertTrue("상한 초과: ${peak.get()}", peak.get() <= 3)
     }
 }

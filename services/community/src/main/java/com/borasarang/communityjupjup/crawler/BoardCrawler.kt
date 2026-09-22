@@ -7,60 +7,22 @@ import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.communityjupjup.util.DebugLogger
 import com.borasarang.communityjupjup.util.UrlCanonical
 import com.borasarang.communityjupjup.util.takeSafe
+import com.borasarang.common.util.HostThrottler
+import com.borasarang.common.util.parallelFetch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
-import java.net.URI
-
-/**
- * 호스트별 최소 요청 간격 강제 (수집 예의 1초, 병렬 시에도 동일 호스트 연타 금지).
- * 서로 다른 호스트는 대기 없이 통과. 순수 JVM (단위테스트 가능).
- */
-class HostThrottler(private val minGapMs: Long = 1000L) {
-    private val mutex = Mutex()
-    private val lastHit = mutableMapOf<String, Long>()
-
-    suspend fun waitFor(url: String) {
-        val host = hostOf(url)
-        while (true) {
-            val wait = mutex.withLock {
-                val now = System.currentTimeMillis()
-                val prev = lastHit[host]
-                if (prev == null || now - prev >= minGapMs) {
-                    lastHit[host] = now
-                    0L
-                } else {
-                    minGapMs - (now - prev)
-                }
-            }
-            if (wait <= 0) return
-            delay(wait)
-        }
-    }
-
-    companion object {
-        fun hostOf(url: String): String {
-            return try {
-                URI(url).host?.lowercase() ?: url
-            } catch (_: Exception) {
-                url
-            }
-        }
-    }
-}
 
 /**
  * selector_config 기반 범용 보드 크롤러 (V2 GenericSpider의 로컬 구현).
  * 보드 목록 페이지만 수집 — 상세 페이지 진입 없음 (예의·속도).
  * 본문 저장 금지: snippet 500자 절단만.
+ * 수집 예의(HostThrottler·parallelFetch)는 common 모듈 공용 (R37 승격).
  */
 class BoardCrawler(
     private val source: CrawlSource,
@@ -141,7 +103,7 @@ class BoardCrawler(
         config: SelectorConfig,
         fetcher: suspend (String) -> DetailResult = { url -> fetchDetail(url, config) },
     ): List<DetailResult> =
-        parallelFetch(urls, throttler, MAX_DETAIL_CONCURRENCY, fetcher)
+        parallelFetch(urls, throttler, MAX_DETAIL_CONCURRENCY, { it }, fetcher)
 
     /**
      * 신규 초안의 요약·썸네일 채우기 + DB 기등록 행 중 상세가 빈 것은 직접 갱신.
@@ -445,26 +407,4 @@ class BoardCrawler(
         if (selector.isBlank()) return null
         return select(selector).firstOrNull()?.text()?.trim()?.takeIf { it.isNotBlank() }
     }
-}
-
-/**
- * URL 일괄 병렬 수집 헬퍼 (R35).
- * [concurrency] 상한 세마포어 + [throttler] 호스트 예의 강제.
- * 반환 순서는 urls와 동일. 순수 코루틴 (단위테스트 가능).
- */
-internal suspend fun <T> parallelFetch(
-    urls: List<String>,
-    throttler: HostThrottler,
-    concurrency: Int,
-    fetcher: suspend (String) -> T,
-): List<T> = coroutineScope {
-    val sem = Semaphore(concurrency.coerceAtLeast(1))
-    urls.map { url ->
-        async(Dispatchers.IO) {
-            sem.withPermit {
-                throttler.waitFor(url)
-                fetcher(url)
-            }
-        }
-    }.awaitAll()
 }
