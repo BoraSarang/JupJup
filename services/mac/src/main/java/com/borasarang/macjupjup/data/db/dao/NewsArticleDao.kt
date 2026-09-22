@@ -23,6 +23,17 @@ interface NewsArticleDao {
     @Query("SELECT * FROM news_articles WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<NewsArticle>
 
+    /** 미번역 뉴스 (제목 기준, 최신 순, R41) */
+    @Query("SELECT * FROM news_articles WHERE titleKo IS NULL ORDER BY publishedAt DESC LIMIT :limit")
+    suspend fun getUntranslated(limit: Int): List<NewsArticle>
+
+    /** 번역 부분 업데이트. null인 쪽은 기존값 보존 */
+    @Query(
+        """UPDATE news_articles SET titleKo = COALESCE(:titleKo, titleKo),
+        summaryKo = COALESCE(:summaryKo, summaryKo) WHERE id = :id"""
+    )
+    suspend fun updateKo(id: String, titleKo: String?, summaryKo: String?)
+
     /** 원문 fetch 전 기존 저장분 제외용 (IN 배치 1회) */
     @Query("SELECT id FROM news_articles WHERE id IN (:ids)")
     suspend fun getExistingIds(ids: List<String>): List<String>

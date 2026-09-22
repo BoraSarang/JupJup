@@ -52,6 +52,8 @@ class TranslateWorker(
                 kotlinx.coroutines.delay(500)
             }
             DebugLogger.i("번역", "번역 워커 완료 $done/${targets.size}건")
+            // R41: 뉴스 제목·요약 번역 (제목 기준, 최신 순, 최대 30건/실행)
+            translateNews(app)
             Result.success()
         } catch (e: Exception) {
             DebugLogger.w("번역", "번역 워커 실패, 재시도: ${e.message}")
@@ -59,7 +61,39 @@ class TranslateWorker(
         }
     }
 
+    /** 뉴스 번역 2단계 (앱 번역과 동일 예의· 중단 처리) */
+    private suspend fun translateNews(app: MacJupJupRuntime) {
+        val targets = try {
+            app.database.newsArticleDao().getUntranslated(MAX_NEWS_PER_RUN)
+        } catch (e: Exception) {
+            DebugLogger.w("번역", "뉴스 대상 조회 스킵: ${e.message}")
+            return
+        }
+        if (targets.isEmpty()) return
+        DebugLogger.i("번역", "뉴스 번역 시작 대상=${targets.size}건")
+        var done = 0
+        for (n in targets) {
+            if (isStopped) {
+                DebugLogger.i("번역", "중단 요청 — 뉴스 진행 $done/${targets.size}건 저장 후 종료")
+                break
+            }
+            try {
+                val titleKo = MacTranslator.translateAutoToKo(n.title)
+                val summaryKo = n.summary?.let { MacTranslator.translateAutoToKo(it) }
+                if (titleKo != null || summaryKo != null) {
+                    app.database.newsArticleDao().updateKo(n.id, titleKo, summaryKo)
+                    done++
+                }
+            } catch (e: Exception) {
+                DebugLogger.w("번역", "뉴스 번역 스킵 ${n.id.take(8)}: ${e.message}")
+            }
+            kotlinx.coroutines.delay(500)
+        }
+        DebugLogger.i("번역", "뉴스 번역 완료 $done/${targets.size}건")
+    }
+
     companion object {
         const val MAX_PER_RUN = 100
+        const val MAX_NEWS_PER_RUN = 30
     }
 }

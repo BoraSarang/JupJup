@@ -184,6 +184,12 @@
     }
     return parts.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
   }
+  /* ---------- 뉴스 한/원문 표시 (R41: titleKo/summaryKo) ---------- */
+  function newsTitle(n) { return (state.lang === 'ko' && n.titleKo) ? n.titleKo : (n.title || ''); }
+  function newsSummary(n) {
+    if (state.lang === 'ko' && n.summaryKo) return n.summaryKo;
+    return n.summary || '';
+  }
   function formatNewsBody(html) {
     if (!html) return '<p>본문이 없습니다. 원문에서 확인해주세요.</p>';
     if (!/<(p|h[1-6]|ul|ol|blockquote|pre|figure|img)\b/i.test(html)) return paraText(html);
@@ -290,7 +296,7 @@
     const bm = getBm();
     if (bm[n.id]) { delete bm[n.id]; toast('북마크 해제'); }
     else {
-      bm[n.id] = { id: n.id, title: n.title, sourceName: n.sourceName, main: n.main, sub: n.sub, publishedAt: n.publishedAt, thumbnailUrl: n.thumbnailUrl || null };
+      bm[n.id] = { id: n.id, title: n.title, titleKo: n.titleKo || null, summaryKo: n.summaryKo || null, sourceName: n.sourceName, main: n.main, sub: n.sub, publishedAt: n.publishedAt, thumbnailUrl: n.thumbnailUrl || null };
       toast('북마크 저장');
     }
     setBm(bm);
@@ -438,8 +444,8 @@
       '<span class="nbody"><span class="nmeta"><span class="subpill">' + esc(n.sub) + '</span>' +
       '<span>' + esc(n.sourceName) + ' · ' + fmtTime(n.publishedAt) + '</span>' +
       (fresh ? '<span class="hot">HOT</span>' : '') + '</span>' +
-      '<span class="ntitle">' + esc(n.title) + '</span>' +
-      (n.summary ? '<span class="ndesc">' + esc(n.summary) + '</span>' : '') + '</span>' +
+      '<span class="ntitle">' + esc(newsTitle(n)) + '</span>' +
+      (newsSummary(n) ? '<span class="ndesc">' + esc(newsSummary(n)) + '</span>' : '') + '</span>' +
       '<span class="narrow" aria-hidden="true">↗</span></button>';
   }
 
@@ -673,9 +679,9 @@
       // 티커 (최신 헤드라인)
       const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
       $('storeTicker').innerHTML = heads.map(n =>
-        '<span class="ticker-item"><b>' + esc(n.title) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
+        '<span class="ticker-item"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
       ).join('') + (heads.map(n =>
-        '<span class="ticker-item"><b>' + esc(n.title) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
+        '<span class="ticker-item"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
       ).join(''));
       // 오늘의 픽 (업데이트 순 3건)
       const picks = (d.updatedApps || []).slice(0, 3);
@@ -961,7 +967,7 @@
     // 티커 (최신 헤드라인)
     const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
     const items = heads.map(n =>
-      '<span class="ticker-item"><b>' + esc(n.title) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
+      '<span class="ticker-item"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
     ).join('');
     $('tickerMove').innerHTML = items + items;
     // 우측 레일
@@ -1023,8 +1029,8 @@
       '<span>' + esc(n.sourceName) + '</span>' +
       ((Date.now() - (n.publishedAt || 0) < 6 * 3600 * 1000) ? '<span class="newtag">NEW</span>' : '') +
       '<time>' + fmtTime(n.publishedAt) + '</time></span>' +
-      '<span class="ncard-main"><span class="ncard-txt"><b>' + esc(n.title) + '</b>' +
-      (n.summary ? '<p>' + esc(n.summary) + '</p>' : '') + '</span>' +
+      '<span class="ncard-main"><span class="ncard-txt"><b>' + esc(newsTitle(n)) + '</b>' +
+      (newsSummary(n) ? '<p>' + esc(newsSummary(n)) + '</p>' : '') + '</span>' +
       (n.thumbnailUrl ? '<img class="ncard-thumb" src="' + esc(n.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
       '</span><span class="ncard-foot"><span class="subpill">' + esc(n.sub) + '</span>' +
       '<span class="star">☆</span></span></button>'
@@ -1080,8 +1086,8 @@
     box.innerHTML =
       '<span class="nd-crumb">' + esc(n.main.toUpperCase()) + ' / ' + esc(n.sub) + '</span>' +
       '<div class="hl-top"><span>' + esc(n.sourceName) + ' · ' + fmtTime(n.publishedAt) + '</span></div>' +
-      '<h1 class="nd-title">' + esc(n.title) + '</h1>' +
-      (n.summary ? '<p class="nd-desc">' + esc(n.summary) + '</p>' : '') +
+      '<h1 class="nd-title">' + esc(newsTitle(n)) + '</h1>' +
+      (newsSummary(n) ? '<p class="nd-desc">' + esc(newsSummary(n)) + '</p>' : '') +
       '<div class="nd-actions">' +
       '<a class="btn-white" href="' + esc(n.originalUrl) + '" target="_blank" rel="noopener">원문 보기 ↗ <span class="mono">' + esc(domain) + '</span></a>' +
       '<button type="button" class="btn-ghost' + (on ? ' on' : '') + '" id="ndBm">' + (on ? '★ 북마크됨' : '☆ 북마크 저장') + '</button></div>' +
@@ -1138,7 +1144,7 @@
       '<button type="button" class="ncard" data-id="' + esc(n.id) + '">' +
       '<span class="ncard-top"><i class="srclogo">' + esc(logoText(n.sourceName)) + '</i>' +
       '<span>' + esc(n.sourceName) + '</span><time>' + fmtTime(n.publishedAt) + '</time></span>' +
-      '<span class="ncard-main"><span class="ncard-txt"><b>' + esc(n.title) + '</b></span>' +
+      '<span class="ncard-main"><span class="ncard-txt"><b>' + esc(newsTitle(n)) + '</b></span>' +
       (n.thumbnailUrl ? '<img class="ncard-thumb" src="' + esc(n.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
       '</span></button>'
     ).join('');

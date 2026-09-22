@@ -130,6 +130,8 @@ internal fun newsElement(a: NewsArticle) = buildJsonObject {
     put("sub", a.sub)
     put("title", a.title)
     a.summary?.let { put("summary", it) }
+    a.titleKo?.let { put("titleKo", it) }
+    a.summaryKo?.let { put("summaryKo", it) }
     a.thumbnailUrl?.let { put("thumbnailUrl", it) }
     put("originalUrl", a.originalUrl)
     put("publishedAt", a.publishedAt)
