@@ -1,5 +1,6 @@
 package com.borasarang.common.ai
 
+import com.borasarang.common.util.NetMeter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -65,6 +66,11 @@ class OpenRouterClient(private val apiKey: String) : AiClient {
 
             val response = client.newCall(request).execute()
             val body = response.body?.string() ?: return@withContext Result.failure(Exception("빈 응답"))
+            NetMeter.record(
+                "ai",
+                body.toByteArray(Charsets.UTF_8).size.toLong(),
+                requestBody.toString().toByteArray(Charsets.UTF_8).size.toLong() + 300L,
+            )
 
             if (!response.isSuccessful) {
                 return@withContext Result.failure(Exception("API 오류 ${response.code}: $body"))

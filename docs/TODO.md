@@ -2,6 +2,13 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R42a 네트워크 트래픽 측정 기반 (PLAN_v18)
+- [x] `common/util/NetMeter` (서비스별 rx/tx 원자 카운터, snapshot/reset/format)
+- [x] 크롤 3벌 `HttpResult(rxBytes/txBytes)` + `NetMeter.record` 연결
+- [x] AI 3종 (`OpenRouter/Exa/ModelCatalog`) + mac gtx 폴백 바이트 계측
+- [x] 검증: NetMeterTest 4건 + 전 모듈 unit·assembleDebug+설치·lint 성공 (실기 E2E 생략)
+- [ ] R42b 예고: CrawlLog 컬럼+Migration+DAO SUM+API/UI+예산 WARN
+
 ## R41 뉴스 한글 번역 (사용자 확인 대기 해소)
 - [x] DB v6 `titleKo`·`summaryKo` + MIGRATION_5_6 (컬럼 추가만)
 - [x] TranslateWorker 뉴스 단계 (최신 30건/실행, 앱과 동일 예의)

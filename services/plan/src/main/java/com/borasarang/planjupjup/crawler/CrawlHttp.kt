@@ -1,5 +1,6 @@
 package com.borasarang.planjupjup.crawler
 
+import com.borasarang.common.util.NetMeter
 import com.borasarang.planjupjup.util.Constants
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -26,6 +27,7 @@ object CrawlHttp {
 
     fun get(url: String, timeoutSec: Long = Constants.CRAWL_TIMEOUT_SEC): HttpResult {
         var connection: HttpURLConnection? = null
+        val txEstimate = url.toByteArray(Charsets.UTF_8).size.toLong() + 300L
         return try {
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
@@ -37,7 +39,9 @@ object CrawlHttp {
                 setRequestProperty("Accept-Language", "ko-KR,ko;q=0.9")
                 setRequestProperty("Accept-Encoding", "gzip")
             }
-            readResult(connection)
+            readResult(connection, txEstimate).also {
+                NetMeter.record("plan", it.rxBytes, it.txBytes)
+            }
         } finally {
             connection?.disconnect()
         }
@@ -53,6 +57,7 @@ object CrawlHttp {
             val body = params.entries.joinToString("&") { (k, v) ->
                 "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
             }.toByteArray(Charsets.UTF_8)
+            val txEstimate = url.toByteArray(Charsets.UTF_8).size.toLong() + 300L + body.size
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
@@ -68,29 +73,31 @@ object CrawlHttp {
                 setRequestProperty("Content-Length", body.size.toString())
                 outputStream.use { it.write(body) }
             }
-            readResult(connection)
+            readResult(connection, txEstimate).also {
+                NetMeter.record("plan", it.rxBytes, it.txBytes)
+            }
         } finally {
             connection?.disconnect()
         }
     }
 
-    private fun readResult(connection: HttpURLConnection): HttpResult {
+    private fun readResult(connection: HttpURLConnection, txBytes: Long = 0L): HttpResult {
         val code = try {
             connection.responseCode
         } catch (e: Exception) {
-            return HttpResult(-1, "", e.message)
+            return HttpResult(-1, "", e.message, 0L, txBytes)
         }
         if (code !in 200..299) {
-            return HttpResult(code, "", "HTTP $code")
+            return HttpResult(code, "", "HTTP $code", 0L, txBytes)
         }
         return try {
             val encoding = connection.contentEncoding ?: ""
             val raw = connection.inputStream
             val stream = if (encoding.contains("gzip", ignoreCase = true)) GZIPInputStream(raw) else raw
             val text = BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
-            HttpResult(code, text, null)
+            HttpResult(code, text, null, text.toByteArray(Charsets.UTF_8).size.toLong(), txBytes)
         } catch (e: Exception) {
-            HttpResult(code, "", e.message)
+            HttpResult(code, "", e.message, 0L, txBytes)
         }
     }
 }
@@ -99,6 +106,8 @@ data class HttpResult(
     val code: Int,
     val body: String,
     val error: String?,
+    val rxBytes: Long = 0L,
+    val txBytes: Long = 0L,
 ) {
     val isOk: Boolean get() = code in 200..299 && error == null
 }

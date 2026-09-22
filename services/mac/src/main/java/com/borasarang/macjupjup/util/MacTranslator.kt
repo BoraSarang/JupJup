@@ -1,5 +1,6 @@
 package com.borasarang.macjupjup.util
 
+import com.borasarang.common.util.NetMeter
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.languageid.LanguageIdentification
 import com.google.mlkit.nl.translate.TranslateLanguage
@@ -178,6 +179,11 @@ object MacTranslator {
                     return null
                 }
                 val body = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                NetMeter.record(
+                    "mac",
+                    body.toByteArray(Charsets.UTF_8).size.toLong(),
+                    url.toByteArray(Charsets.UTF_8).size.toLong() + 200L,
+                )
                 parseGtx(body)
             } finally {
                 conn.disconnect()

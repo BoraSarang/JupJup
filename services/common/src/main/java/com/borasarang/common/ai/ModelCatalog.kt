@@ -1,6 +1,7 @@
 package com.borasarang.common.ai
 
 import com.borasarang.common.prefs.ModelEnabledStore
+import com.borasarang.common.util.NetMeter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -156,6 +157,7 @@ object ModelCatalog {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) throw Exception("HTTP ${resp.code}")
             val body = resp.body?.string() ?: ""
+            NetMeter.record("ai", body.toByteArray(Charsets.UTF_8).size.toLong(), 400L)
             val root = json.parseToJsonElement(body).jsonObject
             root["data"]?.jsonArray.orEmpty().mapNotNull { item ->
                 val obj = item.jsonObject
