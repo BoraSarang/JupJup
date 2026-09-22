@@ -78,4 +78,5 @@
 
 - tags 컬럼·마이그레이션·수집/백필·API·포털 폴백·matchAppIds 경계 강화 구현 완료
 - unit(신규 2건 포함)·build+설치·lint·node --check 전부 통과
-- 브랜치 `feat/android-r50-tags-match` · PR #20
+- 브랜치 `feat/android-r50-tags-match` · PR #20 MERGED (main `6083f7f`)
+- 실기 E2E: user_version=8, 목록 50/50 태그, sideTags 10버튼, /api/health 200
