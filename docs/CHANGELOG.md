@@ -6,7 +6,7 @@
 - **상세 병렬**: `ensureSummaries`·`backfill` 순차+1s delay → `parallelFetch` (Semaphore 3 + `HostThrottler` 호스트별 1초 예의 유지, DB 반영은 순차)
 - **보드 병렬**: `crawl()` 보드 직렬 → 최대 3병렬 (프로세스 전역 공유 스로틀러, 실패 보드 스킵 유지)
 - **전건 스캔 제거**: `list` 매핑 `getAll` → `getByIds`, `stats` `getEnabled` → `countEnabled`
-- **DB v6**: `idx_posts_cat_src`·`idx_posts_collected` + `MIGRATION_5_6` (LIKE 전방와일드는 유지 — 수천 행 규모에 FTS는 과잉)
+- **DB v6**: `index_posts_categoryId_sourceId` 복합 인덱스 + `MIGRATION_5_6` (Room 자동명 일치, LIKE 전방와일드는 유지 — 수천 행 규모에 FTS는 과잉)
 - **검증**: 단위 4건 신규(ThrottlerTest)·전 모듈 unit·assembleDebug+설치·lint 성공, 실기 E2E 생략(사용자 공존)
 
 ### R34 뉴스 본문 단락화 (PLAN_v17 후속)

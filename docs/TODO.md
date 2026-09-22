@@ -6,7 +6,7 @@
 - [x] 상세 30건 순차→병렬: `fetchDetails`+`parallelFetch` (Semaphore 3 + HostThrottler 호스트별 1초 예의)
 - [x] 보드 직렬→병렬: `crawl()` 보드 최대 3병렬 (실패 보드 스킵 유지, 전역 공유 스로틀러)
 - [x] 전건 스캔 제거: `list` 매핑 getAll→getByIds, `stats` getEnabled→countEnabled
-- [x] 복합 인덱스 DB v6 (`idx_posts_cat_src`·`idx_posts_collected`) + MIGRATION_5_6
+- [x] 복합 인덱스 DB v6 (`index_posts_categoryId_sourceId`, Room 자동명 일치) + MIGRATION_5_6
 - [x] LIKE 전방와일드: FTS 보류 (수천 행 규모에 과잉 + JVM 검증 불가, 필터 인덱스로 절삭)
 - [x] 검증: 단위 4건 신규·전 모듈 unit·assembleDebug+설치·lint + 실기 E2E는 사용자 공존으로 생략
 
