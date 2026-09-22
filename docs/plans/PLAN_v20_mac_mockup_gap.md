@@ -38,6 +38,15 @@
 - 세일 필드 부재(`price`만) → 유료+`updated` 근사 유지 (목업 대비 [SOFT] 유예)
 - 태그 칩: 프론트 제목 키워드 추출 유지 (서버 태그 컬럼 없음 → 근사)
 
+### R50 잔여 (후속)
+
+- `news_articles` 컬럼 `tags TEXT NULL` (`Migration7to8`, MacDatabase v8)
+- 수집기 `NewsRssCrawler.extractTags`: 제목 키워드 추출(한글·ASCII), STOP/KEEP_SHORT 규칙
+- `NewsRepository.detail()`: 서버 tags 미보유 기사 백필 (`updateTagsIfNull`)
+- `MacNewsRoutes` `newsElement`: `tags` 배열 노출
+- 포털 `app.js` `extractTags`: 서버 tags 우선, 없으면 클라이언트 근사 폴백
+- `matchAppIds`: 한글/혼합 경계 강화 (3자 미만 스킵, 오탐 방지)
+
 ## R51 범위 — 브랜드·배지·스폰서
 
 - 브랜드마크: `줍` 라임 글리프 + `MACJUBJUB` 모노 라벨 + BETA
