@@ -3,6 +3,8 @@
 > 각 서비스는 독립 포트로 동작: **mac=3010 / plan=3020 / promptjournal=3030 / community=3040** (설정 변경 가능).
 > 웹 포털 정적 에셋: `mac_web/` · `plan_web/` · `pj_web/` · `community_web/` (루트 `/`).
 > **내부망 전용 (R43)**: 전 라우트 `lanOnly()` — 사설대역(10/172.16-31/192.168/169.254·localhost) 외 403.
+> **관리 토큰 (R44)**: `/api` 쓰기(POST/PUT/DELETE)는 `X-Auth-Token` 필수(401).
+> 토큰 페어링은 루프백 전용 `GET /api/admin/token` (기기 내 브라우저·adb forward).
 
 ## 공통 (서비스별 서버)
 | 메서드 | 경로 | 설명 |
@@ -36,6 +38,7 @@
 | GET | `/api/plans` / `/api/plans/{id}` | 요금제 목록·상세 |
 | GET | `/api/sources` | 수집 소스 목록 |
 | POST | `/api/sources/{id}/toggle` | 소스 on/off |
+| POST | `/api/sources/{id}/interval` | 수집 주기 변경(분, 허용값 내, R44) |
 | POST | `/api/sync` | 즉시 수집 |
 | GET | `/api/stats` | 요약 |
 | GET | `/api/stats/overview` `/brands` `/networks` `/distribution` `/trends` `/value-ranking` `/collection-health` `/insights` | 대시보드 |
@@ -49,6 +52,7 @@
 |---|---|---|
 | GET | `/api/categories` | 통합 카테고리 10종 |
 | GET | `/api/sources` | 수집 소스 목록 + 게시글 수 |
+| POST | `/api/sources/{id}/toggle` | 소스 on/off (스케줄 동기화) |
 | GET | `/api/posts?category_id&source_id&q&sort&page` | 게시글 목록/검색/필터/페이지네이션 (source_id 복수 가능) |
 | GET | `/api/posts/{id}` | 게시글 상세 + 출처/보드 |
 | POST | `/api/posts/{id}/refresh` | 단일 게시글 상세 다시 가져오기 (요약·썸네일 보충) |

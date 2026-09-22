@@ -15,6 +15,7 @@ import com.borasarang.common.server.pathIdLong
 import com.borasarang.common.server.putIfNotNull
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
@@ -366,6 +367,20 @@ private fun Route.settingsRoute() {
             put("autoStart", JsonPrimitive(settings.autoStart))
         }
         call.respondText(json.toString(), ContentType.Application.Json)
+    }
+
+    // 관리 토큰 페어링 — 루프백에서만 발급 (R44). LAN 원격은 403.
+    get("/admin/token") {
+        if (!com.borasarang.common.server.AdminAuth.isLoopback(call.request.origin.remoteHost)) {
+            call.respondText(
+                """{"error":"forbidden: loopback only"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.Forbidden,
+            )
+            return@get
+        }
+        val token = PromptJournalRuntime.preferences.getAdminToken()
+        call.respondText("""{"adminToken":"$token"}""", ContentType.Application.Json)
     }
 
     post("/settings") {

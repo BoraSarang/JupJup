@@ -17,3 +17,4 @@
 - 저장 데이터: Room DB(서비스별 파일) + DataStore(preferences) + 웹 에셋. 개인정보 수집 없음.
 - 오직 로컬 서버(같은 Wi-Fi 브라우저) + 수집 대상 공개 소스와 통신.
 - 내부망 전용 (R43): Ktor 4서비스 전 라우트 `lanOnly()` — 사설대역 외 403. 공유기 포트포워딩·UPnP·DMZ 금지.
+- 관리 토큰 (R44): `/api` 쓰기는 `X-Auth-Token` 필수. 토큰은 서비스별 DataStore(`admin_token`) 최초 발급, 루프백 페어링으로만 조회.

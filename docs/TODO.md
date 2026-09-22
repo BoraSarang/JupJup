@@ -2,6 +2,13 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## R44 관리웹 이관 2차: plan·community + 관리 토큰 (PLAN_v19)
+- [x] B2 plan_web: 설정 서랍 + 소스 토글/수집/주기
+- [x] B3 community_web: 소스 토글/수집/테스트/비우기 + 새로고침 + 알림 서랍
+- [x] C2 관리 토큰 4서비스 + 4포털 fetch 패치
+- [x] 검증: node --check 4종·unit·build+설치·lint (실기 스팟체크 생략)
+- [ ] 후속: R45(B4 pj 설정탭·D 앱 슬리밍 + 토큰 표시)
+
 ## R43 관리웹 이관 1차: mac_web + 내부망 필터 (PLAN_v19)
 - [x] B1 mac_web: 설정 서랍 + 소스 토글/수집/주기 + 시드/번역 + 알림 쓰기
 - [x] 서버 `POST /api/sources/{id}/interval` 신설 (앱 setIntervalMinutes 대응)

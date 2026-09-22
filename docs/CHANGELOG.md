@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### R44 관리웹 2차: plan·community + 관리 토큰
+- **plan_web**: 설정 서랍·소스 토글/수집/주기 (+ `POST /api/sources/{id}/interval` 신설)
+- **community_web**: 사이트 소스 토글/수집/테스트/비우기·게시글 새로고침·알림 서랍 (+ `GET /api/sources` 신설)
+- **C2 토큰**: 서비스별 `admin_token` 발급·영속, `/api 쓰기` 401 강제, 루프백 페어링, 4포털 자동 첨부·재시도
+
 ### R43 관리웹 1차: mac_web + 내부망 필터 (PLAN_v19)
 - **mac_web 관리 서랍**: 설정 저장·소스 토글/수집/주기·시드·번역·알림 쓰기 (앱 기능 이관)
 - **서버**: `POST /api/sources/{id}/interval` 신설 (앱 주기 변경 대응)
