@@ -1,0 +1,1 @@
+{"id":"int-a979f44780e30a7fc73810586d027995","kind":"field_change","created_at":"2026-09-22T13:46:26.299882Z","actor":"BoraSarang","issue_id":"JupJup-344","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"5종 UI 수정 완료: node --check + unit 테스트 통과, TODO/CHANGELOG 갱신"}}

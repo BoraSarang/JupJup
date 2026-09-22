@@ -92,6 +92,19 @@ object InitialDataSeeder {
                     errorMessage = null,
                     selectorConfigJson = null,
                 ),
+                CrawlSource(
+                    id = Constants.SOURCE_REDDIT_MACAPPS,
+                    name = "Reddit r/macapps",
+                    type = Constants.TYPE_REDDIT_JSON,
+                    baseUrl = "https://www.reddit.com/r/macapps",
+                    enabled = true,
+                    intervalHours = 12,
+                    intervalMinutes = 720,
+                    lastRunAt = null,
+                    lastStatus = Constants.STATUS_NEVER_RUN,
+                    errorMessage = null,
+                    selectorConfigJson = null,
+                ),
             ) + newsSeeds()
 
     /** 뉴스 RSS 12종 (R32). intervalMinutes가 스케줄 기준값, intervalHours는 표시용 */

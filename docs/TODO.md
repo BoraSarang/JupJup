@@ -2,6 +2,17 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## 메인 UI 폴리시 (JupJup-344)
+- [x] 폰트 크기 A−/A+ 조절 + localStorage 재방문 유지
+- [x] 하이라이트 3카드 클릭 링크 연결 (`openDashboardNews`)
+- [x] 앱 정보 모달 폭 840px 확대
+- [x] 메인 해드라인 아래 필터 칩 행 제거 (`MAIN_FILTERS`/`renderMainFilters` 삭제)
+- [x] 모달 열 때 소개 탭 포커스 해소 → `modalTitle` 포커스
+- [x] 설정 서랍 3탭 통합 + `.drawer-top` sticky 상단 고정 + 소스 2그룹
+- [x] 가격 `$` 표시 + 해드라인 유료 배지 오탐 수정 (`usdPrice`/`priceBadge`)
+- [x] Reddit r/macapps Atom RSS 전환 + RedditParseTest 4/4 + 실기 sync SUCCESS
+- [x] 검증: node --check + unit BUILD SUCCESSFUL + build_and_run 설치 + 문서 갱신
+
 ## R50 잔여: 뉴스 서브태그 DB + 관련앱 매칭 (PLAN_v20)
 - [x] `news_articles.tags` + Migration v7→v8 + 수집 시 추출·상세 백필
 - [x] `/api/news`·`/api/main` `tags` 노출 + 포털 sideTags 서버 우선·클라이언트 폴백

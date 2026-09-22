@@ -41,19 +41,9 @@
     { label: '유료', license: 'PAID' }, { label: '세일중', license: 'PAID', sale: true }
   ];
   const SORT_CHOICES = [
-    { label: '인기순', sort: 'stars' }, { label: '최신순', sort: 'newest' },
+    { label: '최신순', sort: 'newest' }, { label: '인기순', sort: 'stars' },
     { label: '가격낮은순', sort: 'priceAsc' }, { label: '업데이트순', sort: 'updated' },
     { label: 'MAS 우선', sort: 'mas' }
-  ];
-  const MAIN_FILTERS = [
-    { label: '전체', main: '', category: '' },
-    { label: '맥', main: 'mac', category: '' },
-    { label: 'AI', main: 'ai', category: '' },
-    { label: '보안', main: 'sec', category: '' },
-    { label: '생산성', main: '', category: '생산성' },
-    { label: '개발자도구', main: '', category: '개발' },
-    { label: '유틸리티', main: '', category: '유틸리티' },
-    { label: '크리에이티브', main: '', category: '디자인·크리에이티브' }
   ];
   const ICON_BG = ['linear-gradient(135deg,#f97316,#ef4444)', 'linear-gradient(135deg,#3b82f6,#06b6d4)',
     'linear-gradient(135deg,#8b5cf6,#d946ef)', 'linear-gradient(135deg,#18181b,#3f3f46)',
@@ -63,16 +53,17 @@
   const NEWS_PAGE_SIZE = 5;
 
   const NEWS_LAYOUT_KEY = 'macjupjup_news_layout';
+  const FONT_KEY = 'macjupjup_font_px';
+  const FONT_DEFAULT = 14, FONT_MIN = 12, FONT_MAX = 20;
   const state = {
     view: 'dashboard',
     storeSub: 'timeline',
-    filters: { license: '', cat: '', q: '', sort: 'stars', page: 1, newOnly: false, updatedOnly: false },
+    filters: { license: '', cat: '', q: '', sort: 'newest', page: 1, newOnly: false, updatedOnly: false },
     news: {
       main: 'mac', sub: '', page: 1, q: '', detailId: null, topTab: 'news',
       listIds: [], total: 0,
       layout: (function () { try { return localStorage.getItem(NEWS_LAYOUT_KEY) === 'B' ? 'B' : 'A'; } catch (e) { return 'A'; } })()
     },
-    mainFilter: { main: '', category: '' },
     dashPage: 1,
     lang: 'ko',
     modal: { currentId: null, activeTab: 'intro' }
@@ -160,8 +151,7 @@
       const key = 'm' + (++mdSeq);
       mdStore[key] = { ko: koText, en: enText, showing: state.lang };
       const first = state.lang === 'ko' ? koText : enText;
-      return '<div class="md-body" data-mdtext data-key="' + key + '">' + md(first) + '</div>' +
-        '<button class="badge" type="button" data-mdkey="' + key + '" style="margin-top:8px;padding:4px 10px;font-size:11px;">' + (state.lang === 'ko' ? '원문보기' : '번역 보기') + '</button>';
+      return '<div class="md-body" data-mdtext data-key="' + key + '">' + md(first) + '</div>';
     }
     return '<div class="md-body">' + md(show) + '</div>';
   }
@@ -308,9 +298,18 @@
     const ch = (a.name || '?').trim().charAt(0).toUpperCase();
     return '<span class="' + cls + '" style="background:' + iconBg(a.name) + ';display:flex;align-items:center;justify-content:center;color:#fff;" aria-hidden="true">' + esc(ch) + '</span>';
   }
+  /* 통화 표기: 서버 currency=USD 기준 $ (라운딩 2자리) */
+  function usdPrice(n) {
+    return '$' + (Math.round(Number(n) * 100) / 100).toFixed(2);
+  }
+  /* 유료/무료 배지 (license 미확정·OSS·price 0은 무료 처리) */
+  function priceBadge(a) {
+    if (a.price > 0 || a.license === 'PAID') return '유료';
+    return '무료';
+  }
   function priceText(a) {
     if (a.license === 'FREE' || a.price === 0) return '<span class="hprice free">무료</span>';
-    if (a.price > 0) return '<span class="hprice">₩' + Number(a.price).toLocaleString() + '</span>';
+    if (a.price > 0) return '<span class="hprice">' + usdPrice(a.price) + '</span>';
     if (a.license === 'PAID') return '<span class="hprice">유료</span>';
     return '<span class="hprice free">무료</span>';
   }
@@ -384,7 +383,8 @@
   }
   function updateBmCount() {
     const c = Object.keys(getBm()).length;
-    $('topBmCount').textContent = c;
+    const el = $('topBmCount');
+    if (el) el.textContent = c;
   }
 
   /* ---------- 뷰 전환 ---------- */
@@ -407,7 +407,6 @@
   let dashSeq = 0;
   function loadDashboard() {
     const seq = ++dashSeq;
-    renderMainFilters();
     Promise.all([
       api('/api/main').catch(e => { console.error('[대시보드] /api/main 실패', e); return null; }),
       api('/api/watchlist').catch(e => { console.error('[대시보드] 소스 상태 실패', e); return []; }),
@@ -419,22 +418,6 @@
         setNavCounts({ news: ((main.counts || {}).mac || 0) + ((main.counts || {}).ai || 0) + ((main.counts || {}).sec || 0) });
       }
       else $('dashHeroStats').textContent = '불러오기 실패';
-    });
-  }
-
-  function renderMainFilters() {
-    $('mainFilterChips').innerHTML = MAIN_FILTERS.map((f, i) =>
-      '<button type="button" class="chip' + (state.mainFilter.main === f.main && state.mainFilter.category === f.category ? ' active' : '') +
-      '" data-i="' + i + '">' + esc(f.label) + '</button>'
-    ).join('') + '<span class="chipnote">필터는 아래 섹션에 동시 적용</span>';
-    $$('#mainFilterChips .chip').forEach(b => {
-      b.onclick = () => {
-        const f = MAIN_FILTERS[parseInt(b.dataset.i, 10)];
-        state.mainFilter = { main: f.main, category: f.category };
-        state.dashPage = 1;
-        renderMainFilters();
-        loadDashboardGroups();
-      };
     });
   }
 
@@ -452,31 +435,41 @@
     const topMac = (d.mac || [])[0], topApp = (d.updatedApps || [])[0], topSec = (d.sec || [])[0];
     let hl = '';
     if (topMac) {
-      hl += '<article class="hl-card"><div>' +
+      hl += '<article class="hl-card" data-kind="news" data-main="mac" data-id="' + esc(topMac.id) + '" tabindex="0" role="link"><div>' +
         (topMac.thumbnailUrl ? '<img class="hl-thumb" src="' + esc(topMac.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
         '</div><div class="hl-body"><div class="hl-top"><span class="hot">HOT</span><span>' +
         esc(topMac.sourceName) + ' · ' + fmtTime(topMac.publishedAt) + '</span></div>' +
-        '<h3 class="hl-title">' + esc(topMac.title) + '</h3>' +
-        '<p class="hl-desc">' + esc(topMac.summary || '') + '</p></div></article>';
+        '<h3 class="hl-title">' + esc(newsTitle(topMac)) + '</h3>' +
+        '<p class="hl-desc">' + esc(newsSummary(topMac)) + '</p></div></article>';
     }
     if (topApp) {
-      hl += '<article class="hl-card glow"><div class="hl-body"><div class="hl-top">' +
+      hl += '<article class="hl-card glow" data-kind="app" data-id="' + esc(topApp.id) + '" tabindex="0" role="link"><div class="hl-body"><div class="hl-top">' +
         appIcon(topApp, 'hl-icon') +
-        '<b style="font-size:14px;color:var(--text)">' + esc(topApp.name) + '</b>' +
+        '<b style="font-size:1rem;color:var(--text)">' + esc(topApp.name) + '</b>' +
         (topApp.isNew ? '<span class="newpill">NEW</span>' : '') + '</div>' +
         '<div class="hl-top">' + esc([verText(topApp), topApp.category].filter(Boolean).join(' · ')) + '</div>' +
         '<p class="hl-desc">' + esc(topApp.category || '') + ' 앱 최신 소식을 확인하세요</p></div>' +
-        '<span class="hl-price">' + (topApp.license === 'FREE' ? '무료' : '유료') + '</span></article>';
+        '<span class="hl-price">' + priceBadge(topApp) + '</span></article>';
     }
     if (topSec) {
-      hl += '<article class="hl-card"><div class="hl-body"><div class="hl-top">⚠️ <b style="color:var(--text)">보안 긴급</b><span> · ' +
-        fmtTime(topSec.publishedAt) + '</span></div>' +
-        '<h3 class="hl-title">' + esc(topSec.title) + '</h3>' +
-        '<p class="hl-desc">' + esc(topSec.summary || '') + '</p>' +
-        '<a class="hl-cta" href="' + esc(topSec.originalUrl) + '" target="_blank" rel="noopener">즉시 업데이트</a>' +
-        '<div class="hl-src">' + esc(topSec.sourceName) + '</div></div></article>';
+      const badge = newsBadges(topSec) || '<span class="hot">HOT</span>';
+      hl += '<article class="hl-card" data-kind="news" data-main="sec" data-id="' + esc(topSec.id) + '" tabindex="0" role="link"><div>' +
+        (topSec.thumbnailUrl ? '<img class="hl-thumb" src="' + esc(topSec.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+        '</div><div class="hl-body"><div class="hl-top">' + badge + '<span>' +
+        esc(topSec.sourceName) + ' · ' + fmtTime(topSec.publishedAt) + '</span></div>' +
+        '<h3 class="hl-title">' + esc(newsTitle(topSec)) + '</h3>' +
+        '<p class="hl-desc">' + esc(newsSummary(topSec)) + '</p></div></article>';
     }
     $('dashHighlights').innerHTML = hl || '<div class="empty-state">하이라이트 없음</div>';
+    $$('#dashHighlights .hl-card').forEach(el => {
+      const go = (ev) => {
+        if (ev && ev.target && ev.target.closest('a')) return;
+        if (el.dataset.kind === 'app') { openModal(el.dataset.id); return; }
+        openDashboardNews(el.dataset.main, el.dataset.id);
+      };
+      el.onclick = go;
+      el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(e); } };
+    });
 
     renderDashApps(d.updatedApps || []);
     loadDashboardGroups();
@@ -484,8 +477,7 @@
   }
 
   function renderDashApps(apps) {
-    const f = state.mainFilter;
-    const list = f.category ? apps.filter(a => a.category === f.category) : apps;
+    const list = apps;
     $('dashAppCount').textContent = list.length + '개';
     $('dashApps').innerHTML = list.map(a => {
       const ver = [verText(a), fmtTime(a.lastUpdatedAt)].filter(Boolean).join(' · ');
@@ -501,7 +493,6 @@
   function loadDashboardGroups() {
     if (!dashCache) return;
     const d = dashCache.main;
-    const f = state.mainFilter;
     // R49: 대시보드 뉴스 행에도 관련앱 병합 (/api/main relatedApps)
     const withRel = (arr) => arr || [];
     const groups = [
@@ -509,9 +500,8 @@
       { main: 'ai', icon: '✦', label: 'AI 소식', items: withRel(d.ai || []), src: 'trawling.dev · Product Hunt · GeekNews' },
       { main: 'sec', icon: '🛡', label: '보안 소식', items: withRel(d.sec || []), src: 'BleepingComputer · The Hacker News' }
     ];
-    const show = groups.filter(g => !f.main || g.main === f.main);
-    ['mac', 'ai', 'sec'].forEach(m => { $('group-' + m).style.display = (!f.main || f.main === m) ? '' : 'none'; });
-    show.forEach(g => {
+    ['mac', 'ai', 'sec'].forEach(m => { $('group-' + m).style.display = ''; });
+    groups.forEach(g => {
       $('gsrc-' + g.main).textContent = g.src;
       $('gcount-' + g.main).textContent = g.items.length + '개';
       $('grows-' + g.main).innerHTML = g.items.map(n => newsRowHtml(n)).join('') || '<div class="empty-state">뉴스 없음</div>';
@@ -520,11 +510,19 @@
       el.onclick = (ev) => {
         const mini = ev.target.closest('[data-app]');
         if (mini) { ev.stopPropagation(); openModal(mini.dataset.app); return; }
-        state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id;
-        if (state.news.layout !== 'B') setNewsLayout('B');
-        switchView('news');
+        openDashboardNews(el.dataset.main, el.dataset.id);
       };
     });
+  }
+
+  /* 하이라이트·뉴스 행 → 뉴스 뷰 상세 이동 */
+  function openDashboardNews(main, id) {
+    if (!id) return;
+    state.news.main = main || 'mac';
+    state.news.sub = '';
+    state.news.detailId = id;
+    if (state.news.layout !== 'B') setNewsLayout('B');
+    switchView('news');
   }
 
   /* R51: HOT 규칙 — 6h NEW / 6~24h HOT / 초과 무표시 */
@@ -629,13 +627,11 @@
       b.setAttribute('aria-selected', on);
     });
     if (sub === 'watchlist') applyChip('업데이트');
-    else if (sub === 'timeline') applyChip('전체');
-    else loadStore();
+    else applyChip('전체');
   }
 
   function loadStore() {
-    if (state.storeSub === 'stats') loadStatsPanel();
-    else loadStoreList();
+    loadStoreList();
     loadStoreChrome();
   }
   function storeQueryFromFilters() {
@@ -660,11 +656,10 @@
     const f = state.filters;
     f.license = pa.license || '';
     f.cat = pa.category || '';
-    f.sort = pa.sort || 'stars';
+    f.sort = pa.sort || 'newest';
     f.newOnly = !!pa.newOnly;
     f.updatedOnly = !!pa.updatedOnly || chip.label === '업데이트';
     f.page = 1;
-    if (state.storeSub === 'stats') state.storeSub = 'timeline';
     syncStoreSub(chip.label);
     renderStoreChips();
     renderStoreSidebar();
@@ -701,7 +696,7 @@
         (!pa.sort || pa.sort === f.sort);
       if (match) { active = chip.label; break; }
     }
-    if (!active && !f.license && !f.cat && !f.newOnly && !f.updatedOnly && f.sort === 'stars') active = '전체';
+    if (!active && !f.license && !f.cat && !f.newOnly && !f.updatedOnly && f.sort === 'newest') active = '전체';
     $('storeChips').innerHTML = APP_CHIPS.map(c =>
       '<button type="button" class="chip' + (c.label === active ? ' active' : '') + '" data-chip="' + esc(c.label) + '">' +
       esc(c.label) + (c.approx ? '<span class="mono">*</span>' : '') + '</button>'
@@ -748,11 +743,11 @@
   let storeSeq = 0;
   let storeCache = null;
   function loadStoreList() {
-    $('statsContent').innerHTML = '';
     const grid = $('appGrid'), empty = $('emptyStore');
     const seq = ++storeSeq;
     grid.innerHTML = '';
     empty.hidden = true;
+    $('pagination').innerHTML = '';
     renderStoreChips();
     renderStoreSidebar();
     api(storeQueryFromFilters()).then(d => {
@@ -760,7 +755,7 @@
       storeCache = d;
       $('appsCountLabel').textContent = d.total;
       $('storeActiveCat').textContent = state.filters.cat || '전체';
-      setNavCounts({ app: d.total });
+      // 헤더 카운트는 전체 고정값 — 필터 total로 덮지 않음
       if (!d.apps.length) { empty.hidden = false; $('pagination').innerHTML = ''; return; }
       grid.innerHTML = d.apps.map(cardHtml).join('');
       bindCards(grid);
@@ -770,6 +765,7 @@
       if (seq !== storeSeq) return;
       empty.querySelector('.empty-state-title').textContent = '데이터를 불러오는데 실패했습니다';
       empty.hidden = false;
+      $('pagination').innerHTML = '';
     });
   }
 
@@ -781,13 +777,12 @@
       const total = d.totalApps || 0;
       $('storeAppsLive').textContent = total + ' apps · 본체';
       setNavCounts({ app: total });
-      // 티커 (최신 헤드라인)
+      // 티커 (최신 헤드라인) — 내용이 같으면 다시 그리지 않음
       const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
-      $('storeTicker').innerHTML = heads.map(n =>
-        '<span class="ticker-item"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
-      ).join('') + (heads.map(n =>
-        '<span class="ticker-item"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
-      ).join(''));
+      const itemHtml = heads.map(n =>
+        '<button type="button" class="ticker-item" data-main="' + esc(n.main || 'mac') + '" data-id="' + esc(n.id) + '"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></button>'
+      ).join('');
+      fillTicker($('storeTicker'), itemHtml);
       // 오늘의 픽 (업데이트 순 3건)
       const picks = (d.updatedApps || []).slice(0, 3);
       $('todayPicks').innerHTML = picks.length ? picks.map(a =>
@@ -809,7 +804,7 @@
   }
   function cardPrice(a) {
     if (a.license === 'FREE' || a.price === 0) return '<span class="ac-price free">무료</span>';
-    if (a.price > 0) return '<span class="ac-price">₩' + Number(a.price).toLocaleString() + '</span>';
+    if (a.price > 0) return '<span class="ac-price">' + usdPrice(a.price) + '</span>';
     if (a.license === 'PAID') return '<span class="ac-price">유료</span>';
     return '<span class="ac-price free">무료</span>';
   }
@@ -878,25 +873,82 @@
   }
 
   function loadStatsPanel() {
-    $('appGrid').innerHTML = '';
-    $('pagination').innerHTML = '';
-    $('emptyStore').hidden = true;
     const box = $('statsContent');
+    if (!box) return;
     box.innerHTML = '<div class="empty-state">통계 불러오는 중…</div>';
-    api('/api/stats').then(s => api('/api/stats/trends').then(t => {
-      const cats = Object.keys(t.byCategory || {}).sort((a, b) => t.byCategory[b] - t.byCategory[a]);
-      const max = cats.length ? t.byCategory[cats[0]] : 1;
-      box.innerHTML = '<div class="kpi-grid">' +
-        kpi(s.totalApps, '수집 앱') + kpi(s.activeSources, '활성 소스') +
-        kpi(t.newLast7d, '최근 7일 신규') + kpi(t.versionBumpsLast7d, '최근 7일 버전업') +
-        kpi(formatBytes((s.netRxBytes || 0) + (s.netTxBytes || 0)), '30일 네트워크') + '</div>' +
-        '<h3 class="stats-section-title">카테고리 분포</h3>' +
-        cats.map(c => '<div class="bar-row"><span class="bar-name">' + esc(c) + '</span>' +
-          '<span class="bar-track"><span class="bar-fill" style="width:' + Math.round(t.byCategory[c] / max * 100) + '%"></span></span>' +
-          '<span class="bar-count">' + t.byCategory[c] + '</span></div>').join('');
-    })).catch((e) => {
+    Promise.all([
+      api('/api/stats').catch(() => null),
+      api('/api/stats/trends').catch(() => null),
+      api('/api/stats/collect?days=7').catch(() => null),
+      api('/api/main').catch(() => null)
+    ]).then(([s, t, c, main]) => {
+      if (!box.isConnected) return;
+      if (!s && !t) {
+        box.innerHTML = '<div class="empty-state">통계를 불러오는데 실패했습니다</div>';
+        return;
+      }
+      const cats = Object.keys((t && t.byCategory) || {}).sort((a, b) => (t.byCategory[b] || 0) - (t.byCategory[a] || 0));
+      const maxCat = cats.length ? (t.byCategory[cats[0]] || 1) : 1;
+      const rx = (s && s.netRxBytes) || 0;
+      const tx = (s && s.netTxBytes) || 0;
+      const cTotal = (c && c.total) || {};
+      const counts = (main && main.counts) || {};
+      const newsTotal = (counts.mac || 0) + (counts.ai || 0) + (counts.sec || 0);
+      const newsMax = Math.max(counts.mac || 0, counts.ai || 0, counts.sec || 0, 1);
+      const daily = (c && c.days) || [];
+      const dailyMax = Math.max(1, ...daily.map(d => Math.max((d.rxBytes || 0) + (d.txBytes || 0), 0)));
+
+      let html = '<div class="kpi-grid">' +
+        kpi((s && s.totalApps) || 0, '수집 앱') +
+        kpi((s && s.activeSources) || 0, '활성 소스') +
+        kpi((t && t.newLast7d) || 0, '최근 7일 신규') +
+        kpi((t && t.versionBumpsLast7d) || 0, '최근 7일 버전업') +
+        kpi(formatBytes(rx + tx), '30일 네트워크') +
+        '</div>';
+
+      html += '<h3 class="stats-section-title">네트워크 (30일)</h3>' +
+        '<div class="kpi-grid">' +
+        kpi(formatBytes(rx), '수신 Rx') +
+        kpi(formatBytes(tx), '송신 Tx') +
+        kpi(formatBytes((cTotal.rxBytes || 0) + (cTotal.txBytes || 0)), '최근 7일 합계') +
+        '</div>';
+
+      if (daily.length) {
+        html += '<h3 class="stats-section-title">일별 네트워크 (7일)</h3>' +
+          daily.map(d => {
+            const bytes = (d.rxBytes || 0) + (d.txBytes || 0);
+            const w = Math.round((bytes / dailyMax) * 100);
+            return '<div class="bar-row"><span class="bar-name">' + esc(d.day || '') + '</span>' +
+              '<span class="bar-track"><span class="bar-fill" style="width:' + w + '%"></span></span>' +
+              '<span class="bar-count">' + esc(formatBytes(bytes)) + '</span></div>';
+          }).join('');
+      }
+
+      html += '<h3 class="stats-section-title">뉴스 통계</h3>' +
+        '<div class="kpi-grid">' +
+        kpi(newsTotal, '뉴스 전체') +
+        kpi(main && main.todayNews != null ? main.todayNews : 0, '오늘 수집') +
+        kpi(counts.mac || 0, '🍎 맥 소식') +
+        kpi(counts.ai || 0, '✦ AI 소식') +
+        kpi(counts.sec || 0, '🛡 보안 소식') +
+        '</div>' +
+        [['맥 소식', counts.mac || 0], ['AI 소식', counts.ai || 0], ['보안 소식', counts.sec || 0]].map(([label, n]) =>
+          '<div class="bar-row"><span class="bar-name">' + label + '</span>' +
+          '<span class="bar-track"><span class="bar-fill" style="width:' + Math.round(n / newsMax * 100) + '%"></span></span>' +
+          '<span class="bar-count">' + n + '</span></div>'
+        ).join('');
+
+      if (cats.length) {
+        html += '<h3 class="stats-section-title">카테고리 분포</h3>' +
+          cats.map(cname => '<div class="bar-row"><span class="bar-name">' + esc(cname) + '</span>' +
+            '<span class="bar-track"><span class="bar-fill" style="width:' + Math.round((t.byCategory[cname] || 0) / maxCat * 100) + '%"></span></span>' +
+            '<span class="bar-count">' + (t.byCategory[cname] || 0) + '</span></div>').join('');
+      }
+
+      box.innerHTML = html;
+    }).catch((e) => {
       console.error('[스토어] 통계 실패', e);
-      box.innerHTML = '<div class="empty-state">통계를 불러오는데 실패했습니다</div>';
+      if (box) box.innerHTML = '<div class="empty-state">통계를 불러오는데 실패했습니다</div>';
     });
   }
   function kpi(n, l) { return '<div class="kpi"><div class="kpi-value">' + n + '</div><div class="kpi-label">' + l + '</div></div>'; }
@@ -927,6 +979,11 @@
       setActiveTab('intro');
     }
     if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+    requestAnimationFrame(() => {
+      // 제목/패널에 포커스 링 없이 다이얼로그 자체만 포커스
+      modal.setAttribute('tabindex', '-1');
+      modal.focus({ preventScroll: true });
+    });
     api('/api/apps/' + encodeURIComponent(id)).then(a => { renderModal(a); })
       .catch((e) => { console.error('[모달] 실패', e); $('modalTitle').textContent = '불러오기 실패'; });
   }
@@ -936,14 +993,36 @@
     state.modal.currentId = null;
   }
   function ensureModalTabs() {
-    const tabsBox = $('modalTabs');
-    if (!$1('[role="tab"]', tabsBox)) {
-      tabsBox.innerHTML =
-        '<button class="modal-tab active" role="tab" aria-selected="true" data-tab="intro" type="button" id="tabIntro">소개</button>' +
-        '<button class="modal-tab" role="tab" aria-selected="false" data-tab="features" type="button" id="tabFeatures">특징</button>' +
-        '<button class="modal-tab" role="tab" aria-selected="false" data-tab="changelog" type="button" id="tabChangelog">새 기능</button>';
-      $$('[role="tab"]', tabsBox).forEach(btn => { btn.onclick = () => setActiveTab(btn.dataset.tab); });
-    }
+    // 탭/언어 버튼은 HTML에 고정 — 동기화만
+    syncModalLangBtn();
+  }
+  function activeMdKeys() {
+    const panel = $1('#modalPanels .modal-panel.active') || $('panelIntro');
+    if (!panel) return [];
+    return Array.from($$('[data-mdtext][data-key]', panel)).map(el => el.dataset.key);
+  }
+  function syncModalLangBtn() {
+    const btn = $('modalLangBtn');
+    if (!btn) return;
+    const keys = activeMdKeys();
+    if (!keys.length) { btn.hidden = true; return; }
+    btn.hidden = false;
+    const t = mdStore[keys[0]];
+    btn.textContent = t && t.showing === 'en' ? '번역 보기' : '원문보기';
+  }
+  function toggleModalLang() {
+    const keys = activeMdKeys();
+    if (!keys.length) return;
+    const first = mdStore[keys[0]];
+    const next = first && first.showing === 'ko' ? 'en' : 'ko';
+    keys.forEach(k => {
+      const t = mdStore[k];
+      if (!t) return;
+      t.showing = next;
+      const box = $1('[data-mdtext][data-key="' + k + '"]', $('modalPanels'));
+      if (box) box.innerHTML = md(t.showing === 'ko' ? t.ko : t.en);
+    });
+    syncModalLangBtn();
   }
   function setActiveTab(tab) {
     state.modal.activeTab = tab;
@@ -957,6 +1036,7 @@
       p.classList.toggle('active', on);
       p.hidden = !on;
     });
+    syncModalLangBtn();
   }
   function renderModal(a) {
     $('modalTitle').textContent = a.name || '앱 상세';
@@ -974,6 +1054,7 @@
     if (a.repoFullName) cta.push('<a class="btn-secondary" href="https://github.com/' + esc(a.repoFullName) + '" target="_blank" rel="noopener">GitHub</a>');
     if (a.trackId) cta.push('<a class="btn-secondary" href="https://apps.apple.com/us/app/id' + a.trackId + '" target="_blank" rel="noopener">App Store</a>');
     $('modalCta').innerHTML = cta.join('');
+    syncModalLangBtn();
     const koFull = a.descriptionKo || '';
     const enFull = a.descriptionSnippet || '';
     const introKo = excerpt(koFull) || excerpt(enFull);
@@ -1010,6 +1091,32 @@
   }
 
   /* ================= 뉴스 ================= */
+  function fillTicker(tm, itemHtml) {
+    if (!tm || !itemHtml || tm.dataset.sig === itemHtml) return;
+    tm.dataset.sig = itemHtml;
+    const group = '<div class="ticker-group">' + itemHtml + '</div>';
+    // 뷰 폭의 2배 이상이 되도록 그룹 복제 (짧은 목록도 빈틈 없이 루프)
+    tm.innerHTML = group + group;
+    requestAnimationFrame(() => {
+      if (tm.dataset.sig !== itemHtml) return;
+      const viewW = (tm.parentElement && tm.parentElement.clientWidth) || 0;
+      const groupW = tm.firstElementChild ? tm.firstElementChild.getBoundingClientRect().width : 0;
+      const copies = Math.max(2, viewW && groupW ? Math.ceil((viewW * 2) / groupW) + 1 : 2);
+      if (copies > 2) {
+        tm.innerHTML = group.repeat(copies);
+        // N개 동일 그룹 → 한 그룹씩 이동 = -100%/N
+        const pct = (100 / copies).toFixed(4);
+        tm.style.animation = 'none';
+        void tm.offsetWidth;
+        tm.style.animation = `marquee ${Math.max(20, copies * 5)}s linear infinite`;
+        tm.style.setProperty('--marquee-shift', `-${pct}%`);
+      }
+    });
+    $$('.ticker-item', tm).forEach(el => {
+      el.onclick = () => openDashboardNews(el.dataset.main, el.dataset.id);
+    });
+  }
+
   function switchNewsTop(tab) {
     state.news.topTab = tab;
     $$('#topTabs .toptab').forEach(b => {
@@ -1038,14 +1145,17 @@
       b.classList.toggle('active', on);
       if (on) b.setAttribute('aria-selected', 'true'); else b.removeAttribute('aria-selected');
     });
-    $('newsCrumb').textContent = '/news / ' + state.news.main;
+    const crumb = $('newsCrumb');
+    if (crumb) crumb.textContent = '/news / ' + state.news.main;
     const subs = NEWS_SUBS[state.news.main] || ['전체'];
     const html = subs.map(s =>
       '<button type="button" class="chip' + ((state.news.sub || '전체') === s ? ' active' : '') +
       '" data-sub="' + esc(s) + '">' + esc(s) + '</button>'
     ).join('');
-    $('newsSubChips').innerHTML = html;
-    $('newsSubChips2').innerHTML = html;
+    const sc1 = $('newsSubChips');
+    if (sc1) sc1.innerHTML = html;
+    const sc2 = $('newsSubChips2');
+    if (sc2) sc2.innerHTML = html;
     $$('#newsSubChips .chip, #newsSubChips2 .chip').forEach(b => {
       b.onclick = () => {
         state.news.sub = b.dataset.sub === '전체' ? '' : b.dataset.sub;
@@ -1153,18 +1263,19 @@
 
   function renderNewsChrome(d) {
     const c = d.counts || {};
-    $('ncount-mac').textContent = c.mac || 0;
-    $('ncount-ai').textContent = c.ai || 0;
-    $('ncount-sec').textContent = c.sec || 0;
+    const nMac = $('ncount-mac'), nAi = $('ncount-ai'), nSec = $('ncount-sec'), topNews = $('topNewsCount');
+    if (nMac) nMac.textContent = c.mac || 0;
+    if (nAi) nAi.textContent = c.ai || 0;
+    if (nSec) nSec.textContent = c.sec || 0;
     const total = (c.mac || 0) + (c.ai || 0) + (c.sec || 0);
-    $('topNewsCount').textContent = total;
+    if (topNews) topNews.textContent = total;
     setNavCounts({ news: total });
-    // 티커 (최신 헤드라인)
+    // 티커 (최신 헤드라인) — 내용이 같으면 다시 그리지 않아 애니메이션 재시작 방지
     const heads = [...(d.mac || []), ...(d.ai || []), ...(d.sec || [])].slice(0, 8);
-    const items = heads.map(n =>
-      '<span class="ticker-item"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></span>'
+    const itemHtml = heads.map(n =>
+      '<button type="button" class="ticker-item" data-main="' + esc(n.main || 'mac') + '" data-id="' + esc(n.id) + '"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></button>'
     ).join('');
-    $('tickerMove').innerHTML = items + items;
+    fillTicker($('tickerMove'), itemHtml);
     // 우측 레일
     $('railSources').textContent = 12;
     $('railNew').textContent = d.todayNews || 0;
@@ -1208,7 +1319,7 @@
       if (!a) { box.innerHTML = '<p class="mini-empty">광고 슬롯 준비 중</p>'; return; }
       box.innerHTML = '<button type="button" class="sponrow" data-id="' + esc(a.id) + '">' +
         appIcon(a, 'hicon') +
-        '<span><b>' + esc(a.name) + '</b><small>' + esc(a.category || '') + ' · ' + (a.license === 'FREE' ? '무료' : '유료') + '</small></span>' +
+        '<span><b>' + esc(a.name) + '</b><small>' + esc(a.category || '') + ' · ' + priceBadge(a) + '</small></span>' +
         '<span class="spon-cta">AD</span></button>';
       const b = box.querySelector('.sponrow');
       if (b) b.onclick = () => openModal(b.dataset.id);
@@ -1348,8 +1459,10 @@
     const bm = getBm();
     const list = Object.values(bm).sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
     $('nlistTitle').textContent = 'BOOKMARKS / ' + list.length;
-    $('newsSubChips').innerHTML = '';
-    $('newsSubChips2').innerHTML = '';
+    const sc1 = $('newsSubChips');
+    if (sc1) sc1.innerHTML = '';
+    const sc2 = $('newsSubChips2');
+    if (sc2) sc2.innerHTML = '';
     // 북마크는 B형 목록 사용
     setNewsLayout('B');
     const box = $('newsList');
@@ -1372,49 +1485,71 @@
     if (list.length) openNewsDetail(list[0].id, true);
   }
 
-  /* ---------- 알림 센터 (기존 유지) ---------- */
-  function openNotifCenter() {
-    const modal = $('appModal');
-    ensureModalTabs();
-    $('modalTitle').textContent = '알림 센터';
-    $('modalIcon').style.display = 'none';
-    $('modalDev').textContent = '';
-    $('modalMetaPills').innerHTML = '';
-    $('modalCta').innerHTML = '<button type="button" class="chip" id="notifReadAllBtn">모두 읽음</button>';
-    $('panelIntro').innerHTML = '<div class="empty-state">불러오는 중…</div>';
-    $('panelFeatures').hidden = true;
-    $('panelChangelog').hidden = true;
-    setActiveTab('intro');
-    if (typeof modal.showModal === 'function') modal.showModal();
-    const renderNotifs = d => {
-      if (!d.notifications || !d.notifications.length) { $('panelIntro').innerHTML = '<div class="empty-state">알림이 없습니다</div>'; return; }
-      $('panelIntro').innerHTML = d.notifications.map(n =>
+  /* ---------- 알림 (설정 서랍 알림 탭) ---------- */
+  function loadNotifList() {
+    const box = $('notifList');
+    if (!box) return;
+    box.innerHTML = '<p class="tiny-note">불러오는 중…</p>';
+    api('/api/notifications?page=1&pageSize=30').then(d => {
+      const list = d.notifications || [];
+      if (!list.length) {
+        box.innerHTML = '<div class="empty-state">알림이 없습니다</div>';
+        return;
+      }
+      box.innerHTML = list.map(n =>
         '<p class="nrow-admin"><span style="flex:1"><b>' + esc(n.type) + '</b><br>' + esc(n.summary) +
         '<br><small class="muted">' + fmtDate(n.createdAt) + (n.isRead ? '' : ' · <b>안읽음</b>') + '</small></span>' +
         (n.isRead ? '' : '<button type="button" data-nread="' + n.id + '">읽음</button>') +
         '<button type="button" data-ndel="' + n.id + '">삭제</button></p>'
       ).join('');
-      $$('#panelIntro [data-nread]').forEach(b => { b.onclick = () => {
-        apiPost('/api/notifications/' + b.dataset.nread + '/read').then(() => { toast('읽음 처리'); openNotifCenter(); }).catch(() => toast('실패'));
-      }; });
-      $$('#panelIntro [data-ndel]').forEach(b => { b.onclick = () => {
-        apiDel('/api/notifications/' + b.dataset.ndel).then(() => { toast('삭제됨'); openNotifCenter(); }).catch(() => toast('실패'));
-      }; });
-    };
-    api('/api/notifications?page=1&pageSize=20').then(renderNotifs).catch(() => { $('panelIntro').innerHTML = '<div class="empty-state">불러오기 실패</div>'; });
-    const ra = $('notifReadAllBtn');
-    if (ra) ra.onclick = () => {
-      apiPost('/api/notifications/read-all').then(() => { toast('모두 읽음'); openNotifCenter(); }).catch(() => toast('실패'));
-    };
+      $$('#notifList [data-nread]').forEach(b => {
+        b.onclick = () => {
+          apiPost('/api/notifications/' + b.dataset.nread + '/read')
+            .then(() => { toast('읽음 처리'); loadNotifList(); })
+            .catch(() => toast('실패'));
+        };
+      });
+      $$('#notifList [data-ndel]').forEach(b => {
+        b.onclick = () => {
+          apiDel('/api/notifications/' + b.dataset.ndel)
+            .then(() => { toast('삭제됨'); loadNotifList(); })
+            .catch(() => toast('실패'));
+        };
+      });
+    }).catch(() => {
+      box.innerHTML = '<div class="empty-state">불러오기 실패</div>';
+    });
   }
 
-  /* ---------- 관리 서랍 (R43: 앱 설정·소스·도구 이관) ---------- */
+  /* ---------- 설정 서랍 (설정·알림·통계) ---------- */
   const ADMIN_INTERVALS = [15, 30, 60, 120, 360, 720, 1440, 10080];
-  function openAdmin() {
+  let adminTab = 'settings';
+
+  function switchAdminTab(tab) {
+    adminTab = tab === 'notif' || tab === 'stats' ? tab : 'settings';
+    $$('#adminTabs .drawer-tab').forEach(b => {
+      const on = b.dataset.atab === adminTab;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    const show = (id, on) => { const el = $(id); if (el) el.hidden = !on; };
+    show('atabSettings', adminTab === 'settings');
+    show('atabNotif', adminTab === 'notif');
+    show('atabStats', adminTab === 'stats');
+    if (adminTab === 'settings') {
+      loadAdminSettings();
+      loadAdminSources();
+    } else if (adminTab === 'notif') {
+      loadNotifList();
+    } else {
+      loadStatsPanel();
+    }
+  }
+
+  function openAdmin(tab) {
     $('adminDrawer').hidden = false;
     $('adminBackdrop').hidden = false;
-    loadAdminSettings();
-    loadAdminSources();
+    switchAdminTab(tab || adminTab || 'settings');
   }
   function closeAdmin() {
     $('adminDrawer').hidden = true;
@@ -1455,19 +1590,24 @@
       loadAdminSettings();
     }).catch(() => toast('설정 저장 실패'));
   }
+  function srcRowHtml(s) {
+    return '<div class="srcrow"><span class="sname" title="' + esc(s.baseUrl || '') + '">' + esc(s.name) + '</span>' +
+      '<span class="sstatus">' + esc(s.lastStatus || '') + '</span>' +
+      '<select data-sint="' + esc(s.id) + '">' + ADMIN_INTERVALS.map(m =>
+        '<option value="' + m + '"' + (s.intervalMinutes === m ? ' selected' : '') + '>' + m + '분</option>'
+      ).join('') + '</select>' +
+      '<button type="button" data-ssync="' + esc(s.id) + '">수집</button>' +
+      '<button type="button" data-stoggle="' + esc(s.id) + '" class="' + (s.enabled ? 'on' : 'off') + '">' +
+      (s.enabled ? 'ON' : 'OFF') + '</button></div>';
+  }
   function loadAdminSources() {
+    const empty = '<p class="tiny-note">소스 없음</p>';
+    const fail = '<p class="tiny-note">불러오기 실패</p>';
     api('/api/watchlist').then(srcs => {
-      if (!srcs.length) { $('adminSources').innerHTML = '<p class="tiny-note">소스 없음</p>'; return; }
-      $('adminSources').innerHTML = srcs.map(s =>
-        '<div class="srcrow"><span class="sname" title="' + esc(s.baseUrl || '') + '">' + esc(s.name) + '</span>' +
-        '<span class="sstatus">' + esc(s.lastStatus || '') + '</span>' +
-        '<select data-sint="' + esc(s.id) + '">' + ADMIN_INTERVALS.map(m =>
-          '<option value="' + m + '"' + (s.intervalMinutes === m ? ' selected' : '') + '>' + m + '분</option>'
-        ).join('') + '</select>' +
-        '<button type="button" data-ssync="' + esc(s.id) + '">수집</button>' +
-        '<button type="button" data-stoggle="' + esc(s.id) + '" class="' + (s.enabled ? 'on' : 'off') + '">' +
-        (s.enabled ? 'ON' : 'OFF') + '</button></div>'
-      ).join('');
+      const news = srcs.filter(s => s.type === 'NEWS_RSS');
+      const apps = srcs.filter(s => s.type !== 'NEWS_RSS');
+      $('adminSourcesApps').innerHTML = apps.length ? apps.map(srcRowHtml).join('') : empty;
+      $('adminSourcesNews').innerHTML = news.length ? news.map(srcRowHtml).join('') : empty;
       $$('#adminSources [data-stoggle]').forEach(b => { b.onclick = () => {
         apiPost('/api/sources/' + encodeURIComponent(b.dataset.stoggle) + '/toggle').then(r => {
           b.textContent = r.enabled ? 'ON' : 'OFF';
@@ -1482,7 +1622,10 @@
         apiPost('/api/sources/' + encodeURIComponent(sel.dataset.sint) + '/interval',
           { intervalMinutes: parseInt(sel.value, 10) }).then(() => toast('주기 변경됨')).catch(() => { toast('주기 변경 실패'); loadAdminSources(); });
       }; });
-    }).catch(() => { $('adminSources').innerHTML = '<p class="tiny-note">불러오기 실패</p>'; });
+    }).catch(() => {
+      $('adminSourcesApps').innerHTML = fail;
+      $('adminSourcesNews').innerHTML = fail;
+    });
   }
 
   /* ---------- 초기화 ---------- */
@@ -1498,6 +1641,7 @@
     // 뉴스 main 탭
     $$('#newsMains .mainpill').forEach(b => { b.onclick = () => switchNewsMain(b.dataset.main); });
     // R49: A/B 레이아웃 토글 (localStorage 기억)
+  if ($$('layoutToggle .ltbtn').length) {
     $$('#layoutToggle .ltbtn').forEach(b => {
       b.onclick = () => {
         setNewsLayout(b.dataset.layout);
@@ -1506,13 +1650,12 @@
         loadNews();
       };
     });
+  }
     // 메인 더보기
     $('dashAppsMore').onclick = () => switchView('appstore');
     $('dashLoadMore').onclick = () => {
       state.dashPage++;
-      const f = state.mainFilter;
       ['mac', 'ai', 'sec'].forEach(m => {
-        if (f.main && f.main !== m) return;
         const p = new URLSearchParams({ main: m, page: state.dashPage, pageSize: 4 });
         api('/api/news?' + p.toString()).then(d => {
           const box = $('grows-' + m);
@@ -1521,34 +1664,116 @@
             el.onclick = (ev) => {
               const mini = ev.target.closest('[data-app]');
               if (mini) { ev.stopPropagation(); openModal(mini.dataset.app); return; }
-              state.news.main = el.dataset.main; state.news.sub = ''; state.news.detailId = el.dataset.id;
-              if (state.news.layout !== 'B') setNewsLayout('B');
-              switchView('news');
+              openDashboardNews(el.dataset.main, el.dataset.id);
             };
           });
         }).catch((e) => { console.error('[대시보드] 더보기 실패', e); });
       });
     };
-    // 검색
+    // 통합 검색 (앱 + 뉴스 → 드롭다운)
     let searchTimer = null;
-    $('globalSearch').addEventListener('input', e => {
+    let searchSeq = 0;
+    const searchInput = $('globalSearch');
+    const searchDrop = $('searchDrop');
+
+    function closeSearchDrop() {
+      searchDrop.hidden = true;
+      searchDrop.innerHTML = '';
+    }
+    function searchIconHtml(a) {
+      if (a.iconUrl) return '<img class="sd-icon" src="' + esc(a.iconUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">';
+      const ch = (a.name || '?').trim().charAt(0).toUpperCase();
+      return '<span class="sd-icon text" style="background:' + iconBg(a.name) + '">' + esc(ch) + '</span>';
+    }
+    function renderSearchDrop(q, apps, news) {
+      if (!q) { closeSearchDrop(); return; }
+      const appRows = (apps || []).slice(0, 6);
+      const newsRows = (news || []).slice(0, 6);
+      if (!appRows.length && !newsRows.length) {
+        searchDrop.innerHTML = '<div class="sd-empty">“' + esc(q) + '” 결과 없음</div>';
+        searchDrop.hidden = false;
+        return;
+      }
+      let html = '';
+      if (appRows.length) {
+        html += '<div class="sd-head">앱</div>' + appRows.map(a =>
+          '<button type="button" class="sd-item" data-kind="app" data-id="' + esc(a.id) + '" role="option">' +
+          searchIconHtml(a) +
+          '<span class="sd-title">' + esc(a.name) + '</span>' +
+          '<span class="sd-sub">' + esc(a.category || '') + '</span></button>'
+        ).join('');
+      }
+      if (newsRows.length) {
+        html += '<div class="sd-head">뉴스</div>' + newsRows.map(n =>
+          '<button type="button" class="sd-item" data-kind="news" data-id="' + esc(n.id) + '" data-main="' + esc(n.main || 'mac') + '" role="option">' +
+          '<span class="sd-icon text" style="background:#444">' + esc(logoText(n.sourceName)) + '</span>' +
+          '<span class="sd-title">' + esc(newsTitle(n)) + '</span>' +
+          '<span class="sd-sub">' + esc(n.main || '') + '</span></button>'
+        ).join('');
+      }
+      searchDrop.innerHTML = html;
+      searchDrop.hidden = false;
+      $$('.sd-item', searchDrop).forEach(btn => {
+        btn.onclick = () => {
+          closeSearchDrop();
+          searchInput.blur();
+          if (btn.dataset.kind === 'app') openModal(btn.dataset.id);
+          else openDashboardNews(btn.dataset.main, btn.dataset.id);
+        };
+      });
+    }
+    function runUnifiedSearch(q) {
+      const seq = ++searchSeq;
+      if (!q) {
+        searchDrop.innerHTML = '<div class="sd-empty">앱·뉴스를 함께 검색합니다</div>';
+        searchDrop.hidden = false;
+        return;
+      }
+      searchDrop.innerHTML = '<div class="sd-empty">검색 중…</div>';
+      searchDrop.hidden = false;
+      Promise.all([
+        api('/api/apps?q=' + encodeURIComponent(q) + '&page=1&pageSize=6&sort=newest').catch(() => null),
+        api('/api/news?q=' + encodeURIComponent(q) + '&page=1&pageSize=6').catch(() => null)
+      ]).then(([ad, nd]) => {
+        if (seq !== searchSeq) return;
+        const cur = searchInput.value.trim();
+        if (cur !== q) return;
+        renderSearchDrop(q, ad && ad.apps, nd && nd.news);
+      });
+    }
+    searchInput.addEventListener('input', e => {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        const q = e.target.value.trim();
-        if (state.view === 'news') { state.news.q = q; state.news.page = 1; applyNewsLayout(); loadNews(); }
-        else if (state.view === 'appstore') { state.filters.q = q; state.filters.page = 1; loadStoreList(); }
-        else if (q) { state.filters.q = q; switchView('appstore'); }
-      }, 300);
+      const q = e.target.value.trim();
+      searchTimer = setTimeout(() => runUnifiedSearch(q), 250);
+    });
+    searchInput.addEventListener('focus', () => {
+      runUnifiedSearch(searchInput.value.trim());
+    });
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeSearchDrop(); searchInput.blur(); return; }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const first = $1('.sd-item', searchDrop);
+        if (first) first.click();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        const first = $1('.sd-item', searchDrop);
+        if (first) { e.preventDefault(); first.focus(); }
+      }
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest || !e.target.closest('.searchbox')) closeSearchDrop();
     });
     document.addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('globalSearch').focus(); }
     });
     // 정렬/필터 (앱 스토어 — 사이드바·칩은 renderStoreSidebar/renderStoreChips에서 배선)
     // 헤더
-    $('notifBell').onclick = openNotifCenter;
-    $('adminBtn').onclick = openAdmin;
+    $('adminBtn').onclick = () => openAdmin();
     $('adminClose').onclick = closeAdmin;
     $('adminBackdrop').onclick = closeAdmin;
+    $$('#adminTabs .drawer-tab').forEach(b => { b.onclick = () => switchAdminTab(b.dataset.atab); });
     $('adminSettingsForm').onsubmit = saveAdminSettings;
     $('adminSyncAll').onclick = () => {
       apiPost('/api/sync', {}).then(() => toast('전체 수집 요청됨')).catch(() => toast('수집 요청 실패'));
@@ -1557,10 +1782,10 @@
       apiPost('/api/translate', {}).then(() => toast('번역 요청됨')).catch(() => toast('번역 요청 실패'));
     };
     $('adminNotifReadAll').onclick = () => {
-      apiPost('/api/notifications/read-all').then(() => toast('모두 읽음')).catch(() => toast('실패'));
+      apiPost('/api/notifications/read-all').then(() => { toast('모두 읽음'); loadNotifList(); }).catch(() => toast('실패'));
     };
     $('adminNotifCleanup').onclick = () => {
-      apiPost('/api/notifications/cleanup').then(d => toast('정리됨 ' + (d.deleted || 0) + '건')).catch(() => toast('실패'));
+      apiPost('/api/notifications/cleanup').then(d => { toast('정리됨 ' + (d.deleted || 0) + '건'); loadNotifList(); }).catch(() => toast('실패'));
     };
     $('adminSeedForm').onsubmit = e => {
       e.preventDefault();
@@ -1581,15 +1806,33 @@
       // 현재 보기 즉시 반영
     if (state.view === 'appstore') {
         if (state.storeSub === 'timeline' || state.storeSub === 'watchlist') loadStoreList();
-        else loadStatsPanel();
+        else if (!$('adminDrawer') || !$('adminDrawer').hidden) loadStatsPanel();
       } else if (state.view === 'news') {
         if (state.news.detailId) openNewsDetail(state.news.detailId, true);
         else { applyNewsLayout(); loadNews(); }
       }
       if (state.modal.currentId) openModal(state.modal.currentId, true);
     };
+    // 폰트 크기 조절 (localStorage 기억)
+    let fontPx = FONT_DEFAULT;
+    try {
+      const saved = parseInt(localStorage.getItem(FONT_KEY), 10);
+      if (saved >= FONT_MIN && saved <= FONT_MAX) fontPx = saved;
+    } catch (e) {}
+    const applyFont = (px) => {
+      fontPx = Math.min(FONT_MAX, Math.max(FONT_MIN, px));
+      document.documentElement.style.setProperty('--fs', fontPx + 'px');
+      try { localStorage.setItem(FONT_KEY, String(fontPx)); } catch (e) {}
+      toast('글자 크기 ' + fontPx + 'px');
+    };
+    document.documentElement.style.setProperty('--fs', fontPx + 'px');
+    $('fontDown').onclick = () => applyFont(fontPx - 1);
+    $('fontUp').onclick = () => applyFont(fontPx + 1);
     $('modalClose').onclick = () => { if (typeof $('appModal').close === 'function') $('appModal').close(); };
     $('appModal').addEventListener('click', e => { if (e.target === $('appModal')) $('appModal').close(); });
+    $$('#modalTabs [role="tab"]').forEach(btn => { btn.onclick = () => setActiveTab(btn.dataset.tab); });
+    const langBtn = $('modalLangBtn');
+    if (langBtn) langBtn.onclick = toggleModalLang;
     document.addEventListener('click', e => {
       const btn = e.target.closest('[data-mdkey]');
       if (!btn) return;
@@ -1602,7 +1845,8 @@
     });
     // 카운트
     api('/api/apps?page=1&pageSize=1').then(d => {
-      $('topAppCount').textContent = d.total;
+      const topApp = $('topAppCount');
+      if (topApp) topApp.textContent = d.total;
       setNavCounts({ app: d.total });
     }).catch(() => {});
     updateBmCount();
