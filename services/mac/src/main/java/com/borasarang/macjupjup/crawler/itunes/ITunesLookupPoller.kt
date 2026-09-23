@@ -101,7 +101,12 @@ class ITunesLookupPoller(
                             } else {
                                 r.appleCategory?.let { AppleCategoryMap.map(it) } ?: app.category
                             },
-                            lastUpdatedAt = now,
+                            // 버전 bump만 "업데이트" — 순수 enrich(스크린샷·평점 보완)는 lastUpdatedAt 보존 (최신순 오염 방지)
+                            lastUpdatedAt = if (versionChanged || (app.version == null && r.version != null)) {
+                                now
+                            } else {
+                                app.lastUpdatedAt
+                            },
                             isNew = false,
                         )
                         drafts += AppDraft(

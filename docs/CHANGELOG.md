@@ -1,5 +1,13 @@
 # CHANGELOG — JupJup
 
+## 정렬 통일 · README 백필 follow-up (JupJup-dih · JupJup-cej)
+
+- **community/news 최신순 (dih)**: `ORDER BY COALESCE(NULLIF(publishedAt, 0), collectedAt) DESC` — 대상 시간 있으면 그 시간, 없으면 수집 시간 (뉴스 `recentByMain` 동일)
+- **iTunes enrich 오염 제거 (dih)**: Lookup 순수 보완(스크린샷·평점) 시 `lastUpdatedAt` 보존 — 버전 bump만 갱신 · NameMatcher trackId 연결도 `lastUpdatedAt` 보존
+- **GitHub published_at**: `pushed_at` → `releaseDate` 매핑 이미 존재 (검사 결과 이상 없음) · MAS 우선(`sort=mas`)은 `trackId` CASE — 시간 정렬 아님 (유지)
+- **404 README 회전 (cej)**: 레이트리밋 아닌 영구 실패(404 등)를 `rotateRepos`로 모아 `lastUpdatedAt`만 올린 draft 저장 — `lastUpdatedAt ASC` 선두 고착 제거 · `buildMissingOut` 분리(테스트)
+- 검증: unit **144/0** · `node --check` · Room KSP 통과 · PR #24 머지 후
+
 ## 정렬 통일 · GitHub README 백필 (JupJup-a8n · JupJup-zxa)
 
 - **정렬 규칙**: 대상 시간(`releaseDate`) 있으면 그 시간, 없으면 수집 시간(`lastUpdatedAt`) — «최신순»은 수집 시각이 아님

@@ -44,7 +44,7 @@ interface CommunityPostDao {
         WHERE (:main IS NULL OR main = :main)
           AND (:sourceId IS NULL OR sourceId = :sourceId)
           AND (:q IS NULL OR title LIKE '%' || :q || '%' OR summary LIKE '%' || :q || '%')
-        ORDER BY publishedAt DESC
+        ORDER BY COALESCE(NULLIF(publishedAt, 0), collectedAt) DESC
         LIMIT :limit OFFSET :offset""",
     )
     suspend fun listFiltered(

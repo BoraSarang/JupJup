@@ -46,7 +46,8 @@ class ITunesNameMatcher(
                 if (hit != null) {
                     val now = System.currentTimeMillis()
                     drafts += AppDraft(
-                        app.copy(trackId = hit.trackId, lastUpdatedAt = now, isNew = false),
+                        // trackId 연결만 갱신 — lastUpdatedAt 보존 (최신순 오염 방지, JupJup-dih)
+                        app.copy(trackId = hit.trackId, isNew = false),
                         listOf(
                             AppSourceMappingHelper.mapping(
                                 appId = app.id,
