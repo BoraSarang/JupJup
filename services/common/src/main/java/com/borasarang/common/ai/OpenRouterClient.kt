@@ -64,50 +64,51 @@ class OpenRouterClient(private val apiKey: String) : AiClient {
                 .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 
-            val response = client.newCall(request).execute()
-            val body = response.body?.string() ?: return@withContext Result.failure(Exception("빈 응답"))
-            NetMeter.record(
-                "ai",
-                body.toByteArray(Charsets.UTF_8).size.toLong(),
-                requestBody.toString().toByteArray(Charsets.UTF_8).size.toLong() + 300L,
-            )
-
-            if (!response.isSuccessful) {
-                return@withContext Result.failure(Exception("API 오류 ${response.code}: $body"))
-            }
-
-            val jsonResponse = try {
-                json.parseToJsonElement(body).jsonObject
-            } catch (e: Exception) {
-                return@withContext Result.failure(Exception("응답 파싱 실패 — 본문: ${body.take(300)}"))
-            }
-
-            // OpenRouter는 일부 상류(provider) 오류를 HTTP 200 + error 필드로 반환
-            val errObj = jsonResponse["error"]
-            if (errObj != null) {
-                val errMessage = (errObj as? JsonObject)
-                    ?.get("message")?.jsonPrimitive?.content
-                    ?: errObj.toString()
-                val errCode = jsonResponse["code"]?.jsonPrimitive?.content
-                return@withContext Result.failure(
-                    Exception("API 오류${errCode?.let { " $it" } ?: ""}: $errMessage")
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string() ?: return@withContext Result.failure(Exception("빈 응답"))
+                NetMeter.record(
+                    "ai",
+                    body.toByteArray(Charsets.UTF_8).size.toLong(),
+                    requestBody.toString().toByteArray(Charsets.UTF_8).size.toLong() + 300L,
                 )
-            }
 
-            val message = jsonResponse["choices"]
-                ?.jsonArray?.get(0)
-                ?.jsonObject?.get("message")
-                ?.jsonObject
-            val content = extractContentText(message)
-            if (content.isBlank()) {
-                val reason = message?.get("reasoning")?.jsonPrimitive?.content
-                    ?.take(200)?.replace("\n", " ")
-                    ?.let { " — 사고 내용만 반환: $it…" }
-                    .orEmpty()
-                return@withContext Result.failure(Exception("응답 파싱 실패 — 최종 답변(content) 없음${reason}본문: ${body.take(200)}"))
-            }
+                if (!response.isSuccessful) {
+                    return@withContext Result.failure(Exception("API 오류 ${response.code}: $body"))
+                }
 
-            Result.success(content)
+                val jsonResponse = try {
+                    json.parseToJsonElement(body).jsonObject
+                } catch (e: Exception) {
+                    return@withContext Result.failure(Exception("응답 파싱 실패 — 본문: ${body.take(300)}"))
+                }
+
+                // OpenRouter는 일부 상류(provider) 오류를 HTTP 200 + error 필드로 반환
+                val errObj = jsonResponse["error"]
+                if (errObj != null) {
+                    val errMessage = (errObj as? JsonObject)
+                        ?.get("message")?.jsonPrimitive?.content
+                        ?: errObj.toString()
+                    val errCode = jsonResponse["code"]?.jsonPrimitive?.content
+                    return@withContext Result.failure(
+                        Exception("API 오류${errCode?.let { " $it" } ?: ""}: $errMessage")
+                    )
+                }
+
+                val message = jsonResponse["choices"]
+                    ?.jsonArray?.get(0)
+                    ?.jsonObject?.get("message")
+                    ?.jsonObject
+                val content = extractContentText(message)
+                if (content.isBlank()) {
+                    val reason = message?.get("reasoning")?.jsonPrimitive?.content
+                        ?.take(200)?.replace("\n", " ")
+                        ?.let { " — 사고 내용만 반환: $it…" }
+                        .orEmpty()
+                    return@withContext Result.failure(Exception("응답 파싱 실패 — 최종 답변(content) 없음${reason}본문: ${body.take(200)}"))
+                }
+
+                Result.success(content)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

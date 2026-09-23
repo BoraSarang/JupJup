@@ -121,6 +121,7 @@ class CrawlWorker(
                     Result.success()
                 },
                 onFailure = { e ->
+                    if (e is kotlinx.coroutines.CancellationException) throw e
                     val message = e.message ?: e.javaClass.simpleName
                     val net = NetMeter.deltaSince("plan", netBefore)
                     app.sourceRepository.logResult(
@@ -137,9 +138,11 @@ class CrawlWorker(
                     )
                     DebugLogger.e("수집", "E-AND-CRAWL-0211", "워커 실패 source=${source.name}: $message", e)
                     checkFailureStreak(app, sourceId, source.name, message)
-                    Result.retry()
+                    if (runAttemptCount >= MAX_RUN_ATTEMPTS) Result.failure() else Result.retry()
                 },
             )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             val net = NetMeter.deltaSince("plan", netBefore)
             app.sourceRepository.logResult(
@@ -156,7 +159,7 @@ class CrawlWorker(
             )
             DebugLogger.e("수집", "E-AND-CRAWL-0211", "워커 예외 source=${source.name}: ${e.message}", e)
             checkFailureStreak(app, sourceId, source.name, e.message ?: e.javaClass.simpleName)
-            Result.retry()
+            if (runAttemptCount >= MAX_RUN_ATTEMPTS) Result.failure() else Result.retry()
         }
     }
 
@@ -248,5 +251,6 @@ class CrawlWorker(
         const val KEY_SOURCE_ID = "sourceId"
         private const val CHANNEL_ID = "planjupjup_crawl"
         private const val CHANNEL_FAIL_ID = "planjupjup_crawl_fail"
+        private const val MAX_RUN_ATTEMPTS = 3
     }
 }

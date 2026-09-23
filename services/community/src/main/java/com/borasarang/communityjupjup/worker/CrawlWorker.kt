@@ -156,15 +156,23 @@ class CrawlWorker(
                     Result.success()
                 },
                 onFailure = { e ->
+                    if (e is kotlinx.coroutines.CancellationException) throw e
                     val net = NetMeter.deltaSince("community", netBefore)
                     fail(app, source.id, displayName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
-                    Result.retry()
+                    if (runAttemptCount >= MAX_RUN_ATTEMPTS) Result.failure() else Result.retry()
                 },
             )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             val net = NetMeter.deltaSince("community", netBefore)
             fail(app, source.id, displayName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
-            Result.retry()
+            if (runAttemptCount >= MAX_RUN_ATTEMPTS) {
+                DebugLogger.e("수집", "E-AND-CRAWL-0201", "재시도 ${runAttemptCount}회 초과 — 실패 처리 board=$displayName")
+                Result.failure()
+            } else {
+                Result.retry()
+            }
         }
     }
 
@@ -249,5 +257,6 @@ class CrawlWorker(
     companion object {
         const val KEY_BOARD_ID = "boardId"
         private const val CHANNEL_ID = "communityjupjup_crawl"
+        private const val MAX_RUN_ATTEMPTS = 3
     }
 }

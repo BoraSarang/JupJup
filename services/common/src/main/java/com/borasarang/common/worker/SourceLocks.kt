@@ -15,15 +15,15 @@ object SourceLocks {
     }
 
     fun release(sourceId: String) {
+        val mutex = locks[sourceId] ?: return
         try {
-            locks[sourceId]?.unlock()
+            if (mutex.isLocked) mutex.unlock()
         } catch (_: IllegalMonitorStateException) {
             // 미보유 해제 시도 — 무시 (의도적)
         } finally {
             // R6: 유휴 락 제거 — 삭제된 소스 키 영구 잔존·무한증가 방지.
-            // 재선점 경합 시 remove 무시될 수 있으나 워커 주기 대비 무시 가능
-            val mutex = locks[sourceId]
-            if (mutex != null && !mutex.isLocked) {
+            // 원자적 remove(sourceId, mutex): 다른 워커가 이미 재선점한 맵 항목은 제거하지 않음
+            if (!mutex.isLocked) {
                 locks.remove(sourceId, mutex)
             }
         }

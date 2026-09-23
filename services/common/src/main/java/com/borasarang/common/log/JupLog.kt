@@ -40,15 +40,20 @@ object JupLog {
     /** 태그별 파일 트리. 쓰기 실패는 조용히 무시 (로깅이 앱을 죽이면 안 됨) */
     private class FileTree(private val fileTag: String, logDir: File) : Timber.Tree() {
         private val file = File(logDir, "$fileTag.log")
+        private val timeFormat = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.KOREA)
+        private var approxBytes = 0L
 
         init {
             logDir.mkdirs()
+            approxBytes = try {
+                if (file.exists()) file.length() else 0L
+            } catch (_: Exception) {
+                0L
+            }
         }
 
         override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
             try {
-                rotateIfNeeded()
-                val time = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.KOREA).format(Date())
                 val level = when (priority) {
                     Log.VERBOSE -> "V"
                     Log.DEBUG -> "D"
@@ -58,17 +63,21 @@ object JupLog {
                     else -> "?"
                 }
                 val trace = if (t != null) "\n${Log.getStackTraceString(t)}" else ""
-                file.appendText("$time $level/${tag ?: fileTag}: $message$trace\n")
+                val line = "${timeFormat.format(java.util.Date())} $level/${tag ?: fileTag}: $message$trace\n"
+                rotateIfNeeded(line.length.toLong())
+                file.appendText(line)
+                approxBytes += line.length
             } catch (_: Exception) {
             }
         }
 
-        private fun rotateIfNeeded() {
+        private fun rotateIfNeeded(incoming: Long) {
             try {
-                if (!file.exists() || file.length() < MAX_FILE_BYTES) return
+                if (approxBytes + incoming < MAX_FILE_BYTES) return
                 val backup = File(file.parent, "${file.name}.1")
                 backup.delete()
                 file.renameTo(backup)
+                approxBytes = 0L
             } catch (_: Exception) {
             }
         }

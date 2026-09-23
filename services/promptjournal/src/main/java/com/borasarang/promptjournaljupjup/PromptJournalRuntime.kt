@@ -12,6 +12,7 @@ import com.borasarang.promptjournaljupjup.data.repository.PromptRepository
 import com.borasarang.promptjournaljupjup.server.HttpServerService
 import com.borasarang.promptjournaljupjup.util.DebugLogger
 import com.borasarang.promptjournaljupjup.worker.PromptJournalScheduler
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +27,13 @@ object PromptJournalRuntime {
 
     private lateinit var appContext: Context
 
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val appScope = CoroutineScope(
+        SupervisorJob() +
+            Dispatchers.Default +
+            CoroutineExceptionHandler { _, e ->
+                DebugLogger.e("앱", "E-AND-SRV-0103", "appScope 미처리 예외: ${e.message}", e)
+            },
+    )
 
     lateinit var database: PromptJournalDatabase
         private set
@@ -78,11 +85,20 @@ object PromptJournalRuntime {
         ModelCatalog.attachStore(ModelEnabledStore.getInstance(appContext, "pj_models"))
 
         appScope.launch(Dispatchers.IO) {
-            ModelCatalog.restoreEnabled()
-            migrateDeprecatedData()
-            seedIfEmpty()
+            try {
+                ModelCatalog.restoreEnabled()
+                migrateDeprecatedData()
+                seedIfEmpty()
+            } catch (e: Exception) {
+                DebugLogger.e("앱", "E-AND-DB-0403", "초기화 스텝 실패: ${e.message}", e)
+            }
 
-            val settings = preferences.getSettings()
+            val settings = try {
+                preferences.getSettings()
+            } catch (e: Exception) {
+                DebugLogger.e("설정", "E-AND-DB-0404", "설정 조회 실패: ${e.message}", e)
+                return@launch
+            }
             if (settings.autoStart) {
                 DebugLogger.i("앱", "자동 시작 설정 켜짐 — 서버 시작")
                 HttpServerService.start(appContext)
@@ -90,8 +106,12 @@ object PromptJournalRuntime {
                 DebugLogger.i("앱", "자동 시작 꺼짐 — 서버 미시작")
             }
 
-            scheduler.migrateLegacyWork()
-            scheduler.rescheduleAll()
+            try {
+                scheduler.migrateLegacyWork()
+                scheduler.rescheduleAll()
+            } catch (e: Exception) {
+                DebugLogger.e("스케줄", "E-AND-SRV-0103", "워커 재스케줄 실패: ${e.message}", e)
+            }
         }
     }
 

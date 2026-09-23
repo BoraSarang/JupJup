@@ -54,17 +54,18 @@ class ExaSearchClient(private val apiKey: String) {
                 .addHeader("Content-Type", "application/json")
                 .post(body.toString().toRequestBody("application/json".toMediaType()))
                 .build()
-            val response = client.newCall(request).execute()
-            val respBody = response.body?.string() ?: throw IllegalStateException("빈 응답")
-            NetMeter.record(
-                "ai",
-                respBody.toByteArray(Charsets.UTF_8).size.toLong(),
-                body.toString().toByteArray(Charsets.UTF_8).size.toLong() + 300L,
-            )
-            if (!response.isSuccessful) {
-                throw IllegalStateException("Exa 오류 ${response.code}: ${respBody.take(200)}")
+            client.newCall(request).execute().use { response ->
+                val respBody = response.body?.string() ?: throw IllegalStateException("빈 응답")
+                NetMeter.record(
+                    "ai",
+                    respBody.toByteArray(Charsets.UTF_8).size.toLong(),
+                    body.toString().toByteArray(Charsets.UTF_8).size.toLong() + 300L,
+                )
+                if (!response.isSuccessful) {
+                    throw IllegalStateException("Exa 오류 ${response.code}: ${respBody.take(200)}")
+                }
+                Result.success(parseSearchResponse(respBody))
             }
-            Result.success(parseSearchResponse(respBody))
         } catch (e: Exception) {
             Result.failure(e)
         }

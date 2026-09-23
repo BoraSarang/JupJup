@@ -24,9 +24,9 @@ object TimeParser {
         if (raw.isNullOrBlank()) return null
         val text = raw.trim()
         val now = System.currentTimeMillis()
-        relativeMin.find(text)?.let { return now - it.groupValues[1].toLong() * 60_000L }
-        relativeHour.find(text)?.let { return now - it.groupValues[1].toLong() * 3_600_000L }
-        relativeDay.find(text)?.let { return now - it.groupValues[1].toLong() * 86_400_000L }
+        relativeMin.find(text)?.let { return now - (it.groupValues[1].toLongOrNull() ?: return null) * 60_000L }
+        relativeHour.find(text)?.let { return now - (it.groupValues[1].toLongOrNull() ?: return null) * 3_600_000L }
+        relativeDay.find(text)?.let { return now - (it.groupValues[1].toLongOrNull() ?: return null) * 86_400_000L }
         if (text == "방금" || text.startsWith("방금")) return now
         for (re in absoluteDateTime) {
             re.find(text)?.let { m -> return parseDateTime(m.value) }

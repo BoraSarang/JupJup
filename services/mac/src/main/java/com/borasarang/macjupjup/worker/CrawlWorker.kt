@@ -148,9 +148,10 @@ class CrawlWorker(
                     Result.success()
                 },
                 onFailure = { e ->
+                    if (e is kotlinx.coroutines.CancellationException) throw e
                     val net = NetMeter.deltaSince("mac", netBefore)
                     fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
-                    Result.retry()
+                    if (runAttemptCount >= MAX_RUN_ATTEMPTS) Result.failure() else Result.retry()
                 },
             )
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -163,7 +164,7 @@ class CrawlWorker(
         } catch (e: Exception) {
             val net = NetMeter.deltaSince("mac", netBefore)
             fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
-            Result.retry()
+            if (runAttemptCount >= MAX_RUN_ATTEMPTS) Result.failure() else Result.retry()
         }
     }
 
@@ -226,10 +227,12 @@ class CrawlWorker(
                 DebugLogger.w("뉴스수집", "정리 스킵: ${e.message}")
             }
             Result.success()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             val net = NetMeter.deltaSince("mac", netBefore)
             fail(app, sourceId, sourceName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
-            Result.retry()
+            if (runAttemptCount >= MAX_RUN_ATTEMPTS) Result.failure() else Result.retry()
         }
     }
 
@@ -282,10 +285,12 @@ class CrawlWorker(
                 DebugLogger.w("커뮤니티수집", "정리 스킵: ${e.message}")
             }
             Result.success()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             val net = NetMeter.deltaSince("mac", netBefore)
             fail(app, sourceId, sourceName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
-            Result.retry()
+            if (runAttemptCount >= MAX_RUN_ATTEMPTS) Result.failure() else Result.retry()
         }
     }
 
@@ -408,6 +413,7 @@ class CrawlWorker(
     companion object {
         const val KEY_SOURCE_ID = "sourceId"
         private const val MAX_TRANSLATE_PER_RUN = 15
+        private const val MAX_RUN_ATTEMPTS = 3
         private const val CHANNEL_ID = "macjupjup_crawl"
     }
 }

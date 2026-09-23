@@ -13,6 +13,7 @@ import com.borasarang.macjupjup.data.seed.InitialDataSeeder
 import com.borasarang.macjupjup.server.HttpServerService
 import com.borasarang.macjupjup.util.DebugLogger
 import com.borasarang.macjupjup.worker.CrawlScheduler
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,7 +35,13 @@ object MacJupJupRuntime {
 
     private lateinit var appContext: Context
 
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val appScope = CoroutineScope(
+        SupervisorJob() +
+            Dispatchers.Default +
+            CoroutineExceptionHandler { _, e ->
+                DebugLogger.e("앱", "E-AND-SRV-0103", "appScope 미처리 예외: ${e.message}", e)
+            },
+    )
 
     lateinit var database: MacDatabase
         private set
@@ -90,7 +97,11 @@ object MacJupJupRuntime {
         crawlScheduler = CrawlScheduler(appContext)
 
         appScope.launch(Dispatchers.IO) {
-            InitialDataSeeder.seedIfEmpty(database)
+            try {
+                InitialDataSeeder.seedIfEmpty(database)
+            } catch (e: Exception) {
+                DebugLogger.e("앱", "E-AND-DB-0403", "시드 실패: ${e.message}", e)
+            }
             // Setapp 수집처 완전 제거 (사용자 결정): 예약 취소 → 소스행·매핑·고아앱·로그 삭제
             try {
                 crawlScheduler.cancelSource(REMOVED_SOURCE_SETAPP)
@@ -124,11 +135,24 @@ object MacJupJupRuntime {
             } catch (e: Exception) {
                 DebugLogger.w("복구", "스크린샷 정리 스킵: ${e.message}")
             }
-            crawlScheduler.scheduleDailySummary()
-            crawlScheduler.scheduleTranslate()
-            val settings = preferences.getSettings()
+            try {
+                crawlScheduler.scheduleDailySummary()
+                crawlScheduler.scheduleTranslate()
+            } catch (e: Exception) {
+                DebugLogger.e("스케줄", "E-AND-CRAWL-0201", "주기 스케줄 실패: ${e.message}", e)
+            }
+            val settings = try {
+                preferences.getSettings()
+            } catch (e: Exception) {
+                DebugLogger.e("설정", "E-AND-DB-0404", "설정 조회 실패: ${e.message}", e)
+                return@launch
+            }
             if (settings.crawlEnabled) {
-                crawlScheduler.scheduleAll()
+                try {
+                    crawlScheduler.scheduleAll()
+                } catch (e: Exception) {
+                    DebugLogger.e("스케줄", "E-AND-CRAWL-0201", "수집 스케줄 실패: ${e.message}", e)
+                }
             } else {
                 DebugLogger.i("수집", "수집 일시정지 상태 — 주기 스케줄 생략")
             }

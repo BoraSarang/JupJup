@@ -12,6 +12,7 @@ import com.borasarang.planjupjup.data.seed.InitialDataSeeder
 import com.borasarang.planjupjup.server.HttpServerService
 import com.borasarang.planjupjup.util.DebugLogger
 import com.borasarang.planjupjup.worker.CrawlScheduler
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,7 +34,13 @@ object PlanJupJupRuntime {
 
     private lateinit var appContext: Context
 
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val appScope = CoroutineScope(
+        SupervisorJob() +
+            Dispatchers.Default +
+            CoroutineExceptionHandler { _, e ->
+                DebugLogger.e("앱", "E-AND-SRV-0103", "appScope 미처리 예외: ${e.message}", e)
+            },
+    )
 
     lateinit var database: PlanDatabase
         private set
@@ -86,11 +93,28 @@ object PlanJupJupRuntime {
         crawlScheduler = CrawlScheduler(appContext)
 
         appScope.launch(Dispatchers.IO) {
-            InitialDataSeeder.seedIfEmpty(database)
-            crawlScheduler.scheduleDailySummary()
-            val settings = preferences.getSettings()
+            try {
+                InitialDataSeeder.seedIfEmpty(database)
+            } catch (e: Exception) {
+                DebugLogger.e("앱", "E-AND-DB-0403", "시드 실패: ${e.message}", e)
+            }
+            try {
+                crawlScheduler.scheduleDailySummary()
+            } catch (e: Exception) {
+                DebugLogger.e("스케줄", "E-AND-CRAWL-0211", "데일리 스케줄 실패: ${e.message}", e)
+            }
+            val settings = try {
+                preferences.getSettings()
+            } catch (e: Exception) {
+                DebugLogger.e("설정", "E-AND-DB-0404", "설정 조회 실패: ${e.message}", e)
+                return@launch
+            }
             if (settings.crawlEnabled) {
-                crawlScheduler.scheduleAll()
+                try {
+                    crawlScheduler.scheduleAll()
+                } catch (e: Exception) {
+                    DebugLogger.e("스케줄", "E-AND-CRAWL-0211", "수집 스케줄 실패: ${e.message}", e)
+                }
             } else {
                 DebugLogger.i("수집", "수집 일시정지 상태 — 주기 스케줄 생략")
             }

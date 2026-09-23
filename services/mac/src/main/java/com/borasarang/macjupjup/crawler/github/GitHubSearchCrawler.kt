@@ -227,8 +227,9 @@ class GitHubSearchCrawler(
 
     private fun enrichWithReadme(drafts: List<AppDraft>, readmeMap: Map<String, String>): List<AppDraft> =
         drafts.map { d ->
-            val readme = d.app.repoFullName?.let { readmeMap[it] } ?: d
-            if (readme === d) d else enrichDraftWithReadme(d, readmeMap[d.app.repoFullName!!]!!)
+            val key = d.app.repoFullName ?: return@map d
+            val readme = readmeMap[key] ?: return@map d
+            enrichDraftWithReadme(d, readme)
         }
 
     /** README 첫 줄이 배지/헤딩/HTML/URL이면 snippet으로 부적합 */

@@ -19,6 +19,11 @@ private val thumbCache = java.util.concurrent.ConcurrentHashMap<String, ThumbEnt
 private const val THUMB_CACHE_TTL_MS = 10 * 60 * 1000L
 private const val THUMB_CACHE_MAX = 20
 
+private fun evictOldestThumb() {
+    val oldestKey = thumbCache.entries.minByOrNull { it.value.cachedAt }?.key ?: return
+    thumbCache.remove(oldestKey)
+}
+
 internal fun HttpServerService.cmAssetRoutes(route: Route) {
     route.get("/") {
         serveAsset(call, "community_web/index.html", ContentType.Text.Html.withCharset(Charsets.UTF_8))
@@ -50,7 +55,7 @@ internal fun HttpServerService.cmAssetRoutes(route: Route) {
             com.borasarang.communityjupjup.crawler.CrawlHttp.getBytes(raw)
         }.also {
             if (it.isOk && it.bytes != null) {
-                if (thumbCache.size >= THUMB_CACHE_MAX) thumbCache.clear()
+                if (thumbCache.size >= THUMB_CACHE_MAX) evictOldestThumb()
                 thumbCache[raw] = ThumbEntry(it.bytes, it.contentType ?: "image/jpeg", System.currentTimeMillis())
             }
         }

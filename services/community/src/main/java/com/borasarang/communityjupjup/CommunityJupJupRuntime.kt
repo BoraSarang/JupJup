@@ -11,6 +11,7 @@ import com.borasarang.communityjupjup.data.seed.InitialDataSeeder
 import com.borasarang.communityjupjup.server.HttpServerService
 import com.borasarang.communityjupjup.util.DebugLogger
 import com.borasarang.communityjupjup.worker.CrawlScheduler
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,7 +32,13 @@ object CommunityJupJupRuntime {
 
     private lateinit var appContext: Context
 
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val appScope = CoroutineScope(
+        SupervisorJob() +
+            Dispatchers.Default +
+            CoroutineExceptionHandler { _, e ->
+                DebugLogger.e("앱", "E-AND-SRV-0103", "appScope 미처리 예외: ${e.message}", e)
+            },
+    )
 
     lateinit var database: CommunityDatabase
         private set
@@ -81,7 +88,11 @@ object CommunityJupJupRuntime {
         crawlScheduler = CrawlScheduler(appContext)
 
         appScope.launch(Dispatchers.IO) {
-            InitialDataSeeder.seedIfEmpty(database)
+            try {
+                InitialDataSeeder.seedIfEmpty(database)
+            } catch (e: Exception) {
+                DebugLogger.e("앱", "E-AND-DB-0403", "시드 실패: ${e.message}", e)
+            }
             // TTL 정리 (핫딜 3일·중고 7일·그 외 retentionDays)
             try {
                 val retention = preferences.getSettings().retentionDays
@@ -90,16 +101,33 @@ object CommunityJupJupRuntime {
             } catch (e: Exception) {
                 DebugLogger.w("정리", "TTL 정리 스킵: ${e.message}")
             }
-            crawlScheduler.scheduleDailySummary()
-            val settings = preferences.getSettings()
+            try {
+                crawlScheduler.scheduleDailySummary()
+            } catch (e: Exception) {
+                DebugLogger.e("스케줄", "E-AND-CRAWL-0201", "데일리 스케줄 실패: ${e.message}", e)
+            }
+            val settings = try {
+                preferences.getSettings()
+            } catch (e: Exception) {
+                DebugLogger.e("설정", "E-AND-DB-0404", "설정 조회 실패: ${e.message}", e)
+                return@launch
+            }
             // R27: 보드 단위 스케줄 1회 전환 (구 소스 작업명 잔재 정리)
-            if (!preferences.isWorkV4Done()) {
-                crawlScheduler.cancelAll()
-                preferences.setWorkV4Done()
-                DebugLogger.i("스케줄", "보드 단위 스케줄로 1회 전환")
+            try {
+                if (!preferences.isWorkV4Done()) {
+                    crawlScheduler.cancelAll()
+                    preferences.setWorkV4Done()
+                    DebugLogger.i("스케줄", "보드 단위 스케줄로 1회 전환")
+                }
+            } catch (e: Exception) {
+                DebugLogger.w("스케줄", "V4 전환 스킵: ${e.message}")
             }
             if (settings.crawlEnabled) {
-                crawlScheduler.scheduleAll()
+                try {
+                    crawlScheduler.scheduleAll()
+                } catch (e: Exception) {
+                    DebugLogger.e("스케줄", "E-AND-CRAWL-0201", "수집 스케줄 실패: ${e.message}", e)
+                }
             } else {
                 DebugLogger.i("수집", "수집 일시정지 상태 — 주기 스케줄 생략")
             }

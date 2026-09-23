@@ -46,7 +46,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun saveAutoStart(enabled: Boolean) {
         viewModelScope.launch {
             DebugLogger.i("설정", "자동 시작 → $enabled")
-            app.preferences.saveSettings(_settings.value.copy(autoStart = enabled))
+            try {
+                app.preferences.saveSettings(_settings.value.copy(autoStart = enabled))
+            } catch (e: Exception) {
+                DebugLogger.e("설정", "E-AND-DB-0404", "자동 시작 저장 실패: ${e.message}", e)
+            }
             refresh()
         }
     }

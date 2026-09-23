@@ -49,7 +49,8 @@ class PreferencesManager(private val context: Context) {
                 port = prefs[Keys.PORT] ?: Constants.DEFAULT_PORT,
                 retentionDays = prefs[Keys.RETENTION_DAYS] ?: Constants.DEFAULT_RETENTION_DAYS,
                 autoStart = prefs[Keys.AUTO_START] ?: Constants.DEFAULT_AUTO_START,
-                watchdogIntervalSec = prefs[Keys.WATCHDOG_SEC] ?: Constants.DEFAULT_WATCHDOG_INTERVAL_SEC,
+                watchdogIntervalSec = (prefs[Keys.WATCHDOG_SEC] ?: Constants.DEFAULT_WATCHDOG_INTERVAL_SEC)
+                    .coerceIn(Constants.MIN_WATCHDOG_SEC, Constants.MAX_WATCHDOG_SEC),
                 githubToken = prefs[Keys.GITHUB_TOKEN] ?: "",
                 translateKo = prefs[Keys.TRANSLATE_KO] ?: true,
                 notifCrawlComplete = prefs[Keys.NOTIF_CRAWL_COMPLETE] ?: true,

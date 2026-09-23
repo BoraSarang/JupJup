@@ -37,6 +37,13 @@ class HttpServerService : Service() {
     internal val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
     private var watchdogJob: Job? = null
+    private var bindRetryJob: Job? = null
+
+    @Volatile
+    private var bindRetryAttempt = 0
+
+    @Volatile
+    private var lastRestartAt = 0L
 
     @Volatile
     internal var currentPort: Int = Constants.DEFAULT_PORT
@@ -99,7 +106,18 @@ class HttpServerService : Service() {
     override fun onBind(intent: Intent?) = null
 
     internal suspend fun restartServer() {
-        val settings = app().preferences.getSettings()
+        val now = System.currentTimeMillis()
+        if (now - lastRestartAt < RESTART_COOLDOWN_MS) {
+            DebugLogger.w("서버", "재시작 쿨다운 중 — 스킵 (${RESTART_COOLDOWN_MS}ms)")
+            return
+        }
+        lastRestartAt = now
+        val settings = try {
+            app().preferences.getSettings()
+        } catch (e: Exception) {
+            DebugLogger.e("서버", Constants.ERR_AI_CALL_FAILED, "설정 조회 실패 — 재시작 중단: ${e.message}", e)
+            return
+        }
         DebugLogger.i("서버", "서버 재시작 port=$currentPort → ${settings.port}")
         try {
             server?.stop(1000, 2000)
@@ -118,31 +136,59 @@ class HttpServerService : Service() {
     }
 
     private fun startServer(port: Int) {
-        server = embeddedServer(CIO, port = port, host = "0.0.0.0") {
-            com.borasarang.common.server.LanGuard.install(this)
-            com.borasarang.common.server.AdminAuth.install(this,
-                { app().preferences.getAdminCredential() },
-                { app().preferences.getAdminToken() })
-            install(StatusPages) {
-                exception<Throwable> { call, cause ->
-                    DebugLogger.e(
-                        "서버",
-                        Constants.ERR_AI_CALL_FAILED,
-                        "API 오류 ${call.request.local.uri}: ${cause.message}",
-                        cause,
-                    )
-                    call.respondText(
-                        """{"error":"${escapeJson(cause.message ?: "internal error")}"}""",
-                        ContentType.Application.Json,
-                        HttpStatusCode.InternalServerError,
-                    )
+        try {
+            server = embeddedServer(CIO, port = port, host = "0.0.0.0") {
+                com.borasarang.common.server.LanGuard.install(this)
+                com.borasarang.common.server.AdminAuth.install(this,
+                    { app().preferences.getAdminCredential() },
+                    { app().preferences.getAdminToken() })
+                install(StatusPages) {
+                    exception<Throwable> { call, cause ->
+                        DebugLogger.e(
+                            "서버",
+                            Constants.ERR_AI_CALL_FAILED,
+                            "API 오류 ${call.request.local.uri}: ${cause.message}",
+                            cause,
+                        )
+                        call.respondText(
+                            """{"error":"${escapeJson(cause.message ?: "internal error")}"}""",
+                            ContentType.Application.Json,
+                            HttpStatusCode.InternalServerError,
+                        )
+                    }
+                }
+                routing {
+                    pjAssetRoutes(this)
+                    pjRoutes(this)
+                }
+            }.start(wait = false)
+            bindRetryAttempt = 0
+        } catch (e: Throwable) {
+            server = null
+            DebugLogger.e("서버", Constants.ERR_AI_CALL_FAILED, "서버 바인드 실패 재시도 port=$port: ${e.message}", e)
+            updateNotification("포트 $port 사용 불가 — 재시도 중")
+            bindRetryJob?.cancel()
+            bindRetryJob = scope.launch {
+                if (bindRetryAttempt >= MAX_BIND_RETRY) {
+                    DebugLogger.e("서버", Constants.ERR_AI_CALL_FAILED, "바인드 재시도 ${bindRetryAttempt}회 초과 — 중단")
+                    updateNotification("포트 $port 사용 불가 — 재시도 중단")
+                    return@launch
+                }
+                val backoffMs = (2000L shl bindRetryAttempt).coerceAtMost(60_000L)
+                bindRetryAttempt++
+                kotlinx.coroutines.delay(backoffMs)
+                if (server == null) {
+                    try {
+                        startServer(port)
+                        bindRetryAttempt = 0
+                        updateNotification(runningText(port))
+                        DebugLogger.i("서버", "바인드 재시도 성공 port=$port")
+                    } catch (e2: Exception) {
+                        DebugLogger.e("서버", Constants.ERR_AI_CALL_FAILED, "바인드 재시도 실패: ${e2.message}", e2)
+                    }
                 }
             }
-            routing {
-                pjAssetRoutes(this)
-                pjRoutes(this)
-            }
-        }.start(wait = false)
+        }
     }
 
     private fun startWatchdog() {
@@ -151,9 +197,13 @@ class HttpServerService : Service() {
             DebugLogger.i("서버", "Watchdog 시작")
             while (true) {
                 kotlinx.coroutines.delay(30_000L)
-                if (server == null || !isPortOpen(currentPort)) {
-                    DebugLogger.w("서버", "Watchdog: 무응답 감지 → 자동 재시작")
-                    restartServer()
+                try {
+                    if (server == null || !isPortOpen(currentPort)) {
+                        DebugLogger.w("서버", "Watchdog: 무응답 감지 → 자동 재시작")
+                        restartServer()
+                    }
+                } catch (e: Exception) {
+                    DebugLogger.e("서버", Constants.ERR_AI_CALL_FAILED, "Watchdog 루프 오류: ${e.message}", e)
                 }
             }
         }
@@ -161,7 +211,10 @@ class HttpServerService : Service() {
 
     private fun isPortOpen(port: Int): Boolean {
         return try {
-            Socket("127.0.0.1", port).use { true }
+            Socket().use { s ->
+                s.connect(java.net.InetSocketAddress("127.0.0.1", port), PORT_CHECK_TIMEOUT_MS)
+                true
+            }
         } catch (_: Exception) {
             false
         }
@@ -227,6 +280,9 @@ class HttpServerService : Service() {
         const val ACTION_RESTART = "com.borasarang.promptjournaljupjup.RESTART_SERVER"
         const val NOTIFICATION_ID = 3100
         const val CHANNEL_ID = "jupjup_pj_server"
+        private const val RESTART_COOLDOWN_MS = 5_000L
+        private const val PORT_CHECK_TIMEOUT_MS = 500
+        private const val MAX_BIND_RETRY = 5
 
         fun start(context: Context) {
             try {
