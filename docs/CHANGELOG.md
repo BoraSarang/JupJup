@@ -1,5 +1,16 @@
 # CHANGELOG — JupJup
 
+## 정렬 통일 · GitHub README 백필 (JupJup-a8n · JupJup-zxa)
+
+- **정렬 규칙**: 대상 시간(`releaseDate`) 있으면 그 시간, 없으면 수집 시간(`lastUpdatedAt`) — «최신순»은 수집 시각이 아님
+- **앱 `listFiltered`**: 기본·`updated` → `COALESCE(releaseDate, lastUpdatedAt) DESC` · `firstSeen` 신규 키 추가 (신규 등록 칩 = `firstSeenAt` 내림차순)
+- **게임 `listGames`**: `releaseDate DESC` → `COALESCE(releaseDate, lastUpdatedAt)` — null이 목록 바닥 고정 제거
+- **프론트**: 신규 등록 칩 `sort:'firstSeen'` · 대시보드/세일 카드 날짜 `releaseDate || lastUpdatedAt`
+- **GitHub README 백필 (JupJup-zxa)**: 이번 `sort=updated` 검색에 없는 DB 빈 `longDescription` 행을 `loadMissingReadme`로 합류 후 README 보강 · 우선순위는 `getIdsWithLongDescription`(전문만, snippet 미포함) · 백필 성공분만 저장 대상 · `lastUpdatedAt ASC` 회전으로 주기 보강
+- **PAT 등록**: 설정 `githubToken` 등록 후 `token=true` · 런당 README 90건(`limit=90`) · 미인증 30/h 상한 해소
+- **백필 실측**: GitHub empty `longDescription` 963 → **39** · `homoglyph-inspector` `longDescription=6071` (README 전문, 404 선두 고착 제외 잔여는 404 skip)
+- 검증: unit **142/0** · `node --check` · Room 쿼리 KSP 통과 · 기기 API 스모크(`sort=newest`/`firstSeen`/`/api/games?sort=newest` 모노토닉) · `bd close` a8n·zxa
+
 ## 본문 품질·표시 복구 (JupJup-ggb)
 
 - **모달 표시 P0**: 번역 ON·KO 미번역(4000자 초과) 시 `funcShow` 동등성 붕괴로 수집 `longDescription`이 화면에서 숨김 → EN 전문 폴백 + KO 짧은소개+EN 전문 연결(CHANGELOG에만 있던 concat 실현) · 원문보기 토글 개선

@@ -19,7 +19,7 @@
   /* 목업 11종 바로가기 → 앱 스토어 매핑 (params: license/category/sort/newOnly/updatedOnly) */
   const APP_CHIPS = [
     { label: '전체', params: {} },
-    { label: '신규 등록', params: { newOnly: true, sort: 'newest' } },
+    { label: '신규 등록', params: { newOnly: true, sort: 'firstSeen' } },
     { label: '무료', params: { license: 'FREE' } },
     { label: '유료', params: { license: 'PAID' } },
     { label: '업데이트', params: { updatedOnly: true, sort: 'updated' } },
@@ -586,7 +586,7 @@
     const list = apps;
     $('dashAppCount').textContent = list.length + '개';
     $('dashApps').innerHTML = list.map(a => {
-      const ver = [verText(a), fmtTime(a.lastUpdatedAt)].filter(Boolean).join(' · ');
+      const ver = [verText(a), fmtTime(a.releaseDate || a.lastUpdatedAt)].filter(Boolean).join(' · ');
       return '<button type="button" class="hcard" data-id="' + esc(a.id) + '" role="listitem">' +
       '<div class="hcard-top">' + appIcon(a, 'hicon') +
       '<span class="catpill">' + esc(a.category || '') + '</span></div>' +
@@ -699,7 +699,7 @@
       $('sideSaleCount').textContent = paid.length + '개';
       $('sideSale').innerHTML = paid.map(a =>
         '<button type="button" class="salerow" data-id="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
-        '<span><b>' + esc(a.name) + '</b><small>' + esc(a.category || '') + ' · ' + fmtTime(a.lastUpdatedAt) + '</small></span>' +
+        '<span><b>' + esc(a.name) + '</b><small>' + esc(a.category || '') + ' · ' + fmtTime(a.releaseDate || a.lastUpdatedAt) + '</small></span>' +
         '<span class="saleprice">' + priceText(a) + '</span></button>'
       ).join('') || '<div class="mini-empty">세일 앱 없음</div>';
       $$('#sideSale .salerow').forEach(el => { el.onclick = () => openModal(el.dataset.id); });

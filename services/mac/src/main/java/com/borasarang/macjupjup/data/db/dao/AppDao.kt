@@ -41,9 +41,10 @@ interface AppDao {
           CASE WHEN :sort = 'mas' THEN (CASE WHEN trackId IS NOT NULL THEN 0 ELSE 1 END) END ASC,
           CASE WHEN :sort = 'stars' THEN stars END DESC,
           CASE WHEN :sort = 'rating' THEN averageRating END DESC,
-          CASE WHEN :sort = 'updated' THEN lastUpdatedAt END DESC,
+          CASE WHEN :sort = 'updated' THEN COALESCE(releaseDate, lastUpdatedAt) END DESC,
           CASE WHEN :sort = 'priceAsc' THEN price END ASC,
-          lastUpdatedAt DESC
+          CASE WHEN :sort = 'firstSeen' THEN firstSeenAt END DESC,
+          COALESCE(releaseDate, lastUpdatedAt) DESC
         LIMIT :limit OFFSET :offset"""
     )
     suspend fun listFiltered(
@@ -97,8 +98,7 @@ interface AppDao {
           AND (:q IS NULL OR name LIKE '%' || :q || '%')
         ORDER BY
           CASE WHEN :sort = 'rating' THEN averageRating END DESC,
-          releaseDate DESC,
-          lastUpdatedAt DESC
+          COALESCE(releaseDate, lastUpdatedAt) DESC
         LIMIT :limit OFFSET :offset"""
     )
     suspend fun listGames(
@@ -144,6 +144,27 @@ interface AppDao {
           OR COALESCE(TRIM(descriptionSnippet), '') != '')""",
     )
     suspend fun getIdsWithBody(ids: List<String>): List<String>
+
+    /** README 전문(longDescription) 보유 id — README 우선순위 전용 (snippet은 미포함) */
+    @Query(
+        """SELECT id FROM apps WHERE id IN (:ids)
+        AND COALESCE(TRIM(longDescription), '') != ''""",
+    )
+    suspend fun getIdsWithLongDescription(ids: List<String>): List<String>
+
+    /** GitHub README 미수집 행 (JupJup-zxa) — 이번 검색에 없어도 주기 보강. lastUpdatedAt 오래된 순 회전 */
+    @Query(
+        """SELECT * FROM apps
+        WHERE repoFullName IS NOT NULL
+          AND COALESCE(TRIM(longDescription), '') = ''
+          AND id NOT IN (:excludeIds)
+        ORDER BY lastUpdatedAt ASC
+        LIMIT :limit""",
+    )
+    suspend fun getGithubMissingLongDescription(
+        excludeIds: List<String>,
+        limit: Int,
+    ): List<App>
 
     /** 고아 앱 삭제. 반환 = 삭제 행 수 */
     @Query("DELETE FROM apps WHERE id = :id")

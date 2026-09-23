@@ -5,6 +5,11 @@
 - [x] **PLAN_v25** 본문 전체화 풀패치 (longDescription 스키마·크롤러·백필·렌더) / JupJup-qai
 - [x] **AppStorrent 소개 채움** DB 본문 id 우선순위 + DETAIL_LIMIT 60 + 체크포인트 저장 / JupJup-dui
 - [x] **본문 품질·표시 복구** 모달 EN 폴백·GitHub README 우선순위·id충돌·preferSnippet / JupJup-ggb
+- [x] **정렬 통일 범위 A** — 앱/게임 최신순 `COALESCE(releaseDate,lastUpdatedAt)`, 신규등록 `firstSeen`, 카드 표시 fallback / JupJup-a8n
+- [x] **GitHub README 백필** — 검색 미포함 빈 `longDescription` 행 `loadMissingReadme` 합류, 전용 `getIdsWithLongDescription` / JupJup-zxa
+- [x] **GitHub PAT 등록** — 설정 `githubToken` 등록, `token=true` limit=90, homoglyph `longDescription=6071` 검증 (잔여 empty=39는 404 선두) / JupJup-zxa
+- [ ] follow-up: 정렬 범위 B (community COALESCE, GitHub published_at, iTunes enrich 오염, plan 기준 통일)
+- [ ] follow-up: 404 README 선두 `lastUpdatedAt` 회전 (ASC 고착 제거 — 백필 완료 후 잔여 empty 정리)
 - [x] **PLAN_v23** mac 커뮤니티 메뉴 (뷰·시더6·API·DB v10·DC off) / JupJup-294
 - [x] **PLAN_v24** 각 대메뉴 사이드바 수집 소스 필터 (apps/games/news/community) / JupJup-1dq
 

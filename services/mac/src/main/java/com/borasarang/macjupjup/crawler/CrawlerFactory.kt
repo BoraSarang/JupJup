@@ -27,7 +27,11 @@ class CrawlerFactory(
         return when (source.type) {
             Constants.TYPE_GITHUB_SEARCH -> GitHubSearchCrawler(
                 source, githubToken,
-                loadBodyIds = { ids -> db.appDao().getIdsWithBody(ids).toSet() },
+                loadBodyIds = { ids -> db.appDao().getIdsWithLongDescription(ids).toSet() },
+                loadMissingReadme = { excludeIds, limit ->
+                    db.appDao().getGithubMissingLongDescription(excludeIds, limit)
+                        .map { com.borasarang.macjupjup.crawler.AppDraft(it, emptyList()) }
+                },
                 onCheckpoint = onCheckpoint,
             )
             Constants.TYPE_GITHUB_RELEASES -> GitHubReleasesCrawler(source, db, githubToken)

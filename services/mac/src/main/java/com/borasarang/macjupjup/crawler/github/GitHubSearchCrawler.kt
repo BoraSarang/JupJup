@@ -26,8 +26,10 @@ class GitHubSearchCrawler(
     private val queries: List<String> = DEFAULT_QUERIES,
     /** 실행당 README 보강 상한 — 전문 기본 (레이트 여유 시 상향) */
     private val readmeLimit: Int = 90,
-    /** DB에서 이미 본문 보유 id — 본문 없는 초안을 우선 README 보강 (AppStorrent와 동일 패턴) */
+    /** DB에서 이미 README 보유 id — 전문 없는 초안을 우선 README 보강 (AppStorrent와 동일 패턴) */
     private val loadBodyIds: suspend (List<String>) -> Set<String> = { emptySet() },
+    /** 이번 검색에 없는 DB 빈 longDescription 행 (JupJup-zxa 주기 백필) */
+    private val loadMissingReadme: suspend (excludeIds: List<String>, limit: Int) -> List<AppDraft> = { _, _ -> emptyList() },
     /** 10건마다 체크포인트 — 저장 전 취소로 진행량 유실 방지 */
     private val onCheckpoint: suspend (List<AppDraft>) -> Unit = {},
 ) : BaseCrawler(source) {
@@ -59,7 +61,27 @@ class GitHubSearchCrawler(
             seen.add(d.app.repoFullName ?: d.app.id)
         }
         DebugLogger.i("수집", "GitHub Search 완료 queries=${queries.size} found=${drafts.size} unique=${unique.size}")
-        // README 전문 보강 — DB 본문 없는 id 우선 (stars는 동순위 세컨더리)
+        // 미인증 60req/h — 검색 3회 소모 후 실질 한도 ~57건. 토큰 없으면 상한 제한
+        val effectiveLimit = if (token.isBlank()) {
+            readmeLimit.coerceAtMost(UNAUTH_README_LIMIT)
+        } else {
+            readmeLimit
+        }
+        // 이번 검색에 없는 DB 빈 longDescription 행 합류 (sort=updated 미포함 고아 보강, JupJup-zxa)
+        val missing = try {
+            loadMissingReadme(unique.map { it.app.id }, effectiveLimit)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DebugLogger.w("수집", "GitHub README 백필 대상 조회 스킵: ${e.message}")
+            emptyList()
+        }
+        val uniqueIds = unique.map { it.app.id }.toSet()
+        val missingDeduped = missing.filter { it.app.id !in uniqueIds }
+        if (missingDeduped.isNotEmpty()) {
+            DebugLogger.i("수집", "GitHub README 백필 대상 ${missingDeduped.size}건 (검색 미포함)")
+        }
+        // README 전문 보강 — 검색분은 DB 전문 없는 id 우선 (stars 동순위 세컨더리)
         val bodyIds = try {
             loadBodyIds(unique.map { it.app.id })
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -68,13 +90,12 @@ class GitHubSearchCrawler(
             DebugLogger.w("수집", "GitHub 본문 id 조회 스킵: ${e.message}")
             emptySet()
         }
-        val prioritized = prioritizeForReadme(unique, bodyIds)
-        // 미인증 60req/h — 검색 3회 소모 후 실질 한도 ~57건. 토큰 없으면 상한 제한
-        val effectiveLimit = if (token.isBlank()) {
-            readmeLimit.coerceAtMost(UNAUTH_README_LIMIT)
-        } else {
-            readmeLimit
-        }
+        // 백필(오래된 빈 행 lastUpdatedAt ASC 회전) 선행 + 검색분
+        val prioritizedMissing = missingDeduped.sortedBy { it.app.lastUpdatedAt }
+        val missingIds = prioritizedMissing.map { it.app.id }.toSet()
+        val prioritizedUnique = prioritizeForReadme(unique, bodyIds)
+            .filter { it.app.id !in missingIds }
+        val prioritized = prioritizedMissing + prioritizedUnique
         val withReadme = prioritized.take(effectiveLimit)
         val readmeMap = mutableMapOf<String, String>()
         var consecutive403 = 0
@@ -132,14 +153,22 @@ class GitHubSearchCrawler(
         }
         DebugLogger.i(
             "수집",
-            "[FEATURE] GitHub README 보강 readmeMap=${readmeMap.size} processed=$processed limit=$effectiveLimit token=${token.isNotBlank()}",
+            "[FEATURE] GitHub README 보강 readmeMap=${readmeMap.size} processed=$processed " +
+                "limit=$effectiveLimit token=${token.isNotBlank()} missingTried=${missingDeduped.size}",
         )
         if (readmeMap.isEmpty()) return unique
-        return unique.map { d ->
+        // 검색 결과: 전건 반환(README 있으면 주입). 백필분: README 성공분만 저장 대상에 포함
+        val uniqueOut = unique.map { d ->
             val repo = d.app.repoFullName
             val readme = repo?.let { readmeMap[it] } ?: return@map d
             enrichDraftWithReadme(d, readme)
         }
+        val missingOut = missingDeduped.mapNotNull { d ->
+            val repo = d.app.repoFullName ?: return@mapNotNull null
+            val readme = readmeMap[repo] ?: return@mapNotNull null
+            enrichDraftWithReadme(d, readme)
+        }
+        return uniqueOut + missingOut
     }
 
     /**
