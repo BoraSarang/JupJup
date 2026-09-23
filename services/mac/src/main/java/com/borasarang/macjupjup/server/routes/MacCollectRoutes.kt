@@ -1,9 +1,10 @@
-package com.borasarang.macjupjup.server
+package com.borasarang.macjupjup.server.routes
 
 import com.borasarang.common.server.escapeJson
 import com.borasarang.common.server.pathId
 import com.borasarang.common.server.receiveJsonObject
 import com.borasarang.common.server.respondNotFound
+import com.borasarang.macjupjup.server.HttpServerService
 import com.borasarang.macjupjup.util.DebugLogger
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode

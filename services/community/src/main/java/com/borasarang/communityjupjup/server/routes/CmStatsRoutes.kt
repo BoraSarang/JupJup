@@ -1,14 +1,15 @@
-package com.borasarang.communityjupjup.server
+package com.borasarang.communityjupjup.server.routes
 
+import com.borasarang.communityjupjup.server.HttpServerService
 import com.borasarang.communityjupjup.util.CommunityCategories
 import io.ktor.http.ContentType
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.util.concurrent.TimeUnit
 
 /**
  * 통계 라우트: overview·collect·trends·insights.

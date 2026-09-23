@@ -1,4 +1,4 @@
-package com.borasarang.promptjournaljupjup.server
+package com.borasarang.promptjournaljupjup.server.routes
 
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.common.ai.AiProvider
@@ -29,6 +29,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import com.borasarang.promptjournaljupjup.server.HttpServerService
 
 fun pjRoutes(route: Route) {
     route.route("/api") {

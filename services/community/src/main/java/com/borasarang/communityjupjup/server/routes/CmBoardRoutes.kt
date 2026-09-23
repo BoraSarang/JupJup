@@ -1,9 +1,10 @@
-package com.borasarang.communityjupjup.server
+package com.borasarang.communityjupjup.server.routes
 
-import com.borasarang.common.server.respondError
 import com.borasarang.common.server.receiveJsonObject
+import com.borasarang.common.server.respondError
 import com.borasarang.common.server.respondNotFound
 import com.borasarang.communityjupjup.data.db.entity.SiteBoard
+import com.borasarang.communityjupjup.server.HttpServerService
 import com.borasarang.communityjupjup.util.CommunityCategories
 import com.borasarang.communityjupjup.util.DebugLogger
 import io.ktor.http.ContentType
@@ -15,13 +16,13 @@ import io.ktor.server.routing.post
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put

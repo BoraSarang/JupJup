@@ -1,5 +1,6 @@
-package com.borasarang.promptjournaljupjup.server
+package com.borasarang.promptjournaljupjup.server.routes
 
+import com.borasarang.promptjournaljupjup.server.HttpServerService
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.withCharset

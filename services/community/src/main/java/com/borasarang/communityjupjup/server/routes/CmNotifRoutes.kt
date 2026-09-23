@@ -1,6 +1,7 @@
-package com.borasarang.communityjupjup.server
+package com.borasarang.communityjupjup.server.routes
 
 import com.borasarang.common.server.pathIdLong
+import com.borasarang.communityjupjup.server.HttpServerService
 import com.borasarang.communityjupjup.util.Constants
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode

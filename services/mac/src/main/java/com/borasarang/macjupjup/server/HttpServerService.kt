@@ -8,22 +8,31 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import com.borasarang.macjupjup.MacJupJupRuntime
-import com.borasarang.macjupjup.R
-import com.borasarang.macjupjup.util.Constants
-import com.borasarang.macjupjup.util.DebugLogger
 import com.borasarang.common.server.escapeJson
 import com.borasarang.common.util.NetUtils
+import com.borasarang.macjupjup.MacJupJupRuntime
+import com.borasarang.macjupjup.R
+import com.borasarang.macjupjup.server.routes.macAssetRoutes
+import com.borasarang.macjupjup.server.routes.macCollectRoutes
+import com.borasarang.macjupjup.server.routes.macCommunityRoutes
+import com.borasarang.macjupjup.server.routes.macItemRoutes
+import com.borasarang.macjupjup.server.routes.macNewsRoutes
+import com.borasarang.macjupjup.server.routes.macNotifRoutes
+import com.borasarang.macjupjup.server.routes.macSettingsRoutes
+import com.borasarang.macjupjup.server.routes.macStatsRoutes
+import com.borasarang.macjupjup.util.Constants
+import com.borasarang.macjupjup.util.DebugLogger
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
-import io.ktor.server.plugins.statuspages.StatusPages
+import java.net.Socket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,7 +40,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.net.Socket
 
 /**
  * Ktor CIO 임베디드 서버를 품은 포그라운드 서비스 (type=dataSync).

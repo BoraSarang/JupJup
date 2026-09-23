@@ -1,9 +1,10 @@
-package com.borasarang.planjupjup.server
+package com.borasarang.planjupjup.server.routes
 
 import com.borasarang.common.server.pathIdLong
 import com.borasarang.common.server.receiveJsonObject
 import com.borasarang.common.server.respondError
 import com.borasarang.common.server.respondNotFound
+import com.borasarang.planjupjup.server.HttpServerService
 import com.borasarang.planjupjup.util.Constants
 import io.ktor.http.ContentType
 import io.ktor.server.response.respondText
@@ -11,12 +12,12 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import java.util.concurrent.TimeUnit
 
 /**
  * 알림 라우트 (R4). 목록·상세·읽음·삭제·정리·미읽음수.

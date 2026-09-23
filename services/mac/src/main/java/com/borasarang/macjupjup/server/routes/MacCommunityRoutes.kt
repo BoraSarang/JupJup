@@ -1,7 +1,8 @@
-package com.borasarang.macjupjup.server
+package com.borasarang.macjupjup.server.routes
 
 import com.borasarang.common.server.pathId
 import com.borasarang.macjupjup.data.repository.CommunityFilter
+import com.borasarang.macjupjup.server.HttpServerService
 import com.borasarang.macjupjup.util.Constants
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode

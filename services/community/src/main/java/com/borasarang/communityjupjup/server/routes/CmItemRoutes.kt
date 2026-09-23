@@ -1,10 +1,16 @@
-package com.borasarang.communityjupjup.server
+package com.borasarang.communityjupjup.server.routes
 
 import com.borasarang.common.server.escapeJson
 import com.borasarang.common.server.pathId
 import com.borasarang.common.server.putIfNotNull
 import com.borasarang.common.server.respondNotFound
 import com.borasarang.communityjupjup.data.repository.PostFilter
+import com.borasarang.communityjupjup.server.HttpServerService
+import com.borasarang.communityjupjup.server.categoriesJson
+import com.borasarang.communityjupjup.server.postDetailJson
+import com.borasarang.communityjupjup.server.postElement
+import com.borasarang.communityjupjup.server.postsJson
+import com.borasarang.communityjupjup.server.sourcesJson
 import com.borasarang.communityjupjup.util.CommunityCategories
 import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.communityjupjup.util.DebugLogger

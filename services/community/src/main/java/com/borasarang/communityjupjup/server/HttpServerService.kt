@@ -8,22 +8,30 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import com.borasarang.communityjupjup.CommunityJupJupRuntime
-import com.borasarang.communityjupjup.R
-import com.borasarang.communityjupjup.util.Constants
-import com.borasarang.communityjupjup.util.DebugLogger
 import com.borasarang.common.server.escapeJson
 import com.borasarang.common.util.NetUtils
+import com.borasarang.communityjupjup.CommunityJupJupRuntime
+import com.borasarang.communityjupjup.R
+import com.borasarang.communityjupjup.server.routes.cmAssetRoutes
+import com.borasarang.communityjupjup.server.routes.cmBoardRoutes
+import com.borasarang.communityjupjup.server.routes.cmCollectRoutes
+import com.borasarang.communityjupjup.server.routes.cmItemRoutes
+import com.borasarang.communityjupjup.server.routes.cmNotifRoutes
+import com.borasarang.communityjupjup.server.routes.cmSettingsRoutes
+import com.borasarang.communityjupjup.server.routes.cmStatsRoutes
+import com.borasarang.communityjupjup.util.Constants
+import com.borasarang.communityjupjup.util.DebugLogger
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
-import io.ktor.server.plugins.statuspages.StatusPages
+import java.net.Socket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,7 +39,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.net.Socket
 
 /**
  * Ktor CIO 임베디드 서버를 품은 포그라운드 서비스 (type=dataSync).

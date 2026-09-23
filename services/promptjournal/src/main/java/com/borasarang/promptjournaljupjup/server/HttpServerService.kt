@@ -8,29 +8,31 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import com.borasarang.promptjournaljupjup.PromptJournalRuntime
-import com.borasarang.promptjournaljupjup.R
-import com.borasarang.promptjournaljupjup.Constants
-import com.borasarang.promptjournaljupjup.util.DebugLogger
 import com.borasarang.common.server.escapeJson
 import com.borasarang.common.util.NetUtils
+import com.borasarang.promptjournaljupjup.Constants
+import com.borasarang.promptjournaljupjup.PromptJournalRuntime
+import com.borasarang.promptjournaljupjup.R
+import com.borasarang.promptjournaljupjup.server.routes.pjAssetRoutes
+import com.borasarang.promptjournaljupjup.server.routes.pjRoutes
+import com.borasarang.promptjournaljupjup.util.DebugLogger
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
-import io.ktor.server.plugins.statuspages.StatusPages
+import java.net.Socket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import java.net.Socket
 
 class HttpServerService : Service() {
 

@@ -1,6 +1,7 @@
-package com.borasarang.macjupjup.server
+package com.borasarang.macjupjup.server.routes
 
 import com.borasarang.common.server.pathIdLong
+import com.borasarang.macjupjup.server.HttpServerService
 import com.borasarang.macjupjup.util.Constants
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import com.borasarang.macjupjup.server.detailJson
 
 /**
  * 알림 라우트 (R4). 목록·상세·읽음·삭제·정리·미읽음수.

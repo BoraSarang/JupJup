@@ -1,5 +1,6 @@
-package com.borasarang.macjupjup.server
+package com.borasarang.macjupjup.server.routes
 
+import com.borasarang.macjupjup.server.HttpServerService
 import io.ktor.http.ContentType
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route

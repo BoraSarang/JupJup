@@ -1,10 +1,14 @@
-package com.borasarang.macjupjup.server
+package com.borasarang.macjupjup.server.routes
 
 import com.borasarang.common.server.escapeJson
 import com.borasarang.common.server.pathId
 import com.borasarang.common.server.receiveJsonObject
 import com.borasarang.common.server.respondError
 import com.borasarang.macjupjup.data.repository.AppFilter
+import com.borasarang.macjupjup.server.HttpServerService
+import com.borasarang.macjupjup.server.appsJson
+import com.borasarang.macjupjup.server.detailJson
+import com.borasarang.macjupjup.server.gamesJson
 import com.borasarang.macjupjup.util.Constants
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode

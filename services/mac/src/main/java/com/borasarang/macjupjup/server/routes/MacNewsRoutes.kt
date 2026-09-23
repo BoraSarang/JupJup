@@ -1,8 +1,12 @@
-package com.borasarang.macjupjup.server
+package com.borasarang.macjupjup.server.routes
 
 import com.borasarang.common.server.pathId
 import com.borasarang.macjupjup.data.db.entity.NewsArticle
 import com.borasarang.macjupjup.data.repository.NewsFilter
+import com.borasarang.macjupjup.server.HttpServerService
+import com.borasarang.macjupjup.server.appElement
+import com.borasarang.macjupjup.server.genreArray
+import com.borasarang.macjupjup.server.storeOfTags
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.NewsCategories
 import io.ktor.http.ContentType
