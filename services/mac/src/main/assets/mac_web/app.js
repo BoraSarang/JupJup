@@ -49,6 +49,19 @@
     'linear-gradient(135deg,#8b5cf6,#d946ef)', 'linear-gradient(135deg,#18181b,#3f3f46)',
     'linear-gradient(135deg,#22c55e,#15803d)', 'linear-gradient(135deg,#eab308,#f97316)'];
 
+  /* 맥 게임 장르 (PLAN_v21, GameGenres.ORDER와 동일) */
+  const GAME_GENRES = ['전체', '액션', '어드벤처', 'RPG', '전략', '시뮬레이션', '퍼즐',
+    '캐주얼', '인디', '멀티', '레이싱·스포츠', '호러·서바이벌'];
+  const GAME_SOURCES = [
+    { label: '전체', value: '' },
+    { label: 'Steam', value: 'steam' },
+    { label: 'Epic', value: 'epic' }
+  ];
+  const GAME_SORTS = [
+    { label: '최신순', value: 'newest' },
+    { label: '평점순', value: 'rating' }
+  ];
+
   const PAGE_SIZE = 20;
   const NEWS_PAGE_SIZE = 5;
 
@@ -58,16 +71,58 @@
   const state = {
     view: 'dashboard',
     storeSub: 'timeline',
-    filters: { license: '', cat: '', q: '', sort: 'newest', page: 1, newOnly: false, updatedOnly: false },
+    filters: { license: '', cat: '', q: '', sort: 'newest', page: 1, newOnly: false, updatedOnly: false, sourceId: '' },
     news: {
       main: 'mac', sub: '', page: 1, q: '', detailId: null, topTab: 'news',
+      sourceId: '',
       listIds: [], total: 0,
       layout: (function () { try { return localStorage.getItem(NEWS_LAYOUT_KEY) === 'B' ? 'B' : 'A'; } catch (e) { return 'A'; } })()
     },
     dashPage: 1,
     lang: 'ko',
-    modal: { currentId: null, activeTab: 'intro' }
+    modal: { currentId: null, activeTab: 'intro' },
+    games: { genre: '', source: '', sourceId: '', sort: 'newest', page: 1 },
+    community: { main: 'apple', page: 1, q: '', sourceId: '', detailId: null, listIds: [], total: 0 }
   };
+
+  /* 수집 소스 목록 (watchlist 캐시 — 메뉴별 type으로 필터) */
+  let filterSourcesCache = null;
+  function loadFilterSources() {
+    if (filterSourcesCache) return Promise.resolve(filterSourcesCache);
+    return api('/api/watchlist').then(srcs => {
+      filterSourcesCache = Array.isArray(srcs) ? srcs : [];
+      return filterSourcesCache;
+    }).catch(e => {
+      filterSourcesCache = [];
+      throw e;
+    });
+  }
+  function sourcesForMenu(kind) {
+    const all = filterSourcesCache || [];
+    if (kind === 'news') return all.filter(s => s.type === 'NEWS_RSS');
+    if (kind === 'community') return all.filter(s => s.type === 'COMMUNITY_BOARD');
+    if (kind === 'games') {
+      return all.filter(s => s.type === 'STEAM_FREETOMAC' || s.type === 'EPIC_FREE' || s.type === 'APPSTORRENT_GAMES');
+    }
+    return all.filter(s => s.type !== 'NEWS_RSS' && s.type !== 'COMMUNITY_BOARD' &&
+      s.type !== 'STEAM_FREETOMAC' && s.type !== 'EPIC_FREE' && s.type !== 'APPSTORRENT_GAMES');
+  }
+  function renderSourceChoices(elId, kind, activeId, onPick) {
+    const el = $(elId);
+    if (!el) return;
+    const draw = () => {
+      const list = sourcesForMenu(kind);
+      el.innerHTML = [{ id: '', name: '전체' }].concat(list).map(s =>
+        '<button type="button" class="' + ((s.id || '') === (activeId || '') ? 'active' : '') +
+        '" data-sid="' + esc(s.id || '') + '">' + esc(s.name || s.id) + '</button>'
+      ).join('');
+      el.querySelectorAll('button').forEach(b => {
+        b.onclick = () => onPick(b.dataset.sid || '');
+      });
+    };
+    if (filterSourcesCache) { draw(); return; }
+    loadFilterSources().then(draw).catch(draw);
+  }
 
   const $ = (id) => document.getElementById(id);
   const $$ = (sel, ctx = document) => ctx.querySelectorAll(sel);
@@ -132,6 +187,7 @@
   }
   var mdStore = {}, mdSeq = 0;
   const README_MARKER = '— README —';
+  const SYSREQ_MARKER = '— SYSREQ —';
   function splitBody(full) {
     if (!full) return '';
     const i = full.indexOf(README_MARKER);
@@ -141,17 +197,43 @@
   function excerpt(full) {
     if (!full) return '';
     const i = full.indexOf(README_MARKER);
-    if (i >= 0) return full.slice(0, i).trim();
-    return full.trim();
+    let s = i >= 0 ? full.slice(0, i).trim() : full.trim();
+    if (s.length > 360) {
+      const nl = s.indexOf('\n');
+      if (nl > 40 && nl < 320) s = s.slice(0, nl).trim();
+      else s = s.slice(0, 300).trim() + '…';
+    }
+    return s;
+  }
+  /** SYSREQ 마커 뒤는 시스템요건 HTML — 소개 본문과 분리 */
+  function splitSysReq(full) {
+    if (!full) return { body: '', sysreq: '' };
+    const i = full.indexOf(SYSREQ_MARKER);
+    if (i < 0) return { body: full.trim(), sysreq: '' };
+    return {
+      body: full.slice(0, i).trim(),
+      sysreq: full.slice(i + SYSREQ_MARKER.length).trim()
+    };
+  }
+  /** 스팀 bb HTML 요건 — 스크립트·이벤트 속성만 제거하고 구조 HTML 유지 */
+  function sanitizeHtml(html) {
+    if (!html) return '';
+    return String(html)
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+      .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+      .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+      .replace(/javascript:/gi, '');
   }
   function mdBlock(koText, enText) {
     const show = koText || enText || '';
     if (!show) return '';
     if (koText && enText && koText !== enText) {
       const key = 'm' + (++mdSeq);
-      mdStore[key] = { ko: koText, en: enText, showing: state.lang };
-      const first = state.lang === 'ko' ? koText : enText;
-      return '<div class="md-body" data-mdtext data-key="' + key + '">' + md(first) + '</div>';
+      // 한글본문 기본 노출: descriptionKo 있으면 무조건 ko 우선 (toggleModalLang로 전환)
+      mdStore[key] = { ko: koText, en: enText, showing: 'ko' };
+      return '<div class="md-body" data-mdtext data-key="' + key + '">' + md(koText) + '</div>';
     }
     return '<div class="md-body">' + md(show) + '</div>';
   }
@@ -391,14 +473,24 @@
   function switchView(view) {
     state.view = view;
     $$('#mainNav .navpill, #mobileNav .navpill').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-    ['dashboard', 'appstore', 'news'].forEach(v => {
-      const el = v === 'dashboard' ? $('view-dashboard') : (v === 'appstore' ? $('view-appstore') : $('view-news'));
+    const viewMap = {
+      dashboard: 'view-dashboard',
+      appstore: 'view-appstore',
+      games: 'view-games',
+      community: 'view-community',
+      news: 'view-news'
+    };
+    Object.keys(viewMap).forEach(v => {
+      const el = $(viewMap[v]);
+      if (!el) return;
       const on = v === view;
       el.classList.toggle('active', on);
       el.hidden = !on;
     });
     if (view === 'dashboard') loadDashboard();
     else if (view === 'appstore') loadStore();
+    else if (view === 'games') loadGames();
+    else if (view === 'community') loadCommunity();
     else { applyNewsLayout(); loadNews(); }
     window.scrollTo(0, 0);
   }
@@ -426,13 +518,16 @@
     dashCache = { main: d, sources, trends };
     const c = d.counts || {};
     const totalNews = (c.mac || 0) + (c.ai || 0) + (c.sec || 0);
+    const gameN = c.games || 0;
     $('dashHeroStats').innerHTML = '오늘 수집된 앱 <b>' + (d.totalApps || 0) + '개</b> · 업데이트 <b>' +
-      (d.updatedApps ? d.updatedApps.length : 0) + '개</b> · 뉴스 <b>' + totalNews + '개</b> · 맥 ' + (c.mac || 0) +
-      ' / AI ' + (c.ai || 0) + ' / 보안 ' + (c.sec || 0);
+      (d.updatedApps ? d.updatedApps.length : 0) + '개</b> · 뉴스 <b>' + totalNews + '개</b> · 게임 <b>' + gameN +
+      '개</b> · 맥 ' + (c.mac || 0) + ' / AI ' + (c.ai || 0) + ' / 보안 ' + (c.sec || 0);
     $('dashUpdatedAt').textContent = d.generatedAt ? ('마지막 업데이트: ' + new Date(d.generatedAt).toLocaleString('ko-KR')) : '';
+    setNavCounts({ games: gameN });
 
-    // 하이라이트 3카드: 최신 맥뉴스 / 최신 앱 / 최신 보안뉴스
+    // 하이라이트 4카드: 맥뉴스 / 앱 / 보안뉴스 / 맥 게임(이번 주)
     const topMac = (d.mac || [])[0], topApp = (d.updatedApps || [])[0], topSec = (d.sec || [])[0];
+    const topGame = (d.games || [])[0];
     let hl = '';
     if (topMac) {
       hl += '<article class="hl-card" data-kind="news" data-main="mac" data-id="' + esc(topMac.id) + '" tabindex="0" role="link"><div>' +
@@ -460,11 +555,21 @@
         '<h3 class="hl-title">' + esc(newsTitle(topSec)) + '</h3>' +
         '<p class="hl-desc">' + esc(newsSummary(topSec)) + '</p></div></article>';
     }
+    if (topGame) {
+      hl += '<article class="hl-card glow" data-kind="games" data-id="' + esc(topGame.id) + '" tabindex="0" role="link">' +
+        '<div class="hl-body"><div class="hl-top">' +
+        (topGame.iconUrl ? '<img class="hl-thumb" style="width:52px;height:52px" src="' + esc(topGame.iconUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+        '<span class="hot">GAME</span><span>' + esc(topGame.store || '') + ' · 주간</span></div>' +
+        '<h3 class="hl-title">' + esc(topGame.name) + '</h3>' +
+        '<p class="hl-desc">' + esc((topGame.genres || []).join(' · ') || '무료 맥 게임') + '</p></div>' +
+        '<span class="hl-price"><span class="w0">FREE</span></span></article>';
+    }
     $('dashHighlights').innerHTML = hl || '<div class="empty-state">하이라이트 없음</div>';
     $$('#dashHighlights .hl-card').forEach(el => {
       const go = (ev) => {
         if (ev && ev.target && ev.target.closest('a')) return;
         if (el.dataset.kind === 'app') { openModal(el.dataset.id); return; }
+        if (el.dataset.kind === 'games') { switchView('games'); return; }
         openDashboardNews(el.dataset.main, el.dataset.id);
       };
       el.onclick = go;
@@ -472,6 +577,7 @@
     });
 
     renderDashApps(d.updatedApps || []);
+    renderDashGames(d.games || [], gameN);
     loadDashboardGroups();
     renderSidebar(sources, trends, d);
   }
@@ -488,6 +594,17 @@
       priceText(a) + '</button>';
     }).join('') || '<div class="empty-state">앱 없음</div>';
     $$('#dashApps .hcard').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
+  }
+
+  function renderDashGames(games, total) {
+    const el = $('dashGames');
+    const countEl = $('dashGameCount');
+    if (!el) return;
+    countEl.textContent = (total || games.length) + '개';
+    el.innerHTML = games.map(g => gameMiniHtml(g)).join('') ||
+      '<div class="empty-state">게임 없음 — 첫 수집 후 표시됩니다</div>';
+    bindGameCards(el);
+    setNavCounts({ games: total || games.length });
   }
 
   function loadDashboardGroups() {
@@ -520,9 +637,11 @@
     if (!id) return;
     state.news.main = main || 'mac';
     state.news.sub = '';
+    state.news.page = 1;
     state.news.detailId = id;
     if (state.news.layout !== 'B') setNewsLayout('B');
     switchView('news');
+    loadNews();
   }
 
   /* R51: HOT 규칙 — 6h NEW / 6~24h HOT / 초과 무표시 */
@@ -618,6 +737,208 @@
     for (const m of NEWS_MAINS) { if ((NEWS_SUBS[m.id] || []).includes(sub)) return m.id; }
     return 'mac';
   }
+
+  /* ================= 맥 게임 (PLAN_v21) ================= */
+  function gameStoreOf(g) {
+    const t = String(g.tags || '');
+    if (t.indexOf('appstorrent') >= 0) return 'appstorrent';
+    if (t.indexOf('epic') >= 0) return 'epic';
+    if (t.indexOf('steam') >= 0) return 'steam';
+    return g.store || '';
+  }
+
+  function gameGenresOf(g) {
+    if (Array.isArray(g.genres) && g.genres.length) return g.genres;
+    const raw = String(g.tags || '').split(',').map(s => s.trim());
+    return raw.filter(t => t && t !== 'game' && t !== 'steam' && t !== 'epic' && t !== 'appstorrent' &&
+      t.indexOf('steam-appid:') !== 0 && t.indexOf('epic-') !== 0 && t.indexOf('genre:') !== 0);
+  }
+
+  function gameMiniHtml(g) {
+    const store = gameStoreOf(g);
+    const genres = gameGenresOf(g).slice(0, 2).join(' · ');
+    const img = g.iconUrl
+      ? '<img class="hicon" src="' + esc(g.iconUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+      : appIcon(g, 'hicon');
+    return '<button type="button" class="hcard game-hcard" data-id="' + esc(g.id) + '" data-url="' + esc(g.sourceUrl || g.homepageUrl || '') + '" role="listitem">' +
+      '<div class="hcard-top">' + img +
+      '<span class="catpill">' + esc(store.toUpperCase() || 'GAME') + '</span></div>' +
+      '<b>' + esc(g.name) + '</b><div class="ver">' + esc(genres || '무료') + '</div>' +
+      '<span class="w0">FREE</span></button>';
+  }
+
+  // 지원언어 CSV(예: en,ko,ja)에 ko 포함 여부
+  function hasKoLang(csv) {
+    return String(csv || '').split(',').some(s => s.trim() === 'ko');
+  }
+
+  const LANG_LABEL = {
+    en: '영어', ko: '한국어', ja: '일본어', zh: '중국어', fr: '프랑스어', de: '독일어',
+    es: '스페인어', it: '이탈리아어', ru: '러시아어', pt: '포르투갈어', pl: '폴란드어',
+    tr: '터키어', nl: '네덜란드어', cs: '체코어', da: '덴마크어', fi: '핀란드어',
+    el: '그리스어', hu: '헝가리어', no: '노르웨이어', sv: '스웨덴어', th: '태국어',
+    vi: '베트남어', uk: '우크라이나어', ar: '아랍어', hi: '힌디어', id: '인도네시아어',
+    he: '히브리어', ro: '루마니아어', sk: '슬로바키아어', sr: '세르비아어',
+    hr: '크로아티아어', bg: '불가리아어'
+  };
+  function langLabels(csv) {
+    return String(csv || '').split(',')
+      .map(s => s.trim()).filter(Boolean)
+      .map(code => LANG_LABEL[code] || code.toUpperCase());
+  }
+  function isGameApp(a) {
+    return a.category === '게임' || String(a.tags || '').split(',').some(t => t.trim() === 'game');
+  }
+
+  function gameCardHtml(g) {
+    const store = gameStoreOf(g);
+    const genres = gameGenresOf(g).slice(0, 3);
+    const url = g.sourceUrl || g.homepageUrl || '';
+    const koBadge = hasKoLang(g.supportedLanguages) ? '<span class="badge lang-ko">한국어</span>' : '';
+    const img = g.iconUrl
+      ? '<img class="g-thumb" src="' + esc(g.iconUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+      : '<div class="g-thumb g-fallback">🎮</div>';
+    // 카드 클릭 → 내부 상세 모달 (외부 스토어 링크 제거, data-url은 폴백/참조용)
+    return '<article class="game-card" role="listitem" data-id="' + esc(g.id) + '" data-url="' + esc(url) + '" tabindex="0">' +
+      '<div class="g-top">' + img +
+      '<div class="ac-badges"><span class="ac-badge sale">FREE</span>' +
+      (g.isNew ? '<span class="ac-badge new">NEW</span>' : '') + '</div></div>' +
+      '<div class="app-name">' + esc(g.name) + '</div>' +
+      '<div class="ac-sub">' +
+      genres.map(t => '<span class="badge">' + esc(t) + '</span>').join('') +
+      koBadge +
+      '<span class="tag">' + esc((store || 'steam').toUpperCase()) + ' · MAC</span></div>' +
+      '<div class="ac-foot"><span class="ac-price free">무료</span>' +
+      '<span class="mono">' + esc(fmtDate(g.releaseDate || g.lastUpdatedAt)) + '</span></div>' +
+      '</article>';
+  }
+
+  function bindGameCards(container) {
+    $$('.game-card, .game-hcard', container).forEach(el => {
+      const go = (e) => {
+        if (e && e.target && (e.target.closest('a') || e.target.dataset.ext)) return;
+        if (el.dataset.id) openModal(el.dataset.id);
+        else switchView('games');
+      };
+      el.onclick = go;
+      el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(e); } };
+    });
+  }
+
+  function gameQuery() {
+    const g = state.games;
+    const p = new URLSearchParams({ sort: g.sort, page: g.page, pageSize: PAGE_SIZE });
+    if (g.genre) p.set('genre', g.genre);
+    if (g.source) p.set('source', g.source);
+    if (g.sourceId) p.set('sourceId', g.sourceId);
+    return '/api/games?' + p.toString();
+  }
+
+  function renderGameFilters() {
+    const g = state.games;
+    $('gameChips').innerHTML = GAME_GENRES.map(label =>
+      '<button type="button" class="chip' + (label === (g.genre || '전체') ? ' active' : '') + '" data-genre="' + esc(label) + '">' +
+      esc(label) + '</button>'
+    ).join('');
+    $$('#gameChips .chip').forEach(b => {
+      b.onclick = () => {
+        state.games.genre = b.dataset.genre === '전체' ? '' : b.dataset.genre;
+        state.games.page = 1;
+        loadGamesList();
+      };
+    });
+    $('gameSourceChoices').innerHTML = GAME_SOURCES.map(s =>
+      '<button type="button" class="' + (s.value === g.source ? 'active' : '') + '" data-source="' + esc(s.value) + '">' + esc(s.label) + '</button>'
+    ).join('');
+    $$('#gameSourceChoices button').forEach(b => {
+      b.onclick = () => { state.games.source = b.dataset.source; state.games.page = 1; loadGamesList(); };
+    });
+    $('gameGenreChoices').innerHTML = GAME_GENRES.map(label =>
+      '<button type="button" class="' + (label === (g.genre || '전체') ? 'active' : '') + '" data-genre="' + esc(label) + '">' + esc(label) + '</button>'
+    ).join('');
+    $$('#gameGenreChoices button').forEach(b => {
+      b.onclick = () => {
+        state.games.genre = b.dataset.genre === '전체' ? '' : b.dataset.genre;
+        state.games.page = 1;
+        loadGamesList();
+      };
+    });
+    $('gameSortChoices').innerHTML = GAME_SORTS.map(s =>
+      '<button type="button" class="' + (s.value === g.sort ? 'active' : '') + '" data-sort="' + s.value + '">' + esc(s.label) + '</button>'
+    ).join('');
+    $$('#gameSortChoices button').forEach(b => {
+      b.onclick = () => { state.games.sort = b.dataset.sort; state.games.page = 1; loadGamesList(); };
+    });
+    renderSourceChoices('gameCollectSourceChoices', 'games', g.sourceId, sid => {
+      state.games.sourceId = sid;
+      state.games.page = 1;
+      loadGamesList();
+    });
+    $('gameActiveGenre').textContent = g.genre || '전체';
+  }
+
+  let gamesSeq = 0;
+  function loadGamesList() {
+    const grid = $('gameGrid'), empty = $('emptyGames');
+    const seq = ++gamesSeq;
+    if (!grid) return;
+    grid.innerHTML = '';
+    empty.hidden = true;
+    $('gamesPagination').innerHTML = '';
+    renderGameFilters();
+    api(gameQuery()).then(d => {
+      if (seq !== gamesSeq) return;
+      const total = d.total || 0;
+      $('gamesPanelCount').textContent = total;
+      $('gameCountLabel').textContent = total + ' games · FREE';
+      setNavCounts({ games: total });
+      if (!d.games || !d.games.length) { empty.hidden = false; return; }
+      grid.innerHTML = d.games.map(gameCardHtml).join('');
+      bindGameCards(grid);
+      // 이번 주 등록 가로줄: 최신 8
+      const recent = d.games.slice(0, 8);
+      const row = $('gameNewRow');
+      if (row) {
+        $('gameNewCount').textContent = recent.length + '개';
+        row.innerHTML = recent.map(g => gameMiniHtml(g)).join('');
+        bindGameCards(row);
+      }
+      // Epic 주간 하이라이트 (epic 우선)
+      const epic = d.games.find(g => gameStoreOf(g) === 'epic');
+      const hero = $('gameHero');
+      if (hero) {
+        if (epic) {
+          hero.hidden = false;
+          hero.innerHTML =
+            '<div class="gh-body"><div class="gh-top"><span class="hot">이번 주 무료</span><span>EPIC</span></div>' +
+            '<h3 class="hl-title">' + esc(epic.name) + '</h3>' +
+            '<p class="hl-desc">' + esc(gameGenresOf(epic).join(' · ')) + ' · 스토어 호환 확인</p>' +
+            (epic.sourceUrl ? '<a class="ac-btn primary" style="display:inline-block;margin-top:8px" href="' + esc(epic.sourceUrl) + '" target="_blank" rel="noopener">Epic에서 받기 ↗</a>' : '') +
+            '</div>' +
+            (epic.iconUrl ? '<img class="gh-thumb" src="' + esc(epic.iconUrl) + '" alt="" referrerpolicy="no-referrer">' : '');
+        } else {
+          hero.hidden = true;
+          hero.innerHTML = '';
+        }
+      }
+      renderPagination($('gamesPagination'), d.page, d.pageSize, d.total, p => {
+        state.games.page = p;
+        loadGamesList();
+        window.scrollTo(0, 0);
+      });
+    }).catch(e => {
+      console.error('[게임] 목록 실패', e);
+      if (seq !== gamesSeq) return;
+      empty.hidden = false;
+      empty.querySelector('.empty-state-title').textContent = '데이터를 불러오는데 실패했습니다';
+    });
+  }
+
+  function loadGames() {
+    renderGameFilters();
+    loadGamesList();
+  }
+
   /* ================= 앱 스토어 (목업 /apps) ================= */
   function switchStoreSub(sub) {
     state.storeSub = sub;
@@ -642,6 +963,7 @@
     if (f.q) p.set('q', f.q);
     if (f.newOnly) p.set('newOnly', 'true');
     if (f.updatedOnly) p.set('updatedOnly', 'true');
+    if (f.sourceId) p.set('sourceIds', f.sourceId);
     if (state.storeSub === 'watchlist') { p.set('bumped', 'true'); p.set('updatedOnly', 'true'); }
     return '/api/apps?' + p.toString();
   }
@@ -729,6 +1051,7 @@
       };
     });
     $('sortChoices').querySelectorAll('button').forEach(b => { b.onclick = () => setFilter({ sort: b.dataset.sort }); });
+    renderSourceChoices('appSourceChoices', 'apps', f.sourceId, sid => setFilter({ sourceId: sid }));
   }
 
   function setFilter(patch, catClear) {
@@ -1038,6 +1361,32 @@
     });
     syncModalLangBtn();
   }
+  // 게임 스토어 URL: tags 스토어(epic/steam) 우선 — steam-appid가 epic 게임을 스팀으로 못 잡게
+  function gameStoreUrl(a) {
+    const tags = String(a.tags || '');
+    const store = gameStoreOf(a);
+    const sources = a.sources || [];
+    const pickSrc = (host) => {
+      const s = sources.find(x => x.sourceUrl && x.sourceUrl.indexOf(host) >= 0);
+      return s ? s.sourceUrl : '';
+    };
+    const onHost = (url, host) => url && url.indexOf(host) >= 0 ? url : '';
+    const steamAppUrl = () => {
+      const m = tags.match(/steam-appid:(\d+)/);
+      return m ? 'https://store.steampowered.com/app/' + m[1] + '/' : '';
+    };
+    if (store === 'epic') {
+      return pickSrc('epicgames.com') || onHost(a.sourceUrl, 'epicgames.com') ||
+        onHost(a.homepageUrl, 'epicgames.com') || '';
+    }
+    if (store === 'steam') {
+      return steamAppUrl() || pickSrc('steampowered.com') || onHost(a.sourceUrl, 'steampowered.com') ||
+        a.sourceUrl || onHost(a.homepageUrl, 'steampowered.com') || '';
+    }
+    if (a.sourceUrl) return a.sourceUrl;
+    return steamAppUrl() || pickSrc('epicgames.com') || pickSrc('steampowered.com');
+  }
+
   function renderModal(a) {
     $('modalTitle').textContent = a.name || '앱 상세';
     if (a.iconUrl) { $('modalIcon').style.display = ''; $('modalIcon').src = a.iconUrl; }
@@ -1048,46 +1397,199 @@
     if (a.category) pills.push('<span class="pill">' + esc(a.category) + '</span>');
     if (a.stars != null) pills.push('<span class="pill">★ ' + a.stars + '</span>');
     if (a.isNew) pills.push('<span class="pill">NEW</span>');
+    if (hasKoLang(a.supportedLanguages)) pills.push('<span class="pill lang-ko">한국어</span>');
     $('modalMetaPills').innerHTML = pills.join('');
     const cta = [];
-    if (a.homepageUrl) cta.push('<a class="btn-primary" href="' + esc(a.homepageUrl) + '" target="_blank" rel="noopener">홈페이지</a>');
+    // 스토어 바로가기는 모달 푸터 CTA 1개 (게임 카드의 외부 링크 대체)
+    const store = gameStoreOf(a);
+    const storeUrl = gameStoreUrl(a);
+    const storeLabel = store === 'epic' ? 'Epic에서 보기' : store === 'steam' ? 'Steam에서 보기' : '스토어에서 보기';
+    if (storeUrl) cta.push('<a class="btn-primary" href="' + esc(storeUrl) + '" target="_blank" rel="noopener">' + storeLabel + ' ↗</a>');
+    if (a.homepageUrl && a.homepageUrl !== storeUrl) {
+      cta.push('<a class="' + (storeUrl ? 'btn-secondary' : 'btn-primary') + '" href="' + esc(a.homepageUrl) + '" target="_blank" rel="noopener">홈페이지</a>');
+    }
     if (a.repoFullName) cta.push('<a class="btn-secondary" href="https://github.com/' + esc(a.repoFullName) + '" target="_blank" rel="noopener">GitHub</a>');
     if (a.trackId) cta.push('<a class="btn-secondary" href="https://apps.apple.com/us/app/id' + a.trackId + '" target="_blank" rel="noopener">App Store</a>');
     $('modalCta').innerHTML = cta.join('');
     syncModalLangBtn();
-    const koFull = a.descriptionKo || '';
+
+    const isGame = isGameApp(a);
+    // 게임: 탭 라벨 — 소개 / 언어·요건 / 스크린샷 · 앱: 기존 유지
+    $('tabFeatures').textContent = isGame ? '언어·요건' : '특징';
+    $('tabChangelog').textContent = isGame ? '스크린샷' : '새 기능';
+
+    // 전문 우선: longDescription, 없으면 descriptionSnippet(마커 포함 레거시)
+    // KO 미번역(4000자 초과 등)이면 짧은 descriptionKo만 남고 전문이 숨김 → EN 전문 폴백
+    const enBodyFull = a.longDescription || a.descriptionSnippet || '';
+    const koLong = a.longDescriptionKo || '';
+    const koBodyFull = koLong || a.descriptionKo || '';
     const enFull = a.descriptionSnippet || '';
-    const introKo = excerpt(koFull) || excerpt(enFull);
-    const introEn = excerpt(enFull) || excerpt(koFull);
-    const funcKo = splitBody(koFull);
-    const funcEn = splitBody(enFull);
-    const funcShow = funcKo || funcEn;
-    const introHtml = (introKo || introEn) ? mdBlock(introKo, introEn) : '<p>소개 정보가 없습니다.</p>';
-    const funcHtml = (funcShow && funcShow !== (introKo || introEn)) ? mdBlock(funcKo, funcEn) : '';
-    $('panelIntro').innerHTML = '<h4>소개</h4>' + introHtml + (funcHtml ? '<h4 style="margin-top:18px;">세부 설명</h4>' + funcHtml : '');
-    const feats = [];
-    if (a.averageRating != null) feats.push('평점 ' + a.averageRating + (a.ratingCount != null ? ' (' + a.ratingCount + '개)' : ''));
-    if (a.version) feats.push('버전 ' + esc(a.version));
-    if (a.sellerName) feats.push('판매: ' + esc(a.sellerName));
-    $('panelFeatures').innerHTML = '<h4>특징</h4>' + (feats.length ? feats.map(f => '<p>' + f + '</p>').join('') : '<p>특징 정보가 없습니다.</p>');
-    const notesKo = (a.releaseNotesKo || a.releaseNotesSummary) || '';
-    const notesEn = (a.releaseNotesSummary || a.releaseNotesKo) || '';
-    const notesShow = notesKo || notesEn;
-    let newsHtml = '';
-    if (notesShow) {
-      newsHtml = mdBlock(notesKo, notesEn);
-      if (a.version || (a.versions && a.versions.length)) {
-        const rows = (a.versions || []).slice(0, 10).map(v => {
-          const vlink = v.sourceUrl ? ' <a target="_blank" rel="noopener" href="' + esc(v.sourceUrl) + '">열기</a>' : '';
-          return '<tr><td>' + esc(v.version) + '</td><td class="notes">' + md(v.notesSummary || '') + '</td><td>' + vlink + '</td></tr>';
-        }).join('');
-        newsHtml += '<table class="version-table"><tr><th>버전</th><th>새 기능</th><th>링크</th></tr>' +
-          (a.version ? '<tr><td><b>' + esc(a.version) + '</b> (현재)' + (a.prevVersion ? ' ← ' + esc(a.prevVersion) + ' 화' : '') + '</td><td class="notes">' + md(a.releaseNotesSummary || '') + '</td><td></td></tr>' : '') + rows + '</table>';
+    const koFull = a.descriptionKo || '';
+    const enSplit = splitSysReq(enBodyFull);
+    const koSplit = splitSysReq(koBodyFull);
+    const legacyEnSplit = splitSysReq(enFull);
+    const legacyKoSplit = splitSysReq(koFull);
+    const sysreqRaw = enSplit.sysreq || koSplit.sysreq ||
+        legacyEnSplit.sysreq || legacyKoSplit.sysreq;
+
+    // 소개 = 짧은 발췌 (descriptionSnippet/ Ko), 세부 = 전문 (longDescription 또는 마커 뒤)
+    let introKo = excerpt(koFull) || excerpt(enFull);
+    let introEn = excerpt(enFull) || excerpt(koFull);
+    let funcKo = '';
+    let funcEn = '';
+
+    const bodyFromFull = (splitBody(enSplit.body) || enSplit.body || '').trim();
+    const bodyKoFromFull = (splitBody(koSplit.body) || koSplit.body || '').trim();
+
+    if (a.longDescription || a.longDescriptionKo) {
+      funcEn = bodyFromFull || a.longDescription || '';
+      // KO 전문이 없으면(미번역) funcKo를 비워 EN 전문이 표시되도록 함
+      funcKo = koLong ? (bodyKoFromFull || a.longDescriptionKo || '') : '';
+      if (!introEn && !introKo) {
+        introEn = excerpt(enFull) || excerpt(funcEn);
+        introKo = excerpt(koFull) || excerpt(funcKo);
       }
     } else {
-      newsHtml = '<p>버전 기록이 없습니다.</p>';
+      // 레거시: 마커 분리
+      introKo = excerpt(koSplit.body) || excerpt(enSplit.body) || introKo;
+      introEn = excerpt(enSplit.body) || excerpt(koSplit.body) || introEn;
+      funcKo = splitBody(koSplit.body) || '';
+      funcEn = splitBody(enSplit.body) || '';
+      if (!funcEn && !funcKo) {
+        // 마커 없음: 전문 전체를 세부로, 소개는 첫 문단
+        const fullEn = (enSplit.body || '').trim();
+        const fullKo = (koSplit.body || '').trim();
+        if (fullEn.length > 400 || fullKo.length > 400) {
+          const cutEn = fullEn.indexOf('\n');
+          const cutKo = fullKo.indexOf('\n');
+          if (cutEn > 40 && cutEn < fullEn.length - 100) introEn = fullEn.slice(0, cutEn).trim();
+          if (cutKo > 40 && cutKo < fullKo.length - 100) introKo = fullKo.slice(0, cutKo).trim();
+          funcEn = fullEn;
+          funcKo = fullKo;
+        }
+      }
     }
-    $('panelChangelog').innerHTML = '<h4>새 기능</h4>' + newsHtml;
+    // 소개와 세부가 같은 문자열이면 세부 중복 제거 (한쪽만)
+    if (funcKo && funcEn && funcKo === funcEn) funcKo = '';
+    // intro와 동일한 세부는 제거하되, EN 전문이 intro(KO 짧은소개)와 다르면 유지
+    const introShow = introKo || introEn;
+    let funcShowKo = funcKo;
+    let funcShowEn = funcEn;
+    if (funcShowEn && introShow && funcShowEn === introShow) funcShowEn = '';
+    if (funcShowKo && introShow && funcShowKo === introShow) funcShowKo = '';
+    // KO 전문이 짧은 소개와 동일(=descriptionKo만)이면 EN 전문으로 폴백
+    if (funcShowKo && !funcShowEn && introShow && funcShowKo === introShow) funcShowKo = '';
+    if (!funcShowKo && !funcShowEn && a.longDescription && a.longDescription !== introShow) {
+      funcShowEn = a.longDescription;
+    }
+
+    let html = '';
+    if (introShow) {
+      // KO 짧은소개 + EN 전문 연결 (CHANGELOG: KO+EN concat — 게임·앱 공통)
+      if (introKo && funcShowEn && !funcShowKo && introKo !== funcShowEn) {
+        html += mdBlock(introKo, introKo);
+        if (funcShowEn && funcShowEn !== introKo) {
+          html += '<h4 style="margin-top:18px;">세부 설명</h4>';
+          html += mdBlock('', funcShowEn);
+        }
+      } else {
+        html += mdBlock(introKo, introEn);
+      }
+    }
+    if (funcShowKo || funcShowEn) {
+      // 이미 위에서 concat했으면 중복 스킵
+      const already = introKo && funcShowEn && !funcShowKo && introKo !== funcShowEn;
+      if (!already) {
+        if (introShow) html += '<h4 style="margin-top:18px;">세부 설명</h4>';
+        html += mdBlock(funcShowKo, funcShowEn);
+      }
+    }
+    if (!html) html = '<p>소개 정보가 없습니다.</p>';
+    $('panelIntro').innerHTML = html;
+
+    if (isGame) {
+      $('panelFeatures').innerHTML = '<h4>언어·요건</h4>' + gameLangReqHtml(a, sysreqRaw);
+    } else {
+      const feats = [];
+      if (a.averageRating != null) feats.push('평점 ' + a.averageRating + (a.ratingCount != null ? ' (' + a.ratingCount + '개)' : ''));
+      if (a.version) feats.push('버전 ' + esc(a.version));
+      if (a.sellerName) feats.push('판매: ' + esc(a.sellerName));
+      $('panelFeatures').innerHTML = '<h4>특징</h4>' + (feats.length ? feats.map(f => '<p>' + f + '</p>').join('') : '<p>특징 정보가 없습니다.</p>');
+    }
+
+    if (isGame) {
+      $('panelChangelog').innerHTML = gameShotsHtml(a);
+    } else {
+      // 새 기능: 전문 우선 (releaseNotes), 요약은 fallback
+      const notesKo = (a.releaseNotesKo || a.releaseNotes || a.releaseNotesSummary) || '';
+      const notesEn = (a.releaseNotes || a.releaseNotesSummary || a.releaseNotesKo) || '';
+      const notesShow = notesKo || notesEn;
+      let newsHtml = '';
+      if (notesShow) {
+        newsHtml = mdBlock(notesKo, notesEn);
+        if (a.version || (a.versions && a.versions.length)) {
+          const rows = (a.versions || []).slice(0, 10).map(v => {
+            const vlink = v.sourceUrl ? ' <a target="_blank" href="' + esc(v.sourceUrl) + '">열기</a>' : '';
+            return '<tr><td>' + esc(v.version) + '</td><td class="notes">' + md(v.notesSummary || '') + '</td><td>' + vlink + '</td></tr>';
+          }).join('');
+          newsHtml += '<table class="version-table"><tr><th>버전</th><th>새 기능</th><th>링크</th></tr>' +
+            (a.version ? '<tr><td><b>' + esc(a.version) + '</b> (현재)' + (a.prevVersion ? ' ← ' + esc(a.prevVersion) + ' 화' : '') + '</td><td class="notes">' + md(a.releaseNotes || a.releaseNotesSummary || '') + '</td><td></td></tr>' : '') + rows + '</table>';
+        }
+      } else {
+        newsHtml = '<p>버전 기록이 없습니다.</p>';
+      }
+      $('panelChangelog').innerHTML = '<h4>새 기능</h4>' + newsHtml;
+    }
+  }
+
+  /** 게임: 언어 지원 + 시스템 요구 사항(HTML) + 장르/OS/기본 정보 */
+  function gameLangReqHtml(a, sysreqHtml) {
+    const langs = langLabels(a.supportedLanguages);
+    const parts = [];
+    parts.push('<h5 class="mono sm">언어 지원</h5>');
+    if (langs.length) {
+      parts.push('<div class="lang-chips">' + langs.map(l =>
+        '<span class="lang-chip' + (l === '한국어' ? ' ko' : '') + '">' + esc(l) + '</span>'
+      ).join('') + '</div>');
+    } else {
+      parts.push('<p>지원 언어 정보가 없습니다.</p>');
+    }
+    parts.push('<h5 class="mono sm" style="margin-top:14px;">시스템 요구 사항</h5>');
+    if (sysreqHtml) {
+      parts.push('<div class="sysreq">' + sanitizeHtml(sysreqHtml) + '</div>');
+    } else {
+      parts.push('<p>시스템 요구 사항 정보가 없습니다.</p>');
+    }
+    const meta = [];
+    const genres = gameGenresOf(a).filter(g =>
+      g !== 'windows' && g !== 'linux' && g !== 'steam' && g !== 'epic' && g !== 'game');
+    if (genres.length) meta.push('<p>장르: ' + esc(genres.join(' · ')) + '</p>');
+    const tags = String(a.tags || '').split(',').map(s => s.trim());
+    const os = [];
+    if (tags.indexOf('windows') >= 0) os.push('Windows');
+    os.push('macOS');
+    if (tags.indexOf('linux') >= 0) os.push('Linux');
+    meta.push('<p>플랫폼: ' + esc(os.join(' · ')) + '</p>');
+    if (a.developer) meta.push('<p>개발: ' + esc(a.developer) + '</p>');
+    if (a.releaseDate) meta.push('<p>출시: ' + esc(fmtDate(a.releaseDate)) + '</p>');
+    if (a.license === 'FREE' || a.price === 0) meta.push('<p>가격: 무료</p>');
+    if (meta.length) {
+      parts.push('<div class="game-meta">' + meta.join('') + '</div>');
+    }
+    return parts.join('');
+  }
+
+  /** 게임: 스크린샷 그리드 (원본 URL 새 탭) */
+  function gameShotsHtml(a) {
+    const shots = String(a.screenshotUrls || '').split('\n').map(s => s.trim()).filter(Boolean);
+    if (!shots.length) {
+      return '<h4>스크린샷</h4><p>스크린샷이 없습니다.</p>';
+    }
+    return '<h4>스크린샷</h4><div class="shot-grid">' + shots.map(u =>
+      '<a class="shot-cell" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' +
+      '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+      '</a>'
+    ).join('') + '</div>';
   }
 
   /* ================= 뉴스 ================= */
@@ -1185,6 +1687,12 @@
   function loadNews() {
     syncNewsMains();
     applyNewsLayout();
+    renderSourceChoices('newsSourceChoices', 'news', state.news.sourceId, sid => {
+      state.news.sourceId = sid;
+      state.news.page = 1;
+      state.news.detailId = null;
+      loadNews();
+    });
     const seq = ++newsSeq;
     Promise.all([
       api('/api/main').catch(e => { console.error('[뉴스] /api/main 실패', e); return null; }),
@@ -1249,11 +1757,12 @@
         if (el.dataset.main && el.dataset.main !== state.news.main) {
           state.news.main = el.dataset.main;
           state.news.sub = '';
+          state.news.page = 1;
           syncNewsMains();
         }
         setNewsLayout('B');
         applyNewsLayout();
-        openNewsDetail(el.dataset.id);
+        loadNews();
       };
     });
     renderPagination($('hybridPagination'), d.page, d.pageSize, d.total, p => {
@@ -1330,6 +1839,7 @@
     if (state.news.main) p.set('main', state.news.main);
     if (state.news.sub) p.set('sub', state.news.sub);
     if (state.news.q) p.set('q', state.news.q);
+    if (state.news.sourceId) p.set('sourceId', state.news.sourceId);
     return '/api/news?' + p.toString();
   }
   function logoText(src) {
@@ -1369,7 +1879,7 @@
       if (pick) openNewsDetail(pick);
     }
     else if (state.news.detailId) openNewsDetail(state.news.detailId, true);
-    else if (d.news.length && window.innerWidth > 1200) openNewsDetail(d.news[0].id, true);
+    else if (d.news.length) openNewsDetail(d.news[0].id, true);
   }
 
   let pendingEdge = null;
@@ -1388,9 +1898,14 @@
     state.news.detailId = id;
     $$('#newsList .ncard').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
     const box = $('newsDetail');
-    if (!silent) box.scrollIntoView({ block: 'nearest' });
-    // A형에서는 상세가 숨김 → B형 강제 전환
-    if (state.news.layout === 'A') setNewsLayout('B');
+    if (!silent && box) box.scrollIntoView({ block: 'nearest' });
+    // A형에서는 상세가 숨김 → B형 강제 전환 후 목록 로드 (재진입은 B라 무한루프 없음)
+    if (state.news.layout === 'A') {
+      setNewsLayout('B');
+      applyNewsLayout();
+      loadNews();
+      return;
+    }
     api('/api/news/' + encodeURIComponent(id)).then(n => {
       if (state.news.detailId !== id) return;
       renderNewsDetail(n);
@@ -1603,10 +2118,20 @@
   function loadAdminSources() {
     const empty = '<p class="tiny-note">소스 없음</p>';
     const fail = '<p class="tiny-note">불러오기 실패</p>';
+    const GAME_TYPES = ['STEAM_FREETOMAC', 'EPIC_FREE', 'APPSTORRENT_GAMES'];
+    const NEWS_TYPES = ['NEWS_RSS'];
+    const COMMUNITY_TYPES = ['COMMUNITY_BOARD'];
+    const isCommunity = s => COMMUNITY_TYPES.indexOf(s.type) >= 0;
+    const isNews = s => NEWS_TYPES.indexOf(s.type) >= 0;
+    const isGame = s => GAME_TYPES.indexOf(s.type) >= 0;
     api('/api/watchlist').then(srcs => {
-      const news = srcs.filter(s => s.type === 'NEWS_RSS');
-      const apps = srcs.filter(s => s.type !== 'NEWS_RSS');
+      const community = srcs.filter(isCommunity);
+      const news = srcs.filter(s => isNews(s) && !isCommunity(s));
+      const games = srcs.filter(s => isGame(s) && !isNews(s) && !isCommunity(s));
+      const apps = srcs.filter(s => !isCommunity(s) && !isNews(s) && !isGame(s));
       $('adminSourcesApps').innerHTML = apps.length ? apps.map(srcRowHtml).join('') : empty;
+      $('adminSourcesGames').innerHTML = games.length ? games.map(srcRowHtml).join('') : empty;
+      $('adminSourcesCommunity').innerHTML = community.length ? community.map(srcRowHtml).join('') : empty;
       $('adminSourcesNews').innerHTML = news.length ? news.map(srcRowHtml).join('') : empty;
       $$('#adminSources [data-stoggle]').forEach(b => { b.onclick = () => {
         apiPost('/api/sources/' + encodeURIComponent(b.dataset.stoggle) + '/toggle').then(r => {
@@ -1624,7 +2149,167 @@
       }; });
     }).catch(() => {
       $('adminSourcesApps').innerHTML = fail;
+      $('adminSourcesGames').innerHTML = fail;
+      $('adminSourcesCommunity').innerHTML = fail;
       $('adminSourcesNews').innerHTML = fail;
+    });
+  }
+
+  /* ---------- 커뮤니티 (PLAN_v23) ---------- */
+  const COMMUNITY_MAINS = [
+    { id: 'apple', label: '애플' },
+    { id: 'mac', label: '맥' },
+    { id: 'ai', label: 'AI' },
+    { id: 'all', label: '전체' }
+  ];
+  const CM_PAGE_SIZE = 30;
+  let communitySeq = 0;
+
+  function syncCommunityMains() {
+    $$('#communityMains .mainpill').forEach(b => {
+      const on = b.dataset.main === state.community.main;
+      b.classList.toggle('active', on);
+      if (on) b.setAttribute('aria-selected', 'true'); else b.removeAttribute('aria-selected');
+    });
+    const label = COMMUNITY_MAINS.find(m => m.id === state.community.main);
+    const t = $('cmListTitle');
+    if (t) t.textContent = String(state.community.main).toUpperCase() + ' / ' + ((label && label.label) || '');
+  }
+
+  function buildCommunityQuery() {
+    const c = state.community;
+    const p = new URLSearchParams({ page: String(c.page), pageSize: String(CM_PAGE_SIZE) });
+    if (c.main && c.main !== 'all') p.set('main', c.main);
+    if (c.q) p.set('q', c.q);
+    if (c.sourceId) p.set('sourceId', c.sourceId);
+    return '/api/community?' + p.toString();
+  }
+
+  function communityRowHtml(p) {
+    const age = Date.now() - (p.publishedAt || 0);
+    let badges = '';
+    if (age < 6 * 3600 * 1000) badges = '<span class="newtag">NEW</span>';
+    return '<button type="button" class="nrow cmrow" data-id="' + esc(p.id) + '" data-main="' + esc(p.main) + '" role="listitem">' +
+      '<span class="nbody"><span class="nmeta"><span class="subpill">' + esc(cmMainLabel(p.main)) + '</span>' +
+      '<span>' + esc(p.sourceName) + (p.authorName ? ' · ' + esc(p.authorName) : '') + ' · ' + fmtTime(p.publishedAt) + '</span>' +
+      badges +
+      (p.commentCount != null ? '<span class="mono">💬' + p.commentCount + '</span>' : '') +
+      '</span>' +
+      '<span class="ntitle">' + esc(p.title) + '</span>' +
+      (p.summary ? '<span class="ndesc">' + esc(p.summary) + '</span>' : '') +
+      '</span>' +
+      '<span class="narrow" aria-hidden="true">↗</span></button>';
+  }
+
+  function cmMainLabel(id) {
+    const m = COMMUNITY_MAINS.find(x => x.id === id);
+    return m ? m.label : id;
+  }
+
+  function renderCommunityList(d) {
+    const box = $('communityList');
+    const empty = $('emptyCommunity');
+    const posts = d.posts || [];
+    state.community.total = d.total || 0;
+    state.community.listIds = posts.map(p => p.id);
+    if (state.community.detailId && state.community.listIds.indexOf(state.community.detailId) < 0) {
+      state.community.detailId = null;
+    }
+    if (!posts.length) {
+      box.innerHTML = '<div class="mini-empty">글이 없습니다</div>';
+      if (empty) empty.hidden = (d.total || 0) > 0;
+      const det = $('communityDetail');
+      if (det) det.innerHTML = '';
+      return;
+    }
+    if (empty) empty.hidden = true;
+    box.innerHTML = posts.map(communityRowHtml).join('');
+    $$('.cmrow', box).forEach(el => {
+      el.onclick = () => openCommunityDetail(el.dataset.id);
+    });
+    if (!state.community.detailId) {
+      state.community.detailId = posts[0].id;
+    }
+    openCommunityDetail(state.community.detailId, true);
+    renderCommunityPagination(d);
+  }
+
+  function renderCommunityPagination(d) {
+    const nav = $('communityPagination');
+    if (!nav) return;
+    const total = d.total || 0;
+    const pages = Math.max(1, Math.ceil(total / CM_PAGE_SIZE));
+    if (pages <= 1) { nav.innerHTML = ''; return; }
+    const cur = state.community.page;
+    let html = '';
+    html += '<button type="button" class="pagebtn"' + (cur <= 1 ? ' disabled' : '') + ' data-p="' + (cur - 1) + '">이전</button>';
+    const start = Math.max(1, cur - 2);
+    const end = Math.min(pages, start + 4);
+    for (let i = start; i <= end; i++) {
+      html += '<button type="button" class="pagebtn' + (i === cur ? ' active' : '') + '" data-p="' + i + '">' + i + '</button>';
+    }
+    html += '<button type="button" class="pagebtn"' + (cur >= pages ? ' disabled' : '') + ' data-p="' + (cur + 1) + '">다음</button>';
+    nav.innerHTML = html;
+    $$('.pagebtn', nav).forEach(b => {
+      b.onclick = () => {
+        const p = parseInt(b.dataset.p, 10);
+        if (!p || p === state.community.page) return;
+        state.community.page = p;
+        state.community.detailId = null;
+        loadCommunity();
+      };
+    });
+  }
+
+  function openCommunityDetail(id, skipListHighlight) {
+    if (!id) return;
+    state.community.detailId = id;
+    $$('.cmrow').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+    const det = $('communityDetail');
+    if (!det) return;
+    det.innerHTML = '<p class="tiny-note">불러오는 중…</p>';
+    api('/api/community/' + encodeURIComponent(id)).then(p => {
+      det.innerHTML =
+        '<header class="ndetail-head">' +
+        '<div class="nmeta"><span class="subpill">' + esc(cmMainLabel(p.main)) + '</span>' +
+        '<span>' + esc(p.sourceName) + ' · ' + fmtTime(p.publishedAt) + '</span></div>' +
+        '<h2 class="ndtitle">' + esc(p.title) + '</h2>' +
+        '<div class="ndmeta">' + esc([p.authorName, p.commentCount != null ? ('댓글 ' + p.commentCount) : ''].filter(Boolean).join(' · ')) + '</div>' +
+        '</header>' +
+        (p.thumbnailUrl ? '<img class="ndthumb" src="' + esc(p.thumbnailUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+        (p.contentHtml
+          ? '<div class="ndbody">' + p.contentHtml + '</div>'
+          : (p.summary ? '<div class="ndbody"><p>' + esc(p.summary) + '</p></div>' : '')) +
+        '<footer class="ndfoot"><a class="btn-primary" href="' + esc(p.originalUrl) + '" target="_blank" rel="noopener noreferrer">원문 보기 ↗</a></footer>';
+      if (!skipListHighlight) window.scrollTo(0, 0);
+    }).catch(e => {
+      console.error('[커뮤니티] 상세 실패', e);
+      det.innerHTML = '<p class="tiny-note">상세를 불러오지 못했습니다</p>';
+    });
+  }
+
+  function loadCommunity() {
+    syncCommunityMains();
+    renderSourceChoices('cmSourceChoices', 'community', state.community.sourceId, sid => {
+      state.community.sourceId = sid;
+      state.community.page = 1;
+      state.community.detailId = null;
+      loadCommunity();
+    });
+    const seq = ++communitySeq;
+    Promise.all([
+      api(buildCommunityQuery()).catch(e => { console.error('[커뮤니티] 목록 실패', e); return null; }),
+      api('/api/community/counts').catch(() => null)
+    ]).then(([list, counts]) => {
+      if (seq !== communitySeq) return;
+      if (list) renderCommunityList(list);
+      if (counts) {
+        ['apple', 'mac', 'ai', 'all'].forEach(k => {
+          const el = $('cmcount-' + k);
+          if (el) el.textContent = counts[k] != null ? counts[k] : '-';
+        });
+        setNavCounts({ community: counts.all });
+      }
     });
   }
 
@@ -1636,6 +2321,26 @@
     $('brandLink').onclick = e => { e.preventDefault(); switchView('dashboard'); };
     // 앱스토어 서브탭
     $$('#view-appstore .subpill').forEach(b => { b.onclick = () => switchStoreSub(b.dataset.sub); });
+    // 커뮤니티 카테고리
+    $$('#communityMains .mainpill').forEach(b => { b.onclick = () => {
+      state.community.main = b.dataset.main;
+      state.community.page = 1;
+      state.community.detailId = null;
+      loadCommunity();
+    }; });
+    const cmQ = $('communityQ');
+    if (cmQ) {
+      let cmQTimer = null;
+      cmQ.oninput = () => {
+        clearTimeout(cmQTimer);
+        cmQTimer = setTimeout(() => {
+          state.community.q = cmQ.value.trim();
+          state.community.page = 1;
+          state.community.detailId = null;
+          loadCommunity();
+        }, 350);
+      };
+    }
     // 뉴스 TopTab
     $$('#topTabs .toptab').forEach(b => { b.onclick = () => switchNewsTop(b.dataset.top); });
     // 뉴스 main 탭
@@ -1653,6 +2358,8 @@
   }
     // 메인 더보기
     $('dashAppsMore').onclick = () => switchView('appstore');
+    const dashGamesMore = $('dashGamesMore');
+    if (dashGamesMore) dashGamesMore.onclick = () => switchView('games');
     $('dashLoadMore').onclick = () => {
       state.dashPage++;
       ['mac', 'ai', 'sec'].forEach(m => {
@@ -1807,6 +2514,8 @@
     if (state.view === 'appstore') {
         if (state.storeSub === 'timeline' || state.storeSub === 'watchlist') loadStoreList();
         else if (!$('adminDrawer') || !$('adminDrawer').hidden) loadStatsPanel();
+      } else if (state.view === 'games') {
+        loadGamesList();
       } else if (state.view === 'news') {
         if (state.news.detailId) openNewsDetail(state.news.detailId, true);
         else { applyNewsLayout(); loadNews(); }
@@ -1849,6 +2558,9 @@
       if (topApp) topApp.textContent = d.total;
       setNavCounts({ app: d.total });
     }).catch(() => {});
+    api('/api/games?page=1&pageSize=1').then(d => {
+      setNavCounts({ games: d.total });
+    }).catch(() => {});
     updateBmCount();
     applyNewsLayout();
     switchView('dashboard');
@@ -1862,6 +2574,12 @@
     }
     if (part.news != null) {
       ['navNewsCount', 'navNewsCountM'].forEach(id => { const el = $(id); if (el) el.textContent = part.news; });
+    }
+    if (part.games != null) {
+      ['navGameCount', 'navGameCountM'].forEach(id => { const el = $(id); if (el) el.textContent = part.games; });
+    }
+    if (part.community != null) {
+      ['navCommunityCount', 'navCommunityCountM'].forEach(id => { const el = $(id); if (el) el.textContent = part.community; });
     }
   }
 

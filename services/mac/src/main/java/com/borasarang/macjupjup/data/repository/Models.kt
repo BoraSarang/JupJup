@@ -58,6 +58,8 @@ data class AppFilter(
     val newOnly: Boolean = false,
     /** 비어 있으면 전체 (대표 sourceId 기준) */
     val sourceIds: Set<String> = emptySet(),
+    /** true면 category='게임' 제외 (앱 스토어 기본, 검색은 false) */
+    val excludeGames: Boolean = true,
 )
 
 data class PagedApps(
@@ -73,6 +75,36 @@ data class AppListItem(
     val sourceName: String?,
     val sourceUrl: String?,
 )
+
+/**
+ * tags 스토어(epic/steam)와 매칭되는 출처 1건 우선.
+ * Epic 게임이 Steam URL로 표시되는 버그 방지 — 없으면 URL 있는 첫 출처.
+ */
+fun preferredMapping(
+    tags: String?,
+    sources: List<com.borasarang.macjupjup.data.db.entity.AppSourceMapping>,
+): com.borasarang.macjupjup.data.db.entity.AppSourceMapping? {
+    if (sources.isEmpty()) return null
+    val withUrl = sources.filter { !it.sourceUrl.isNullOrBlank() }
+    if (withUrl.isEmpty()) return sources.firstOrNull()
+    val store = when {
+        tags?.contains("appstorrent") == true && tags?.contains("game") == true -> "appstorrent-game"
+        tags?.contains("appstorrent") == true -> "appstorrent"
+        tags?.contains("epic") == true -> "epic"
+        tags?.contains("steam") == true -> "steam"
+        else -> ""
+    }
+    val hit = when (store) {
+        "epic" -> withUrl.firstOrNull { it.sourceUrl!!.contains("epicgames.com") }
+            ?: withUrl.firstOrNull { it.sourceName.contains("Epic", ignoreCase = true) }
+        "steam" -> withUrl.firstOrNull { it.sourceUrl!!.contains("steampowered.com") }
+            ?: withUrl.firstOrNull { it.sourceName.contains("Steam", ignoreCase = true) }
+        "appstorrent", "appstorrent-game" -> withUrl.firstOrNull { it.sourceUrl!!.contains("appstorrent.ru") }
+            ?: withUrl.firstOrNull { it.sourceName.contains("AppStorrent", ignoreCase = true) }
+        else -> null
+    }
+    return hit ?: withUrl.first()
+}
 
 /** 일별 수집량 (그래프용) */
 data class DayCollect(

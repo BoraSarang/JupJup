@@ -41,11 +41,16 @@ class TranslateWorker(
                 val descKo = a.descriptionSnippet
                     ?.takeIf { a.descriptionKo == null || needsDescRepair }
                     ?.let { MacTranslator.translateAutoToKo(it) }
+                // 전문 번역: 4000자 이하만 (ML Kit 비용·시간 절약 — 초과분은 getUntranslated 쿼리에서 제외,
+                // 프론트가 EN longDescription로 폴백. 미번역 시 원문 폴백)
+                val longKo = a.longDescription
+                    ?.takeIf { a.longDescriptionKo == null && it.length <= 4000 }
+                    ?.let { MacTranslator.translateAutoToKo(it) }
                 val notesKo = (a.releaseNotes ?: a.releaseNotesSummary)
                     ?.takeIf { a.releaseNotesKo == null }
                     ?.let { MacTranslator.translateAutoToKo(it) }
-                if (descKo != null || notesKo != null) {
-                    app.database.appDao().updateKo(a.id, descKo, notesKo)
+                if (descKo != null || notesKo != null || longKo != null) {
+                    app.database.appDao().updateKo(a.id, descKo, notesKo, longKo)
                     done++
                 }
                 // gtx 레이트 제한 예의 대기

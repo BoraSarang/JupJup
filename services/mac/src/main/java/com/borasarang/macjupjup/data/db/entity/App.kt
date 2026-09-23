@@ -50,13 +50,17 @@ data class App(
     /** 릴리즈노트 요약 (전문 복제 금지) */
     val releaseNotesSummary: String?,
     val releaseDate: Long?,
-    /** 소개 발췌 (최대 2000자) */
+    /** 소개 발췌 (카드·목록용, APP_SUMMARY_LEN) */
     val descriptionSnippet: String?,
+    /** 전문 (README·스토어 설명 등 — 상세 모달 세부 설명) */
+    val longDescription: String? = null,
     /** 앱 아이콘 URL (Apple CDN·GitHub 아바타, 직접 표시) */
     val iconUrl: String?,
-    /** 소개 한글 번역 (ML Kit) */
+    /** 소개 한글 번역 (ML Kit) — descriptionSnippet 기준 */
     val descriptionKo: String?,
-    /** 릴리즈노트 전체 (최대 2000자) */
+    /** 전문 한글 번역 (미번역이면 원문 폴백) */
+    val longDescriptionKo: String? = null,
+    /** 릴리즈노트 전문 */
     val releaseNotes: String?,
     /** 릴리즈노트 한글 번역 */
     val releaseNotesKo: String?,
@@ -80,6 +84,8 @@ data class App(
     val ratingCount: Int?,
     val stars: Int?,
     val primaryLanguage: String?,
+    /** 지원언어 ISO 639-1 CSV (예: en,ko,ja) */
+    val supportedLanguages: String?,
     /** GitHub topics CSV */
     val topics: String?,
     val firstSeenAt: Long,

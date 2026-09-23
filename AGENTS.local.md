@@ -9,7 +9,12 @@
 - **데이터 격리**: 서비스별 포트(mac 3010 / plan 3020 / pj 3030 / community 3040), 서비스별 Room DB 파일·마이그레이션, 서비스별 DataStore(`settings_{service}`), 서비스별 알림 채널.
 - **Application 패턴**: 통합 `JupJupApplication`만 사용. 각 서비스는 `{Prefix}JupJupApplication` 대신 `{Prefix}JupJupRuntime`(object, `fun initialize(context)`)로 전환.
 - **phisical 디바이스**: Galaxy S22 실기 E2E. 사용자 사용 중이면 headless·smoke/unit만, full은 사전 확인.
-- **수집 예의 고정**: 공식 API 우선, 요청 간격 1초+, UA 명시, robots.txt 확인. 크랙·활성화툴 사이트 수집 금지. 릴리즈노트 전문 복제 금지(요약+링크만).
+- **수집 예의 고정**: 공식 API 우선, 요청 간격 1초+, UA 명시, robots.txt 확인.
+  - **크랙·리패키지 사이트**(appstorrent 등): **메타데이터 전용 허용** — 제목·요약·아이콘·장르·**출처 상세 링크만**.
+  - **다운로드 URI 금지**: magnet·torrent·warez·직접 파일 URL 저장/표시/크롤 금지. 본문에서 해당 구간 제거.
+  - 다운로드 UI/CTA 금지, 스토어 CTA는 **출처 상세 페이지**만.
+  - 릴리즈노트 전문 복제 금지(요약+링크만).
+  - appstorrent: CF 회피용 **Googlebot UA** 사용(robots `User-agent:*` Disallow 없음, 2026-09 확인) — 메타데이터 GET만.
 - **시크릿**: GitHub 토큰은 설정 화면 입력→DataStore만. 커밋·로그 금지(마스킹).
 - **버전 고정**: `gradle/libs.versions.toml` 단일 진실 (AGP 9.3.1·Ktor 3.5.2·Room 2.7.0·Work 2.9.0).
 - **서버 예외**: 공통 server 규칙(Node/Go)과 달리 Ktor(CIO) 임베디드 사용. /health 기준·p95 300ms·캐시 70% 예산은 그대로 적용.

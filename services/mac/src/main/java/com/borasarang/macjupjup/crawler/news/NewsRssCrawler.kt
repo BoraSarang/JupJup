@@ -64,13 +64,21 @@ class NewsRssCrawler(
         val unique = drafts.distinctBy { it.id }
         DebugLogger.i("뉴스수집", "파싱 완료 feeds=${feeds.size} found=${drafts.size} unique=${unique.size}")
 
-        // 기존 저장분 제외 (원문 fetch 낭비 방지, IN 배치 1회)
-        val existing = if (unique.isEmpty()) {
+        // 기존 저장분: 신규는 제외, 기존 중 본문이 짧은 행은 백필 대상으로 유지
+        val existingAll = if (unique.isEmpty()) {
             emptySet()
         } else {
             db.newsArticleDao().getExistingIds(unique.map { it.id }).toSet()
         }
-        val fresh = unique.filter { it.id !in existing }
+        val existingShort = if (existingAll.isEmpty()) {
+            emptySet()
+        } else {
+            db.newsArticleDao().getExistingShortContentIds(
+                existingAll.toList(),
+                Constants.NEWS_FULL_BODY_MIN_LEN,
+            ).toSet()
+        }
+        val fresh = unique.filter { it.id !in existingAll || it.id in existingShort }
         val now = System.currentTimeMillis()
         // R36: 상세 순차 → 최대 3병렬 (호스트 스로틀로 예의 유지, 실패 건 스킵).
         // 수집 예의 헬퍼는 common 모듈 공용 (R37 승격).
@@ -79,8 +87,17 @@ class NewsRssCrawler(
                 .onFailure { e -> DebugLogger.w("뉴스수집", "본문 스킵 ${d.link}: ${e.message}") }
                 .getOrNull()
         }.filterNotNull()
-        val relations = matchApps(articles)
-        NewsOutcome(articles, relations)
+        // 백필: 기존 짧은 행 본문 갱신 (insert IGNORE는 덮어쓰지 않음)
+        val shortExisting = articles.filter { a -> a.id in existingShort }
+        if (shortExisting.isNotEmpty()) {
+            for (a in shortExisting) {
+                db.newsArticleDao().updateContentBody(a.id, a.contentHtml, a.summary, now)
+            }
+            DebugLogger.i("뉴스수집", "본문 백필 ${shortExisting.size}건")
+        }
+        val insertable = articles.filter { it.id !in existingShort }
+        val relations = matchApps(insertable)
+        NewsOutcome(insertable, relations)
     }
 
     /** 원문 본문 확보 + 분류 + 요약 → 저장용 엔티티 */
@@ -88,14 +105,25 @@ class NewsRssCrawler(
         var bodyText = d.feedText
         var bodyHtml = d.feedHtml
         var thumb = d.thumbnailUrl
-        if (bodyText.isBlank()) {
-            // 피드 본문 없음 → 원문 fetch 후 jsoup 추출 (Readability 대체)
-            val html = fetchGet(d.link)
-            val extracted = extractBody(html, d.link)
-            bodyText = extracted.text
-            bodyHtml = extracted.html
-            if (thumb == null) thumb = extracted.firstImage
-        } else if (bodyHtml != null) {
+        // 피드 본문이 없거나 짧으면 원문 fetch (전문 기본)
+        val needFull = bodyText.isBlank() ||
+            bodyText.length < Constants.NEWS_FULL_BODY_MIN_LEN ||
+            bodyHtml == null
+        if (needFull) {
+            try {
+                val html = fetchGet(d.link)
+                val extracted = extractBody(html, d.link)
+                if (extracted.text.isNotBlank() && extracted.text.length > bodyText.length) {
+                    bodyText = extracted.text
+                    bodyHtml = extracted.html
+                }
+                if (thumb == null) thumb = extracted.firstImage
+            } catch (e: Exception) {
+                DebugLogger.d("뉴스수집", "원문 fetch 실패 ${d.link}: ${e.message}")
+                if (bodyText.isBlank()) throw IllegalStateException("본문 없음")
+            }
+        }
+        if (bodyHtml != null) {
             bodyHtml = sanitizeHtml(bodyHtml, d.link)
             if (thumb == null) thumb = firstImageOf(bodyHtml)
         }

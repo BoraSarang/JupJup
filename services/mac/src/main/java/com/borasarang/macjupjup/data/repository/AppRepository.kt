@@ -136,8 +136,13 @@ class AppRepository(
             newOnly = filter.newOnly,
             filterBySource = filterBySource,
             sourceIds = sourceIds,
+            excludeGames = filter.excludeGames,
         )
-        val total = db.appDao().countFiltered(filter.license, filter.category, filter.tag, q, filter.bumped, filter.updatedOnly, filter.newOnly, filterBySource, sourceIds)
+        val total = db.appDao().countFiltered(
+            filter.license, filter.category, filter.tag, q,
+            filter.bumped, filter.updatedOnly, filter.newOnly,
+            filterBySource, sourceIds, filter.excludeGames,
+        )
         // P1-1: 대표 매핑 일괄 조회 (행당 getByApp N+1 제거)
         val mapsByApp = if (apps.isEmpty()) {
             emptyMap()
@@ -145,7 +150,7 @@ class AppRepository(
             db.appSourceMappingDao().getByApps(apps.map { it.id }).groupBy { it.appId }
         }
         val items = apps.map { a ->
-            val mapping = mapsByApp[a.id]?.firstOrNull()
+            val mapping = preferredMapping(a.tags, mapsByApp[a.id].orEmpty())
             AppListItem(
                 app = a,
                 sourceName = mapping?.sourceName,
@@ -154,6 +159,40 @@ class AppRepository(
         }
         return PagedApps(items, total, page, pageSize)
     }
+
+    /** 맥 게임 목록 (PLAN_v21). source는 steam/epic (tags LIKE), sourceId는 수집처 필터 */
+    suspend fun games(
+        genre: String? = null,
+        source: String? = null,
+        sourceId: String? = null,
+        q: String? = null,
+        sort: String = "newest",
+        page: Int = 1,
+        pageSize: Int = 50,
+    ): PagedApps {
+        val size = pageSize.coerceIn(1, Constants.API_MAX_PAGE_SIZE)
+        val p = page.coerceAtLeast(1)
+        val offset = (p - 1) * size
+        val g = genre?.ifBlank { null }
+        val s = source?.ifBlank { null }
+        val sid = sourceId?.ifBlank { null }
+        val qq = q?.ifBlank { null }
+        val rows = db.appDao().listGames(g, s, sid, qq, sort, size, offset)
+        val total = db.appDao().countGames(g, s, sid, qq)
+        val mapsByApp = if (rows.isEmpty()) {
+            emptyMap()
+        } else {
+            db.appSourceMappingDao().getByApps(rows.map { it.id }).groupBy { it.appId }
+        }
+        val items = rows.map { a ->
+            // 스토어 태그와 매칭되는 출처 우선 (Epic이 Steam URL로 표시되는 버그 방지)
+            val mapping = preferredMapping(a.tags, mapsByApp[a.id].orEmpty())
+            AppListItem(app = a, sourceName = mapping?.sourceName, sourceUrl = mapping?.sourceUrl)
+        }
+        return PagedApps(items, total, p, size)
+    }
+
+    suspend fun countGames(): Int = db.appDao().countGames(null, null, null, null)
 
     suspend fun detail(id: String): AppWithSourceList? {
         val withSources = db.appDao().getWithSources(id) ?: return null
@@ -280,11 +319,31 @@ class AppRepository(
             isNew = if (versionChanged) false else existing.isNew,
             licenseOverride = existing.licenseOverride,
             license = maxLicense(existing.license, draft.license),
-            descriptionSnippet = longer(existing.descriptionSnippet, draft.descriptionSnippet),
+            // 카드용 발췌는 상한 고정. 레거시 긴 snippet은 전문으로 승계.
+            // draft snippet이 existing보다 짧으면 덮지 않음 (쓰�기 좋은 소개 방어)
+            descriptionSnippet = preferSnippet(
+                existing.descriptionSnippet,
+                draft.descriptionSnippet,
+            )?.take(Constants.APP_SUMMARY_LEN),
+            descriptionKo = preferSnippet(
+                existing.descriptionKo,
+                draft.descriptionKo,
+            )?.take(Constants.APP_SUMMARY_LEN),
+            longDescription = longer(
+                existing.longDescription
+                    ?: existing.descriptionSnippet?.takeIf { it.length > Constants.APP_SUMMARY_LEN },
+                draft.longDescription
+                    ?: draft.descriptionSnippet?.takeIf { it.length > Constants.APP_SUMMARY_LEN },
+            ),
+            longDescriptionKo = draft.longDescriptionKo
+                ?: existing.longDescriptionKo
+                ?: existing.descriptionKo?.takeIf { it.length > Constants.APP_SUMMARY_LEN },
             releaseNotes = if (versionChanged) {
-                draft.releaseNotes ?: existing.releaseNotes
+                (draft.releaseNotes ?: existing.releaseNotes)
+                    ?.take(Constants.RELEASE_NOTES_MAX)
             } else {
                 longer(existing.releaseNotes, draft.releaseNotes)
+                    ?.take(Constants.RELEASE_NOTES_MAX)
             },
             releaseNotesSummary = if (versionChanged) {
                 draft.releaseNotesSummary ?: existing.releaseNotesSummary
@@ -292,7 +351,6 @@ class AppRepository(
                 draft.releaseNotesSummary ?: existing.releaseNotesSummary
             },
             iconUrl = draft.iconUrl ?: existing.iconUrl,
-            descriptionKo = draft.descriptionKo ?: existing.descriptionKo,
             releaseNotesKo = if (versionChanged) draft.releaseNotesKo else {
                 draft.releaseNotesKo ?: existing.releaseNotesKo
             },
@@ -305,6 +363,7 @@ class AppRepository(
             averageRating = draft.averageRating ?: existing.averageRating,
             ratingCount = draft.ratingCount ?: existing.ratingCount,
             primaryLanguage = draft.primaryLanguage ?: existing.primaryLanguage,
+            supportedLanguages = draft.supportedLanguages ?: existing.supportedLanguages,
             topics = draft.topics ?: existing.topics,
             forks = draft.forks ?: existing.forks,
             issues = draft.issues ?: existing.issues,
@@ -328,6 +387,19 @@ class AppRepository(
     private fun longer(a: String?, b: String?): String? {        if (a.isNullOrBlank()) return b
         if (b.isNullOrBlank()) return a
         return if (b.length > a.length) b else a
+    }
+
+    /**
+     * 카드용 snippet 병합: draft가 null/빈 값이면 existing 유지.
+     * draft가 existing보다 **현저히 짧으면** existing 유지 (목록 초안의 임시 문구가 좋은 소개를 덮는 방지).
+     * 동등/더 길면 draft 채택 (새 본문 갱신 반영).
+     */
+    internal fun preferSnippet(existing: String?, draft: String?): String? {
+        if (draft.isNullOrBlank()) return existing
+        if (existing.isNullOrBlank()) return draft
+        // draft가 existing의 50% 미만이면 기존 유지 (쓰레기 단축 덮어쓰기 방어)
+        if (draft.length * 2 < existing.length) return existing
+        return draft
     }
 
     private fun maxLicense(a: String, b: String): String {        val rank = mapOf(

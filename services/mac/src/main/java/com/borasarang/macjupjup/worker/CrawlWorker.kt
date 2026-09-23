@@ -58,6 +58,11 @@ class CrawlWorker(
         } catch (e: Exception) {
             // REPLACE 취소 등 비정상 종료도 식별되게 기록
             DebugLogger.w("수집", "워커 종료(${e.javaClass.simpleName}) source=${source.name}")
+            if (e is kotlinx.coroutines.CancellationException) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                    app.sourceRepository.clearRunning(sourceId)
+                }
+            }
             throw e
         } finally {
             SourceLocks.release(sourceId)
@@ -78,15 +83,30 @@ class CrawlWorker(
         if (source.type == Constants.TYPE_NEWS_RSS) {
             return runNewsCrawl(app, source, startedAt)
         }
+        // PLAN_v23: 커뮤니티 보드는 별도 경로 (CommunityBoardCrawler)
+        if (source.type == Constants.TYPE_COMMUNITY_BOARD) {
+            return runCommunityCrawl(app, source, startedAt)
+        }
         return try {
             val token = app.preferences.getSettings().githubToken
-            val crawler = CrawlerFactory(app.database, token).create(source)
+            // 체크포인트: 상세 보강 중 워커 취소 시에도 본문 진행량을 NonCancellable로 적재
+            val crawler = CrawlerFactory(app.database, token).create(source) { drafts ->
+                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                    app.appRepository.saveApps(
+                        drafts.map { it.app },
+                        drafts.flatMap { it.mappings },
+                    )
+                }
+            }
             val outcome = crawler.crawl()
             outcome.fold(
                 onSuccess = { drafts ->
                     val apps = drafts.map { it.app }
                     val mappings = drafts.flatMap { it.mappings }
-                    val saved = app.appRepository.saveApps(apps, mappings)
+                    // 저장 직전 취소로 결과 전건 유실 방지 (JupJup-dui)
+                    val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                        app.appRepository.saveApps(apps, mappings)
+                    }
                     val net = NetMeter.deltaSince("mac", netBefore)
                     app.sourceRepository.logResult(
                         sourceId = sourceId,
@@ -133,6 +153,13 @@ class CrawlWorker(
                     Result.retry()
                 },
             )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            DebugLogger.w("수집", "워커 취소(CancellationException) source=${source.name} — 체크포인트 본문은 유지")
+            // RUNNING 고착 방지: 이전 종료 상태로 복원 (실패 스트릭 오염 금지)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                app.sourceRepository.clearRunning(sourceId)
+            }
+            throw e
         } catch (e: Exception) {
             val net = NetMeter.deltaSince("mac", netBefore)
             fail(app, sourceId, source.name, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
@@ -197,6 +224,62 @@ class CrawlWorker(
                 if (purged > 0) DebugLogger.i("뉴스수집", "보관기간 정리 ${purged}건")
             } catch (e: Exception) {
                 DebugLogger.w("뉴스수집", "정리 스킵: ${e.message}")
+            }
+            Result.success()
+        } catch (e: Exception) {
+            val net = NetMeter.deltaSince("mac", netBefore)
+            fail(app, sourceId, sourceName, startedAt, e.message ?: e.javaClass.simpleName, net.rxBytes, net.txBytes)
+            Result.retry()
+        }
+    }
+
+    /**
+     * 커뮤니티 보드 수집 (PLAN_v23).
+     * 목록 + 신규 상세 → community_posts 저장, 로그·완료 알림.
+     */
+    private suspend fun runCommunityCrawl(
+        app: MacJupJupRuntime,
+        source: com.borasarang.macjupjup.data.db.entity.CrawlSource,
+        startedAt: Long,
+    ): Result {
+        val sourceId = source.id
+        val sourceName = source.name
+        val netBefore = NetMeter.snapshotFor("mac")
+        return try {
+            val crawler = com.borasarang.macjupjup.crawler.community.CommunityBoardCrawler(source, app.database)
+            val outcome = crawler.crawl().getOrThrow()
+            val net = NetMeter.deltaSince("mac", netBefore)
+            app.sourceRepository.logResult(
+                sourceId = sourceId,
+                sourceName = sourceName,
+                startedAt = startedAt,
+                status = Constants.STATUS_SUCCESS,
+                found = outcome.posts.size,
+                created = outcome.created,
+                updated = 0,
+                error = null,
+                rxBytes = net.rxBytes,
+                txBytes = net.txBytes,
+            )
+            DebugLogger.i(
+                "커뮤니티수집",
+                "워커 완료 source=$sourceName found=${outcome.posts.size} new=${outcome.created}",
+            )
+            app.notificationService.createCrawlCompleteNotification(
+                com.borasarang.macjupjup.data.repository.CrawlResult(
+                    sourceName = sourceName,
+                    found = outcome.posts.size,
+                    created = outcome.created,
+                    updated = 0,
+                    startedAt = startedAt,
+                ),
+                emptyList(),
+            )
+            try {
+                val purged = app.communityRepository.purge()
+                if (purged > 0) DebugLogger.i("커뮤니티수집", "보관기간 정리 ${purged}건")
+            } catch (e: Exception) {
+                DebugLogger.w("커뮤니티수집", "정리 스킵: ${e.message}")
             }
             Result.success()
         } catch (e: Exception) {

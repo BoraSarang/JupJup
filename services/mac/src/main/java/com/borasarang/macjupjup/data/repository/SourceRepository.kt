@@ -2,6 +2,7 @@ package com.borasarang.macjupjup.data.repository
 
 import androidx.room.withTransaction
 import com.borasarang.macjupjup.data.db.MacDatabase
+import com.borasarang.macjupjup.util.Constants
 
 /** 소스 상태 조회·토글·수집 결과 기록 */
 class SourceRepository(private val db: MacDatabase) {
@@ -63,6 +64,19 @@ class SourceRepository(private val db: MacDatabase) {
     suspend fun markRunEnd(id: String, success: Boolean, error: String? = null) {
         val status = if (success) "SUCCESS" else "FAILED"
         db.crawlSourceDao().updateRun(id, System.currentTimeMillis(), status, error)
+    }
+
+    /**
+     * 워커 취소(REPLACE 등)로 RUNNING이 남지 않도록 이전 종료 상태로 복원.
+     * crawl_log를 FAILED로 남기지 않아 실패 스트릭을 오염시키지 않는다.
+     */
+    suspend fun clearRunning(id: String) {
+        val current = db.crawlSourceDao().getById(id) ?: return
+        if (current.lastStatus != Constants.STATUS_RUNNING) return
+        val prev = db.crawlLogDao().latestBySource(id)?.status
+            ?.takeIf { it != Constants.STATUS_RUNNING }
+            ?: Constants.STATUS_NEVER_RUN
+        db.crawlSourceDao().updateRun(id, current.lastRunAt ?: System.currentTimeMillis(), prev, null)
     }
 
     /** 수집 결과 기록: crawl_logs insert + 소스 상태 갱신 (R5: 원자화) */
