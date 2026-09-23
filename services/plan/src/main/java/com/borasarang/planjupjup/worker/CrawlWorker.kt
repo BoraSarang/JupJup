@@ -17,8 +17,8 @@ import com.borasarang.planjupjup.data.repository.NotificationService
 import com.borasarang.planjupjup.data.repository.NotificationType
 import com.borasarang.planjupjup.util.Constants
 import com.borasarang.planjupjup.util.DebugLogger
-import com.borasarang.common.util.NetMeter
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetMeter
+import com.borasarang.common.util.net.NetUtils
 import com.borasarang.common.worker.SourceLocks
 
 /**

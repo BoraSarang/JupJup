@@ -1,4 +1,4 @@
-package com.borasarang.macjupjup.util
+package com.borasarang.macjupjup.util.category
 
 /**
  * 뉴스 카테고리 (R32 PLAN_v17).

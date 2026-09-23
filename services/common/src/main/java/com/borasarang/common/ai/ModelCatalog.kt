@@ -1,7 +1,7 @@
 package com.borasarang.common.ai
 
 import com.borasarang.common.prefs.ModelEnabledStore
-import com.borasarang.common.util.NetMeter
+import com.borasarang.common.util.net.NetMeter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json

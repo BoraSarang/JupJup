@@ -1,7 +1,7 @@
 package com.borasarang.communityjupjup.server.routes
 
 import com.borasarang.communityjupjup.server.HttpServerService
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import io.ktor.http.ContentType
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route

@@ -7,7 +7,7 @@ import com.borasarang.macjupjup.data.db.entity.NewsArticle
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.macjupjup.util.NewsCategories
+import com.borasarang.macjupjup.util.category.NewsCategories
 import com.borasarang.common.util.HostThrottler
 import com.borasarang.common.util.parallelFetch
 import kotlinx.coroutines.Dispatchers

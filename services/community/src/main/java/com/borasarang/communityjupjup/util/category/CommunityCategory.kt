@@ -1,4 +1,4 @@
-package com.borasarang.communityjupjup.util
+package com.borasarang.communityjupjup.util.category
 
 /** 통합 카테고리 10종 (V2 §3). 고정 시드 — Room 엔티티 없이 정적 제공 */
 data class CommunityCategory(

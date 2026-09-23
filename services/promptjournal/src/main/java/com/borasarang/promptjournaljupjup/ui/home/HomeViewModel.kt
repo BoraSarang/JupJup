@@ -6,7 +6,7 @@ import com.borasarang.promptjournaljupjup.Constants
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.common.ai.AiProvider
 import com.borasarang.promptjournaljupjup.util.DebugLogger
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,7 +46,7 @@ class HomeViewModel : ViewModel() {
 
                 _uiState.value = HomeUiState(
                     isServerRunning = NetUtils.isPortOpen(settings.port),
-                    localIp = com.borasarang.common.util.NetUtils.getLocalIp(app.context),
+                    localIp = com.borasarang.common.util.net.NetUtils.getLocalIp(app.context),
                     port = settings.port,
                     lastExecutionLabel = lastLabel,
                     executionCount = count,

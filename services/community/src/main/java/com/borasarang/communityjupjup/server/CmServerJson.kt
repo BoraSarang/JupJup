@@ -7,7 +7,7 @@ import com.borasarang.communityjupjup.data.repository.PostListItem
 import com.borasarang.communityjupjup.data.repository.PostWithSourceList
 import com.borasarang.communityjupjup.data.repository.SettingsView
 import com.borasarang.communityjupjup.data.repository.SourceStatus
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray

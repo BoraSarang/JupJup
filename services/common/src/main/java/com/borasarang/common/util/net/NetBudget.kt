@@ -1,4 +1,4 @@
-package com.borasarang.common.util
+package com.borasarang.common.util.net
 
 /**
  * 네트워크 예산 상수 (R42b, PLAN_v18).

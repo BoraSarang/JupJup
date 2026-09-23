@@ -1,18 +1,20 @@
 package com.borasarang.promptjournaljupjup.server.routes
 
-import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.common.ai.AiProvider
 import com.borasarang.common.ai.ModelCatalog
 import com.borasarang.common.search.ExaSearchClient
-import com.borasarang.promptjournaljupjup.data.db.entity.Prompt
-import com.borasarang.promptjournaljupjup.data.db.entity.PromptExecution
-import com.borasarang.promptjournaljupjup.util.DebugLogger
-import com.borasarang.promptjournaljupjup.Constants
+import com.borasarang.common.server.pathIdLong
+import com.borasarang.common.server.putIfNotNull
 import com.borasarang.common.server.receiveJsonObject
 import com.borasarang.common.server.respondError
 import com.borasarang.common.server.respondNotFound
-import com.borasarang.common.server.pathIdLong
-import com.borasarang.common.server.putIfNotNull
+import com.borasarang.common.util.net.NetMeter
+import com.borasarang.promptjournaljupjup.Constants
+import com.borasarang.promptjournaljupjup.PromptJournalRuntime
+import com.borasarang.promptjournaljupjup.data.db.entity.Prompt
+import com.borasarang.promptjournaljupjup.data.db.entity.PromptExecution
+import com.borasarang.promptjournaljupjup.server.HttpServerService
+import com.borasarang.promptjournaljupjup.util.DebugLogger
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.plugins.origin
@@ -29,7 +31,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import com.borasarang.promptjournaljupjup.server.HttpServerService
+
 
 fun pjRoutes(route: Route) {
     route.route("/api") {
@@ -46,7 +48,7 @@ fun pjRoutes(route: Route) {
 
 private fun Route.healthRoute() {
     get("/health") {
-        val net = com.borasarang.common.util.NetMeter.snapshotFor("ai")
+        val net = com.borasarang.common.util.net.NetMeter.snapshotFor("ai")
         call.respondText(
             """{"status":"ok","service":"promptjournal","port":${PromptJournalRuntime.preferences.getSettings().port},"netRxBytes":${net.rxBytes},"netTxBytes":${net.txBytes}}""",
             ContentType.Application.Json,

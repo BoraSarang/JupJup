@@ -1,5 +1,6 @@
 package com.borasarang.macjupjup.util
 
+import com.borasarang.macjupjup.util.category.AppleCategoryMap
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

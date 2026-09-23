@@ -7,7 +7,7 @@ import com.borasarang.communityjupjup.CommunityJupJupRuntime
 import com.borasarang.communityjupjup.data.db.entity.NotificationType
 import com.borasarang.communityjupjup.data.repository.CategoryCount
 import com.borasarang.communityjupjup.data.repository.NotificationDetail
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import com.borasarang.communityjupjup.util.DebugLogger
 import com.borasarang.communityjupjup.util.TimeUtils
 

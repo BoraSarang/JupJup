@@ -9,7 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import com.borasarang.common.server.escapeJson
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetUtils
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.macjupjup.R
 import com.borasarang.macjupjup.server.routes.macAssetRoutes

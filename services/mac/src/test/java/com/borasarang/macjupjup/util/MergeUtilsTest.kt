@@ -1,5 +1,6 @@
 package com.borasarang.macjupjup.util
 
+import com.borasarang.macjupjup.util.merge.MergeUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals

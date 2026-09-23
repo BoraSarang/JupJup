@@ -1,4 +1,4 @@
-package com.borasarang.common.util
+package com.borasarang.common.util.net
 
 import android.content.Context
 import android.net.ConnectivityManager

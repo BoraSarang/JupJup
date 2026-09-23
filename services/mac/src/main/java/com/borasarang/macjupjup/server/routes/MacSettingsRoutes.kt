@@ -8,7 +8,7 @@ import com.borasarang.macjupjup.server.HttpServerService
 import com.borasarang.macjupjup.server.settingsJson
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.macjupjup.util.maskToken
+import com.borasarang.macjupjup.util.category.maskToken
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.plugins.origin

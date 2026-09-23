@@ -1,6 +1,9 @@
 package com.borasarang.macjupjup.data.repository
 
+import androidx.room.withTransaction
 import com.borasarang.common.cache.StatsCache
+import com.borasarang.common.util.net.NetBudget
+import com.borasarang.common.util.net.NetMeter
 import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.AppSourceMapping
@@ -8,7 +11,8 @@ import com.borasarang.macjupjup.data.db.entity.VersionHistory
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
 import com.borasarang.macjupjup.util.TimeUtils
-import androidx.room.withTransaction
+import com.borasarang.macjupjup.util.merge.MergeUtils
+
 
 /** 등록 테이블에 없는 내부 수집처 표시명 (수동 시드 등 일회성) */
 private val INTERNAL_SOURCE_NAMES = mapOf("manual_seed" to "수동 시드")
@@ -97,7 +101,7 @@ class AppRepository(
             for (app in withVersion) {
                 val v = app.version?.trim() ?: continue
                 val latest = latestByApp[app.id]
-                if (latest == null || !com.borasarang.macjupjup.util.MergeUtils.sameVersion(latest.version, v)) {
+                if (latest == null || !com.borasarang.macjupjup.util.merge.MergeUtils.sameVersion(latest.version, v)) {
                     if (latest != null) {
                         DebugLogger.i("버전추적", "버전 bump 감지: ${app.name} ${latest.version} → $v")
                     }
@@ -238,8 +242,8 @@ class AppRepository(
             val rx = rows.sumOf { it.rxBytes }
             val tx = rows.sumOf { it.txBytes }
             val lastDay = rows.lastOrNull()?.let { it.rxBytes + it.txBytes } ?: 0L
-            if (com.borasarang.common.util.NetBudget.isDailyOver(lastDay)) {
-                DebugLogger.w("트래픽", "일일 사용량 초과(200MB) mac ${com.borasarang.common.util.NetMeter.formatBytes(lastDay)}")
+            if (com.borasarang.common.util.net.NetBudget.isDailyOver(lastDay)) {
+                DebugLogger.w("트래픽", "일일 사용량 초과(200MB) mac ${com.borasarang.common.util.net.NetMeter.formatBytes(lastDay)}")
             }
             rx to tx
         }
@@ -312,7 +316,7 @@ class AppRepository(
     internal fun mergeApps(existing: App, draft: App): App {
         // T-132: 공백 차이 버전 오판 방지 (정규화 비교)
         val versionChanged = draft.version != null && existing.version != null &&
-            !com.borasarang.macjupjup.util.MergeUtils.sameVersion(draft.version, existing.version)
+            !com.borasarang.macjupjup.util.merge.MergeUtils.sameVersion(draft.version, existing.version)
         return draft.copy(
             firstSeenAt = existing.firstSeenAt,
             // isNew 정책: 버전 bump되면 정착 앱으로 간주, NEW 즉시 해제

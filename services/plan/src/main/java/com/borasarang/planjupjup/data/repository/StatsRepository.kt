@@ -1,6 +1,8 @@
 package com.borasarang.planjupjup.data.repository
 
 import com.borasarang.common.cache.StatsCache
+import com.borasarang.common.util.net.NetBudget
+import com.borasarang.common.util.net.NetMeter
 import com.borasarang.planjupjup.data.db.PlanDatabase
 import com.borasarang.planjupjup.data.db.dao.PlanStatsRow
 import com.borasarang.planjupjup.util.PlanMetrics
@@ -8,6 +10,7 @@ import com.borasarang.planjupjup.util.TimeUtils
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
+
 
 /**
  * 통계/인사이트 집계 리포지토리.
@@ -45,10 +48,10 @@ class StatsRepository(
         val logs24h = db.crawlLogDao().getLogsSince(now - TimeUnit.DAYS.toMillis(1))
         val netRx24h = logs24h.sumOf { it.rxBytes }
         val netTx24h = logs24h.sumOf { it.txBytes }
-        if (com.borasarang.common.util.NetBudget.isDailyOver(netRx24h + netTx24h)) {
+        if (com.borasarang.common.util.net.NetBudget.isDailyOver(netRx24h + netTx24h)) {
             com.borasarang.planjupjup.util.DebugLogger.w(
                 "트래픽",
-                "일일 사용량 초과(200MB) plan ${com.borasarang.common.util.NetMeter.formatBytes(netRx24h + netTx24h)}",
+                "일일 사용량 초과(200MB) plan ${com.borasarang.common.util.net.NetMeter.formatBytes(netRx24h + netTx24h)}",
             )
         }
 

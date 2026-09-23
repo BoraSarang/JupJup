@@ -7,7 +7,7 @@ import com.borasarang.communityjupjup.data.db.entity.CommunityPost
 import com.borasarang.communityjupjup.data.db.entity.NotificationLog
 import com.borasarang.communityjupjup.data.db.entity.NotificationType
 import com.borasarang.communityjupjup.data.preferences.PreferencesManager
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.communityjupjup.util.DebugLogger
 import kotlinx.serialization.json.Json

@@ -3,6 +3,7 @@ package com.borasarang.macjupjup.data.db.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.borasarang.common.util.net.NetMeter
 
 /** 수집 이력/에러 로그. 디버그 로그 화면과 /api 소스 상태의 근거 */
 @Entity(

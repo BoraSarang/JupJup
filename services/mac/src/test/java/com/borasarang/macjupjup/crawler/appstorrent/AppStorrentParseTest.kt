@@ -1,12 +1,14 @@
 package com.borasarang.macjupjup.crawler.appstorrent
 
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
+import com.borasarang.macjupjup.util.category.GameGenres
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
 
 class AppStorrentParseTest {
 
@@ -228,12 +230,12 @@ class AppStorrentParseTest {
 
     @Test
     fun `장르_슬러그_GameGenres_매핑`() {
-        assertEquals("액션", com.borasarang.macjupjup.util.GameGenres.fromSlug("action"))
-        assertEquals("RPG", com.borasarang.macjupjup.util.GameGenres.fromSlug("rpg"))
-        assertEquals("호러·서바이벌", com.borasarang.macjupjup.util.GameGenres.fromSlug("horror"))
-        assertEquals("캐주얼", com.borasarang.macjupjup.util.GameGenres.fromSlug("arcade"))
-        assertEquals("시뮬레이션", com.borasarang.macjupjup.util.GameGenres.fromSlug("simulator"))
-        assertEquals("어드벤처", com.borasarang.macjupjup.util.GameGenres.fromSlug("platformer"))
+        assertEquals("액션", com.borasarang.macjupjup.util.category.GameGenres.fromSlug("action"))
+        assertEquals("RPG", com.borasarang.macjupjup.util.category.GameGenres.fromSlug("rpg"))
+        assertEquals("호러·서바이벌", com.borasarang.macjupjup.util.category.GameGenres.fromSlug("horror"))
+        assertEquals("캐주얼", com.borasarang.macjupjup.util.category.GameGenres.fromSlug("arcade"))
+        assertEquals("시뮬레이션", com.borasarang.macjupjup.util.category.GameGenres.fromSlug("simulator"))
+        assertEquals("어드벤처", com.borasarang.macjupjup.util.category.GameGenres.fromSlug("platformer"))
     }
 
     @Test

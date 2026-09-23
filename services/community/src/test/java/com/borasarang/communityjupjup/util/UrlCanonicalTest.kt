@@ -1,5 +1,6 @@
 package com.borasarang.communityjupjup.util
 
+import com.borasarang.communityjupjup.util.text.UrlCanonical
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

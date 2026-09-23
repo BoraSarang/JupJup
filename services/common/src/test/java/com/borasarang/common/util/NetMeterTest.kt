@@ -1,5 +1,6 @@
 package com.borasarang.common.util
 
+import com.borasarang.common.util.net.NetMeter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

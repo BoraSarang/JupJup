@@ -1,4 +1,4 @@
-package com.borasarang.macjupjup.util
+package com.borasarang.macjupjup.util.category
 
 /**
  * Apple Store 카테고리 → Setapp 10카테고리 매핑.

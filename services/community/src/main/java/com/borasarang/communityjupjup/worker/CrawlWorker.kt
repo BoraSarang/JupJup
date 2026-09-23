@@ -15,10 +15,10 @@ import com.borasarang.communityjupjup.data.db.entity.CommunityPost
 import com.borasarang.communityjupjup.data.db.entity.SiteBoard
 import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.common.util.CrawlStats
-import com.borasarang.common.util.NetMeter
+import com.borasarang.common.util.net.NetMeter
 import com.borasarang.communityjupjup.util.DebugLogger
-import com.borasarang.communityjupjup.util.takeSafe
-import com.borasarang.common.util.NetUtils
+import com.borasarang.communityjupjup.util.text.takeSafe
+import com.borasarang.common.util.net.NetUtils
 import com.borasarang.common.worker.SourceLocks
 
 /**

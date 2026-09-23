@@ -1,4 +1,4 @@
-package com.borasarang.communityjupjup.util
+package com.borasarang.communityjupjup.util.text
 
 /**
  * 서로게이트 쌍을 가르고 자르면 깨진 문자(U+FFFD/물음표)로 표시된다.

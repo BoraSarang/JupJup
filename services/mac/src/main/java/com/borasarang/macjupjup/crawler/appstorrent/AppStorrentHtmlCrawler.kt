@@ -5,7 +5,7 @@ import com.borasarang.macjupjup.crawler.BaseCrawler
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.macjupjup.util.GameGenres
+import com.borasarang.macjupjup.util.category.GameGenres
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element

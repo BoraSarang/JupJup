@@ -5,7 +5,7 @@ import com.borasarang.macjupjup.crawler.BaseCrawler
 import com.borasarang.macjupjup.crawler.chart.ChartRssCrawler
 import com.borasarang.macjupjup.crawler.str
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
-import com.borasarang.macjupjup.util.AppleCategoryMap
+import com.borasarang.macjupjup.util.category.AppleCategoryMap
 import com.borasarang.macjupjup.util.DebugLogger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull

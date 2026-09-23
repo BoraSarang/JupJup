@@ -1,17 +1,18 @@
-package com.borasarang.macjupjup.util
+package com.borasarang.macjupjup.util.translate
 
-import com.borasarang.common.util.NetMeter
+import com.borasarang.common.util.net.NetMeter
+import com.borasarang.macjupjup.util.DebugLogger
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.languageid.LanguageIdentification
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
+import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.coroutines.resume
 
 /**
  * 다국어 → 한글 번역 (T-100: 소스 언어 Auto).

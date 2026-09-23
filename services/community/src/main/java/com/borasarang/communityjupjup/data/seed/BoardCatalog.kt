@@ -1,6 +1,6 @@
 package com.borasarang.communityjupjup.data.seed
 
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 
 /**
  * 사이트별 추천 게시판 카탈로그 (V2 명세 기반).

@@ -1,5 +1,10 @@
 package com.borasarang.macjupjup.util
 
+import com.borasarang.macjupjup.util.category.AppCategory
+import com.borasarang.macjupjup.util.category.AppLicense
+import com.borasarang.macjupjup.util.category.AppTag
+import com.borasarang.macjupjup.util.category.classifyLicense
+import com.borasarang.macjupjup.util.category.maskToken
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

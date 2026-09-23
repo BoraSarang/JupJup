@@ -1,4 +1,4 @@
-package com.borasarang.communityjupjup.util
+package com.borasarang.communityjupjup.util.text
 
 /**
  * 게시글 URL正規화 (중복 판정 단일 진실).

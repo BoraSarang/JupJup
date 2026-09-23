@@ -3,6 +3,7 @@ package com.borasarang.communityjupjup.data.db.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 
 /** 사이트 게시판 — 소스 1:N, 통합 카테고리 매핑 (V2 site_boards) */
 @Entity(

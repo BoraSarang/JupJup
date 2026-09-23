@@ -11,7 +11,7 @@ import com.borasarang.communityjupjup.server.postDetailJson
 import com.borasarang.communityjupjup.server.postElement
 import com.borasarang.communityjupjup.server.postsJson
 import com.borasarang.communityjupjup.server.sourcesJson
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.communityjupjup.util.DebugLogger
 import io.ktor.http.ContentType

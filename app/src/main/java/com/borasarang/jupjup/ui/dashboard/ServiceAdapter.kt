@@ -1,7 +1,12 @@
 package com.borasarang.jupjup.ui.dashboard
 
 import android.content.Context
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetMeter
+import com.borasarang.common.util.net.NetUtils
+import com.borasarang.communityjupjup.CommunityJupJupRuntime
+import com.borasarang.communityjupjup.server.HttpServerService as CmHttpServerService
+import com.borasarang.communityjupjup.util.DebugLogger as CmDebugLogger
+import com.borasarang.communityjupjup.util.TimeUtils as CmTimeUtils
 import com.borasarang.jupjup.ui.nav.Service
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.macjupjup.server.HttpServerService as MacHttpServerService
@@ -14,10 +19,7 @@ import com.borasarang.planjupjup.util.TimeUtils as PlanTimeUtils
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.promptjournaljupjup.server.HttpServerService as PjHttpServerService
 import com.borasarang.promptjournaljupjup.util.DebugLogger as PjDebugLogger
-import com.borasarang.communityjupjup.CommunityJupJupRuntime
-import com.borasarang.communityjupjup.server.HttpServerService as CmHttpServerService
-import com.borasarang.communityjupjup.util.DebugLogger as CmDebugLogger
-import com.borasarang.communityjupjup.util.TimeUtils as CmTimeUtils
+
 
 /**
  * 서비스 어댑터 (R3). DashboardViewModel이 양쪽 Runtime을 직접 import하던 결합을 흡수한다.
@@ -61,7 +63,7 @@ object MacServiceAdapter : ServiceAdapter {
             adminToken = macToken,
             lastCollectedLabel = MacTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
-            netLabel = "네트워크 30일 ${com.borasarang.common.util.NetMeter.formatBytes(net.first + net.second)}",
+            netLabel = "네트워크 30일 ${com.borasarang.common.util.net.NetMeter.formatBytes(net.first + net.second)}",
         )
     }
 
@@ -121,7 +123,7 @@ object PlanServiceAdapter : ServiceAdapter {
             adminToken = planToken,
             lastCollectedLabel = PlanTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
-            netLabel = "네트워크 24시간 ${com.borasarang.common.util.NetMeter.formatBytes(stats.netRx24h + stats.netTx24h)}",
+            netLabel = "네트워크 24시간 ${com.borasarang.common.util.net.NetMeter.formatBytes(stats.netRx24h + stats.netTx24h)}",
         )
     }
 
@@ -185,7 +187,7 @@ object PjServiceAdapter : ServiceAdapter {
         // getAll()은 프롬프트 본문(대형 마크다운)까지 전건 로딩한다 → 활성 목록만 조회
         val enabled = app.promptRepository.getEnabled()
         val activeCount = enabled.size
-        val aiNet = com.borasarang.common.util.NetMeter.snapshotFor("ai")
+        val aiNet = com.borasarang.common.util.net.NetMeter.snapshotFor("ai")
         val pjToken = try { app.preferences.getAdminToken() } catch (_: Exception) { "" }
         return DashboardServiceUi(
             isServerRunning = NetUtils.isPortOpen(settings.port),
@@ -194,7 +196,7 @@ object PjServiceAdapter : ServiceAdapter {
             statValue2 = activeCount,
             lastCollectedLabel = if (activeCount > 0) "프롬프트 ${activeCount}개 활성" else "활성 프롬프트 없음",
             crawlEnabled = activeCount > 0,
-            netLabel = "AI·검색 ${com.borasarang.common.util.NetMeter.formatBytes(aiNet.totalBytes)}",
+            netLabel = "AI·검색 ${com.borasarang.common.util.net.NetMeter.formatBytes(aiNet.totalBytes)}",
             adminToken = pjToken,
         )
     }
@@ -264,7 +266,7 @@ object CmServiceAdapter : ServiceAdapter {
             adminToken = cmToken,
             lastCollectedLabel = CmTimeUtils.formatRelative(stats.lastCollectedAt),
             crawlEnabled = settings.crawlEnabled,
-            netLabel = "네트워크 30일 ${com.borasarang.common.util.NetMeter.formatBytes(net.first + net.second)}",
+            netLabel = "네트워크 30일 ${com.borasarang.common.util.net.NetMeter.formatBytes(net.first + net.second)}",
         )
     }
 

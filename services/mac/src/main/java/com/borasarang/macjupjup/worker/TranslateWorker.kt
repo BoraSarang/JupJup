@@ -5,7 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.macjupjup.util.MacTranslator
+import com.borasarang.macjupjup.util.translate.MacTranslator
 
 /**
  * 한글 번역 전용 워커 (ML Kit 온디바이스).

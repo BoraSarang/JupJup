@@ -5,8 +5,9 @@ import com.borasarang.common.server.respondError
 import com.borasarang.common.server.respondNotFound
 import com.borasarang.communityjupjup.data.db.entity.SiteBoard
 import com.borasarang.communityjupjup.server.HttpServerService
-import com.borasarang.communityjupjup.util.CommunityCategories
 import com.borasarang.communityjupjup.util.DebugLogger
+import com.borasarang.communityjupjup.util.category.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunitySites
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respondText
@@ -26,6 +27,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
+
 
 /**
  * 게시판 관리 라우트: 목록 조회 + 일괄 적용(추가·수정·삭제·on/off) + 소스 게시글 비우기.
@@ -208,7 +210,7 @@ internal fun HttpServerService.cmBoardRoutes(route: Route) {    val application 
                         val ids = group.map { it.id }
                         add(buildJsonObject {
                             put("domain", domain)
-                            put("name", com.borasarang.communityjupjup.util.CommunitySites.nameOf(domain))
+                            put("name", com.borasarang.communityjupjup.util.category.CommunitySites.nameOf(domain))
                             put("sourceIds", buildJsonArray { ids.forEach { add(JsonPrimitive(it)) } })
                             put("boardCount", ids.sumOf { boardsBySource[it]?.size ?: 0 })
                             put("postCount", ids.sumOf { counts[it] ?: 0 })

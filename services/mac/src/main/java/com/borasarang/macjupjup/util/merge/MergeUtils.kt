@@ -1,4 +1,4 @@
-package com.borasarang.macjupjup.util
+package com.borasarang.macjupjup.util.merge
 
 /** 앱 중복 병합용 정규화 키 생성. PLAN 5장 규칙 */
 object MergeUtils {

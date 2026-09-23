@@ -1,4 +1,6 @@
-package com.borasarang.macjupjup.util
+package com.borasarang.macjupjup.util.category
+
+import com.borasarang.macjupjup.util.Constants
 
 /**
  * 맥 게임 장르 — Steam tagid ↔ 한글 라벨 (PLAN_v21).

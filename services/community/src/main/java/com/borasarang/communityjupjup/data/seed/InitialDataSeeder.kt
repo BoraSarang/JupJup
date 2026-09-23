@@ -3,7 +3,7 @@ package com.borasarang.communityjupjup.data.seed
 import com.borasarang.communityjupjup.data.db.CommunityDatabase
 import com.borasarang.communityjupjup.data.db.entity.CrawlSource
 import com.borasarang.communityjupjup.data.db.entity.SiteBoard
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.communityjupjup.util.DebugLogger
 import kotlinx.serialization.json.buildJsonObject

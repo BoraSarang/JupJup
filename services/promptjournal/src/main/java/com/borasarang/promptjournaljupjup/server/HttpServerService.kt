@@ -9,7 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import com.borasarang.common.server.escapeJson
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetUtils
 import com.borasarang.promptjournaljupjup.Constants
 import com.borasarang.promptjournaljupjup.PromptJournalRuntime
 import com.borasarang.promptjournaljupjup.R

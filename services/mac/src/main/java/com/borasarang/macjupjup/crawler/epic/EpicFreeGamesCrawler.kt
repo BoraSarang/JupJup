@@ -7,7 +7,7 @@ import com.borasarang.macjupjup.crawler.str
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.macjupjup.util.GameGenres
+import com.borasarang.macjupjup.util.category.GameGenres
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray

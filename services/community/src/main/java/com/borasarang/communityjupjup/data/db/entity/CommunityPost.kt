@@ -3,6 +3,7 @@ package com.borasarang.communityjupjup.data.db.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.borasarang.communityjupjup.util.text.UrlCanonical
 
 /**
  * 커뮤니티 게시글 메타 (V2 posts의 Room 이식).

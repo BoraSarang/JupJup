@@ -1,6 +1,6 @@
 package com.borasarang.macjupjup.crawler.news
 
-import com.borasarang.macjupjup.util.NewsCategories
+import com.borasarang.macjupjup.util.category.NewsCategories
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull

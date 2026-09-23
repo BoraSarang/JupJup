@@ -8,14 +8,20 @@ import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import com.borasarang.common.util.net.NetMeter
+import com.borasarang.common.util.net.NetUtils
+import com.borasarang.common.worker.SourceLocks
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.macjupjup.R
 import com.borasarang.macjupjup.crawler.CrawlerFactory
 import com.borasarang.macjupjup.util.Constants
 import com.borasarang.macjupjup.util.DebugLogger
-import com.borasarang.common.util.NetMeter
-import com.borasarang.common.util.NetUtils
-import com.borasarang.common.worker.SourceLocks
+import com.borasarang.macjupjup.util.category.CategoryInfer
+import com.borasarang.macjupjup.util.category.GameGenres
+import com.borasarang.macjupjup.util.category.NewsCategories
+import com.borasarang.macjupjup.util.merge.MergeUtils
+import com.borasarang.macjupjup.util.translate.MacTranslator
+
 
 /**
  * 소스 1건 수집 워커. 장시간 실행 대비 setForeground 사용.
@@ -316,10 +322,10 @@ class CrawlWorker(
                 val current = app.database.appDao().getById(a.id) ?: continue
                 val descKo = current.descriptionSnippet
                     ?.takeIf { current.descriptionKo == null }
-                    ?.let { com.borasarang.macjupjup.util.MacTranslator.translateAutoToKo(it) }
+                    ?.let { com.borasarang.macjupjup.util.translate.MacTranslator.translateAutoToKo(it) }
                 val notesKo = (current.releaseNotes ?: current.releaseNotesSummary)
                     ?.takeIf { current.releaseNotesKo == null }
-                    ?.let { com.borasarang.macjupjup.util.MacTranslator.translateAutoToKo(it) }
+                    ?.let { com.borasarang.macjupjup.util.translate.MacTranslator.translateAutoToKo(it) }
                 if (descKo != null || notesKo != null) {
                     app.database.appDao().updateKo(a.id, descKo, notesKo)
                     done++

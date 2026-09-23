@@ -1,4 +1,4 @@
-package com.borasarang.macjupjup.util
+package com.borasarang.macjupjup.util.category
 
 /**
  * 키워드 기반 카테고리·태그 추론 (Setapp 10종 + AI-Agent/MenuBar 태그).

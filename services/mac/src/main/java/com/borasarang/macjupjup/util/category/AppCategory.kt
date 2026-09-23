@@ -1,4 +1,4 @@
-package com.borasarang.macjupjup.util
+package com.borasarang.macjupjup.util.category
 
 /**
  * Setapp 10카테고리 + 라이선스 3분류 + 횡단 태그.

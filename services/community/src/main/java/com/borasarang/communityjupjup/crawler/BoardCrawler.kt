@@ -2,11 +2,11 @@ package com.borasarang.communityjupjup.crawler
 
 import com.borasarang.communityjupjup.data.db.CommunityDatabase
 import com.borasarang.communityjupjup.data.db.entity.CrawlSource
-import com.borasarang.communityjupjup.util.CommunityCategories
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import com.borasarang.communityjupjup.util.Constants
 import com.borasarang.communityjupjup.util.DebugLogger
-import com.borasarang.communityjupjup.util.UrlCanonical
-import com.borasarang.communityjupjup.util.takeSafe
+import com.borasarang.communityjupjup.util.text.UrlCanonical
+import com.borasarang.communityjupjup.util.text.takeSafe
 import com.borasarang.common.util.HostThrottler
 import com.borasarang.common.util.parallelFetch
 import kotlinx.coroutines.Dispatchers

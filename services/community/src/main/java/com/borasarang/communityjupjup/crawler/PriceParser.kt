@@ -1,6 +1,6 @@
 package com.borasarang.communityjupjup.crawler
 
-import com.borasarang.communityjupjup.util.takeSafe
+import com.borasarang.communityjupjup.util.text.takeSafe
 
 /** 핫딜/중고 제목·발췌에서 가격·할인율·상태 추출 (V2 특수 카테고리, 순수 함수) */
 object PriceParser {

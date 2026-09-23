@@ -1,4 +1,4 @@
-package com.borasarang.communityjupjup.util
+package com.borasarang.communityjupjup.util.category
 
 /** 사이트(1차) 정의. domain 기준 그룹, 화면 표시명 */
 data class CommunitySite(

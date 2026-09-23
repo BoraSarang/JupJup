@@ -10,7 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetUtils
 import com.borasarang.jupjup.databinding.ActivityMainBinding
 import com.borasarang.jupjup.ui.dashboard.DashboardFragment
 import com.borasarang.jupjup.ui.nav.Service

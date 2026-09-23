@@ -1,5 +1,7 @@
 package com.borasarang.communityjupjup.crawler
 
+import com.borasarang.communityjupjup.util.text.UrlCanonical
+
 /** 게시글 초안 1건 (Worker가 CommunityPost로 변환·저장) */
 data class PostDraft(
     val boardId: Long,

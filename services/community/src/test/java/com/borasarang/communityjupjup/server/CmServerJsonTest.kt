@@ -4,6 +4,7 @@ import com.borasarang.communityjupjup.data.db.entity.CommunityPost
 import com.borasarang.communityjupjup.data.repository.PagedPosts
 import com.borasarang.communityjupjup.data.repository.PostListItem
 import com.borasarang.communityjupjup.data.repository.PostWithSourceList
+import com.borasarang.communityjupjup.server.routes.isAllowedThumbUrl
 import org.junit.Assert.assertTrue
 import org.junit.Test
 

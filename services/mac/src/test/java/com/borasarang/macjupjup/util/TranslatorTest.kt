@@ -1,5 +1,6 @@
 package com.borasarang.macjupjup.util
 
+import com.borasarang.macjupjup.util.translate.MacTranslator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

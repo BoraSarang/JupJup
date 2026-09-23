@@ -8,7 +8,7 @@ import com.borasarang.macjupjup.server.appElement
 import com.borasarang.macjupjup.server.genreArray
 import com.borasarang.macjupjup.server.storeOfTags
 import com.borasarang.macjupjup.util.Constants
-import com.borasarang.macjupjup.util.NewsCategories
+import com.borasarang.macjupjup.util.category.NewsCategories
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respondText

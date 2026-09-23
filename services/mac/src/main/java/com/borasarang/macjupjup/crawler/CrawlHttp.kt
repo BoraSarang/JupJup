@@ -1,6 +1,6 @@
 package com.borasarang.macjupjup.crawler
 
-import com.borasarang.common.util.NetMeter
+import com.borasarang.common.util.net.NetMeter
 import com.borasarang.macjupjup.util.Constants
 import java.io.BufferedReader
 import java.io.InputStreamReader

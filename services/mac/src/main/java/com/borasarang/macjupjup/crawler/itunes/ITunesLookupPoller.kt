@@ -7,13 +7,15 @@ import com.borasarang.macjupjup.crawler.str
 import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
-import com.borasarang.macjupjup.util.AppleCategoryMap
 import com.borasarang.macjupjup.util.DebugLogger
+import com.borasarang.macjupjup.util.category.AppleCategoryMap
+import com.borasarang.macjupjup.util.merge.MergeUtils
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+
 
 /**
  * iTunes Lookup 버전 폴링 (US, 키 불필요, 분당 ~20회).
@@ -52,7 +54,7 @@ class ITunesLookupPoller(
                     val now = System.currentTimeMillis()
                     // T-132: 공백 차이 버전 오판 방지 (정규화 비교)
                     val versionChanged = r.version != null && app.version != null &&
-                        !com.borasarang.macjupjup.util.MergeUtils.sameVersion(r.version, app.version)
+                        !com.borasarang.macjupjup.util.merge.MergeUtils.sameVersion(r.version, app.version)
                     val needsEnrich = app.screenshotUrls.isNullOrBlank() && !r.screenshotUrls.isNullOrEmpty() ||
                         app.averageRating == null && r.averageRating != null ||
                         app.descriptionSnippet.isNullOrBlank() && !r.description.isNullOrBlank() ||

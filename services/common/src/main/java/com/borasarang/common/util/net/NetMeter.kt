@@ -1,4 +1,4 @@
-package com.borasarang.common.util
+package com.borasarang.common.util.net
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong

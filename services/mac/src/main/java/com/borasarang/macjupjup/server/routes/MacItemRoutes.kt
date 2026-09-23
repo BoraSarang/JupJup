@@ -10,6 +10,8 @@ import com.borasarang.macjupjup.server.appsJson
 import com.borasarang.macjupjup.server.detailJson
 import com.borasarang.macjupjup.server.gamesJson
 import com.borasarang.macjupjup.util.Constants
+import com.borasarang.macjupjup.util.DebugLogger
+import com.borasarang.macjupjup.util.merge.MergeUtils
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respondText
@@ -21,6 +23,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+
 
 /**
  * 앱 아이템 라우트 (R4). health·목록·상세·수동시드·워치리스트.
@@ -134,9 +137,9 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
                 val drafts = if (trackId != null) {
                     hits
                 } else {
-                    val norm = com.borasarang.macjupjup.util.MergeUtils.normalizeName(name!!)
+                    val norm = com.borasarang.macjupjup.util.merge.MergeUtils.normalizeName(name!!)
                     hits.filter {
-                        com.borasarang.macjupjup.util.MergeUtils.normalizeName(it.app.name) == norm
+                        com.borasarang.macjupjup.util.merge.MergeUtils.normalizeName(it.app.name) == norm
                     }
                 }
                 if (drafts.isEmpty()) {

@@ -1,5 +1,7 @@
 package com.borasarang.macjupjup.util
 
+import com.borasarang.macjupjup.util.category.AppTag
+import com.borasarang.macjupjup.util.category.CategoryInfer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

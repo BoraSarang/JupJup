@@ -2,11 +2,14 @@ package com.borasarang.communityjupjup.data.repository
 
 import androidx.room.withTransaction
 import com.borasarang.common.cache.StatsCache
+import com.borasarang.common.util.net.NetBudget
+import com.borasarang.common.util.net.NetMeter
 import com.borasarang.communityjupjup.data.db.CommunityDatabase
 import com.borasarang.communityjupjup.data.db.entity.CommunityPost
-import com.borasarang.communityjupjup.util.CommunityCategories
 import com.borasarang.communityjupjup.util.Constants
+import com.borasarang.communityjupjup.util.category.CommunityCategories
 import java.util.concurrent.TimeUnit
+
 
 /** 게시글 저장·조회·TTL 정리 */
 class CommunityRepository(private val db: CommunityDatabase) {
@@ -139,10 +142,10 @@ class CommunityRepository(private val db: CommunityDatabase) {
             val tx = rows.sumOf { it.txBytes }
             val byDay = rows.groupBy { it.day }.mapValues { (_, rs) -> rs.sumOf { it.rxBytes + it.txBytes } }
             val lastDay = byDay.toSortedMap().values.lastOrNull() ?: 0L
-            if (com.borasarang.common.util.NetBudget.isDailyOver(lastDay)) {
+            if (com.borasarang.common.util.net.NetBudget.isDailyOver(lastDay)) {
                 com.borasarang.communityjupjup.util.DebugLogger.w(
                     "트래픽",
-                    "일일 사용량 초과(200MB) community ${com.borasarang.common.util.NetMeter.formatBytes(lastDay)}",
+                    "일일 사용량 초과(200MB) community ${com.borasarang.common.util.net.NetMeter.formatBytes(lastDay)}",
                 )
             }
             rx to tx

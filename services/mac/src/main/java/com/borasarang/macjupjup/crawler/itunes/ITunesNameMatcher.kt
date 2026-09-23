@@ -8,6 +8,7 @@ import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.util.DebugLogger
+import com.borasarang.macjupjup.util.merge.MergeUtils
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -101,7 +102,7 @@ class ITunesNameMatcher(
     companion object {
         /** MergeUtils 단일 진실에 위임 (R1-11) */
         fun normalize(s: String): String =
-            com.borasarang.macjupjup.util.MergeUtils.normalizeName(s)
+            com.borasarang.macjupjup.util.merge.MergeUtils.normalizeName(s)
 
         /** 수집원 표기 개발사 — 실제 개발사 아님 (PH·HN·MMB 제거 후 잔재 행 매칭용으로 유지).
          *  신규 수집은 6종이므로 해당 표기는 더 이상 생성되지 않음. */

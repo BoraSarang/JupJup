@@ -7,9 +7,11 @@ import com.borasarang.macjupjup.crawler.str
 import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.util.DebugLogger
+import com.borasarang.macjupjup.util.merge.MergeUtils
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+
 
 /**
  * DB에 repoFullName이 있는 앱의 릴리즈 추적.
@@ -44,7 +46,7 @@ class GitHubReleasesCrawler(
                     headers,
                 )
                 val latest = parseLatestRelease(body) ?: continue
-                if (latest.tag != null && !com.borasarang.macjupjup.util.MergeUtils.sameVersion(latest.tag, app.version)) {
+                if (latest.tag != null && !com.borasarang.macjupjup.util.merge.MergeUtils.sameVersion(latest.tag, app.version)) {
                     val now = System.currentTimeMillis()
                     val notes = cleanNotes(latest.notes)
                     val updated = app.copy(

@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.borasarang.planjupjup.PlanJupJupRuntime
 import com.borasarang.planjupjup.server.HttpServerService
 import com.borasarang.planjupjup.util.DebugLogger
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -125,5 +125,5 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     /** 로컬 포트 개방 여부. 반드시 백그라운드 스레드에서 호출 (R5: 타임아웃 내장 공용 헬퍼) */
     private fun isServiceRunning(port: Int): Boolean =
-        com.borasarang.common.util.NetUtils.isPortOpen(port)
+        com.borasarang.common.util.net.NetUtils.isPortOpen(port)
 }

@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.borasarang.common.util.NetUtils
+import com.borasarang.common.util.net.NetUtils
 import com.borasarang.jupjup.ui.nav.Service
 import com.borasarang.jupjup.ui.nav.ServiceRegistry
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger

@@ -1,6 +1,6 @@
 package com.borasarang.common.search
 
-import com.borasarang.common.util.NetMeter
+import com.borasarang.common.util.net.NetMeter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
