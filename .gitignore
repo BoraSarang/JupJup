@@ -12,9 +12,8 @@ keystore.properties
 # Agent 로그
 .agent/
 
-# Beads / Dolt files (added by bd init)
+# Beads / Dolt (동기화는 refs/dolt/data)
 .beads/
 .dolt/
 *.db
 .beads-credential-key
-.beads/proxieddb/
