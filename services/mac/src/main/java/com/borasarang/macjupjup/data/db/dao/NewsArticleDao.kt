@@ -76,7 +76,7 @@ interface NewsArticleDao {
           AND (:sub IS NULL OR sub = :sub)
           AND (:sourceId IS NULL OR sourceId = :sourceId)
           AND (:q IS NULL OR title LIKE '%' || :q || '%' OR summary LIKE '%' || :q || '%')
-        ORDER BY publishedAt DESC
+        ORDER BY COALESCE(NULLIF(publishedAt, 0), collectedAt) DESC
         LIMIT :limit OFFSET :offset"""
     )
     suspend fun listFiltered(
@@ -105,7 +105,7 @@ interface NewsArticleDao {
     /** 대시보드용 main별 최신 N건 */
     @Query(
         """SELECT * FROM news_articles WHERE `main` = :main
-        ORDER BY publishedAt DESC LIMIT :limit"""
+        ORDER BY COALESCE(NULLIF(publishedAt, 0), collectedAt) DESC LIMIT :limit"""
     )
     suspend fun recentByMain(main: String, limit: Int): List<NewsArticle>
 

@@ -98,6 +98,8 @@ class GitHubSearchCrawler(
         val prioritized = prioritizedMissing + prioritizedUnique
         val withReadme = prioritized.take(effectiveLimit)
         val readmeMap = mutableMapOf<String, String>()
+        /** README 404·영구 실패(레이트리밋 아님) — lastUpdatedAt 회전으로 ASC 선두 고착 제거 */
+        val rotateRepos = mutableSetOf<String>()
         var consecutive403 = 0
         var processed = 0
         // 체크포인트: 이번 실행에서 새로 보강된 draft 버퍼 (10건마다 flush)
@@ -129,6 +131,8 @@ class GitHubSearchCrawler(
                         break
                     }
                 } else {
+                    // 404 등 영구 실패 — 회전 대상 (다음 런 선두 밀림)
+                    rotateRepos.add(repo)
                     DebugLogger.d("수집", "README 스킵 $repo: $msg")
                 }
             }
@@ -154,21 +158,36 @@ class GitHubSearchCrawler(
         DebugLogger.i(
             "수집",
             "[FEATURE] GitHub README 보강 readmeMap=${readmeMap.size} processed=$processed " +
-                "limit=$effectiveLimit token=${token.isNotBlank()} missingTried=${missingDeduped.size}",
+                "limit=$effectiveLimit token=${token.isNotBlank()} missingTried=${missingDeduped.size} " +
+                "rotate=${rotateRepos.size}",
         )
-        if (readmeMap.isEmpty()) return unique
-        // 검색 결과: 전건 반환(README 있으면 주입). 백필분: README 성공분만 저장 대상에 포함
+        if (readmeMap.isEmpty() && rotateRepos.isEmpty()) return unique
+        // 검색 결과: 전건 반환(README 있으면 주입). 백필분: README 성공분 + 404 회전분만 저장 대상
         val uniqueOut = unique.map { d ->
             val repo = d.app.repoFullName
             val readme = repo?.let { readmeMap[it] } ?: return@map d
             enrichDraftWithReadme(d, readme)
         }
-        val missingOut = missingDeduped.mapNotNull { d ->
-            val repo = d.app.repoFullName ?: return@mapNotNull null
-            val readme = readmeMap[repo] ?: return@mapNotNull null
-            enrichDraftWithReadme(d, readme)
+        return uniqueOut + buildMissingOut(missingDeduped, readmeMap, rotateRepos, System.currentTimeMillis())
+    }
+
+    /**
+     * 백필 결과 분기: README 성공 → 전문 주입 · 404 영구 실패 → lastUpdatedAt만 올려 ASC 선두에서 회전 ·
+     * 미시도/레이트리밋 → null (다음 런 재시도).
+     */
+    internal fun buildMissingOut(
+        missing: List<AppDraft>,
+        readmeMap: Map<String, String>,
+        rotateRepos: Set<String>,
+        rotateAt: Long,
+    ): List<AppDraft> = missing.mapNotNull { d ->
+        val repo = d.app.repoFullName ?: return@mapNotNull null
+        val readme = readmeMap[repo]
+        when {
+            readme != null -> enrichDraftWithReadme(d, readme)
+            repo in rotateRepos -> d.copy(app = d.app.copy(lastUpdatedAt = rotateAt))
+            else -> null
         }
-        return uniqueOut + missingOut
     }
 
     /**

@@ -126,6 +126,16 @@ class MergeTest {
     }
 
     @Test
+    fun `lastUpdatedAt은_draft값_유지_404회전저장`() {
+        // 404 README 회전: draft.lastUpdatedAt만 올린 빈 행이 기존 lastUpdatedAt으로 덮이지 않아야 함
+        val merged = repo.mergeApps(
+            app(id = "x").copy(lastUpdatedAt = 100),
+            app(id = "x").copy(lastUpdatedAt = 9999),
+        )
+        assertEquals(9999, merged.lastUpdatedAt)
+    }
+
+    @Test
     fun `버전bump_NEW해제`() {
         val merged = repo.mergeApps(
             app(id = "x", version = "1.0").copy(isNew = true),

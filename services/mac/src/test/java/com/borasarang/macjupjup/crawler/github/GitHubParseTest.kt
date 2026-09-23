@@ -126,4 +126,26 @@ class GitHubParseTest {
         assertEquals(10, GitHubSearchCrawler.CHECKPOINT_EVERY)
         assertEquals(3, GitHubSearchCrawler.RATE_LIMIT_ABORT)
     }
+
+    @Test
+    fun `백필_성공은전문주입_404는_lastUpdatedAt회전_미시도는제외`() {
+        val c = GitHubSearchCrawler(source)
+        val drafts = GitHubSearchCrawler(source).parseRepos(searchJson)
+        val ok = drafts[0]
+        val nf = drafts[1]
+        val untried = nf.copy(app = nf.app.copy(id = "other", repoFullName = "o/Other"))
+        val out = c.buildMissingOut(
+            missing = listOf(ok, nf, untried),
+            readmeMap = mapOf(ok.app.repoFullName!! to "# Body\n\nLong README content here"),
+            rotateRepos = setOf(nf.app.repoFullName!!),
+            rotateAt = 7777L,
+        )
+        assertEquals(2, out.size)
+        val enriched = out.first { it.app.id == ok.app.id }
+        assertEquals("# Body\n\nLong README content here", enriched.app.longDescription)
+        val rotated = out.first { it.app.id == nf.app.id }
+        assertEquals(7777L, rotated.app.lastUpdatedAt)
+        assertNull(rotated.app.longDescription)
+        assertTrue(out.none { it.app.id == untried.app.id })
+    }
 }
