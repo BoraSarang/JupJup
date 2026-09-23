@@ -2,6 +2,37 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+- [x] **PLAN_v25** 본문 전체화 풀패치 (longDescription 스키마·크롤러·백필·렌더) / JupJup-qai
+- [x] **AppStorrent 소개 채움** DB 본문 id 우선순위 + DETAIL_LIMIT 60 + 체크포인트 저장 / JupJup-dui
+- [x] **본문 품질·표시 복구** 모달 EN 폴백·GitHub README 우선순위·id충돌·preferSnippet / JupJup-ggb
+- [x] **정렬 통일 범위 A** — 앱/게임 최신순 `COALESCE(releaseDate,lastUpdatedAt)`, 신규등록 `firstSeen`, 카드 표시 fallback / JupJup-a8n
+- [x] **GitHub README 백필** — 검색 미포함 빈 `longDescription` 행 `loadMissingReadme` 합류, 전용 `getIdsWithLongDescription` / JupJup-zxa
+- [x] **GitHub PAT 등록** — 설정 `githubToken` 등록, `token=true` limit=90, homoglyph `longDescription=6071` 검증 (잔여 empty=39는 404 선두) / JupJup-zxa
+- [ ] follow-up: 정렬 범위 B (community COALESCE, GitHub published_at, iTunes enrich 오염, plan 기준 통일)
+- [ ] follow-up: 404 README 선두 `lastUpdatedAt` 회전 (ASC 고착 제거 — 백필 완료 후 잔여 empty 정리)
+- [x] **PLAN_v23** mac 커뮤니티 메뉴 (뷰·시더6·API·DB v10·DC off) / JupJup-294
+- [x] **PLAN_v24** 각 대메뉴 사이드바 수집 소스 필터 (apps/games/news/community) / JupJup-1dq
+
+## AppStorrent + 소스 3분리 (PLAN_v22, JupJup-67v)
+- [x] AGENTS.local 크랙 규칙: 메타데이터 전용·다운로드 URI 금지로 갱신
+- [x] AppStorrentHtmlCrawler (게임/프로그램 모드) + Constants/Factory/Seeder
+- [x] AppStorrentParseTest (games-item/soft-item/tabs-1·다운로드 제거·장르)
+- [x] 설정 서랍 수집 소스 3그룹: 앱 스토어 · 게임 · 뉴스
+- [x] gameStoreOf/preferredMapping appstorrent
+- [x] unit 122/0 · node --check · 문서 (PLAN_v22/CHANGELOG/TODO)
+- [x] ChallengeFail 격리: CF 403/0건 → 소스 FAILED
+- [x] **CF 우회 Googlebot UA** + 실제 셀렉터 재작성 — 기기 **SUCCESS** 게임 287·프로그램 266
+- [x] 수동수집 `KEEP`→cancel+`REPLACE` (백오프 잔여 워커 막힘 해소)
+
+## 맥 게임 메뉴 (PLAN_v21, JupJup-l0g)
+- [x] 상단 메뉴 4열: 메인 · 앱 스토어 · 맥 게임 · 뉴스 + 배지
+- [x] GameGenres + SteamFreeMacCrawler + EpicFreeGamesCrawler + 시드/팩토리
+- [x] AppFilter.excludeGames · AppDao listGames · GET /api/games · /api/main games
+- [x] 크롤러 fixture 테스트 (Steam/Epic)
+- [x] view-games UI + 메인 하이라이트 4th + 가로스크롤 + 히어로 통계
+- [x] 문서 TODO·CHANGELOG·DESIGN + node --check · unit · build
+- [x] 실기 E2E: menu 4pill · /api/games 41건 · apps games=0 · games뷰/히어로/필터/페이지네이션
+
 ## 메인 UI 폴리시 (JupJup-344)
 - [x] 폰트 크기 A−/A+ 조절 + localStorage 재방문 유지
 - [x] 하이라이트 3카드 클릭 링크 연결 (`openDashboardNews`)

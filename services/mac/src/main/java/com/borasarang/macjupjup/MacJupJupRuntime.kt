@@ -4,6 +4,7 @@ import android.content.Context
 import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.preferences.PreferencesManager
 import com.borasarang.macjupjup.data.repository.AppRepository
+import com.borasarang.macjupjup.data.repository.CommunityRepository
 import com.borasarang.macjupjup.data.repository.NewsRepository
 import com.borasarang.macjupjup.data.repository.NotificationRepository
 import com.borasarang.macjupjup.data.repository.NotificationService
@@ -40,6 +41,8 @@ object MacJupJupRuntime {
     lateinit var appRepository: AppRepository
         private set
     lateinit var newsRepository: NewsRepository
+        private set
+    lateinit var communityRepository: CommunityRepository
         private set
     lateinit var sourceRepository: SourceRepository
         private set
@@ -79,6 +82,7 @@ object MacJupJupRuntime {
         }
         appRepository = AppRepository(database)
         newsRepository = NewsRepository(database)
+        communityRepository = CommunityRepository(database)
         sourceRepository = SourceRepository(database)
         preferences = PreferencesManager.getInstance(appContext)
         notificationService = NotificationService(appContext, database, preferences)

@@ -21,6 +21,7 @@ class SiblingTest {
         fileSize = null, minOs = null, contentRating = null, forks = null,
         issues = null, licenseName = null, firstSeenAt = 1, lastUpdatedAt = 2,
         isNew = true, sourceId = "s", licenseOverride = null,
+        supportedLanguages = null,
     )
 
     private val repo = AppRepository(mockk(relaxed = true))

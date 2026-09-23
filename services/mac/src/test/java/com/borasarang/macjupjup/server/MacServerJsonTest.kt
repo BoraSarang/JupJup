@@ -25,7 +25,7 @@ class MacServerJsonTest {
         forks = null, issues = null, licenseName = null, screenshotUrls = null,
         averageRating = null, ratingCount = null, stars = null, primaryLanguage = null,
         topics = null, firstSeenAt = 1000L, lastUpdatedAt = 2000L, isNew = true,
-        sourceId = null, licenseOverride = null,
+        sourceId = null, licenseOverride = null, supportedLanguages = null,
     )
 
     @Test
@@ -54,6 +54,77 @@ class MacServerJsonTest {
         ).toString()
         assertTrue(json.contains(""""sources":[]"""))
         assertTrue(json.contains(""""versions":[]"""))
+        assertFalse(json.contains("sourceUrl"))
+    }
+
+    @Test
+    fun detailJson_epic태그는_에픽출처_sourceUrl() {
+        val epic = com.borasarang.macjupjup.data.db.entity.AppSourceMapping(
+            appId = "a1", sourceName = "Epic 주간 무료 게임",
+            sourceUrl = "https://store.epicgames.com/en-US/p/foo", fetchedAt = 1L,
+        )
+        val steam = com.borasarang.macjupjup.data.db.entity.AppSourceMapping(
+            appId = "a1", sourceName = "Steam 무료 맥 게임",
+            sourceUrl = "https://store.steampowered.com/app/1/", fetchedAt = 2L,
+        )
+        val json = Json.parseToJsonElement(
+            detailJson(
+                AppWithSourceList(
+                    app().copy(tags = "game,epic,epic-weekly-free"),
+                    listOf(steam, epic),
+                    emptyList(),
+                ),
+            ),
+        ).toString()
+        // sources 배열엔 두 출처 모두, 최상단 sourceUrl은 에픽만
+        assertTrue(json.contains("https://store.epicgames.com/en-US/p/foo"))
+        assertTrue(json.contains("store.steampowered.com"))
+        val top = Regex(""""sourceUrl":"([^"]+)"""").find(json)?.groupValues?.get(1)
+        assertEquals("https://store.epicgames.com/en-US/p/foo", top)
+    }
+
+    @Test
+    fun preferredMapping_steam우선_에픽태그는_에픽() {
+        val epic = com.borasarang.macjupjup.data.db.entity.AppSourceMapping(
+            appId = "a", sourceName = "Epic", sourceUrl = "https://store.epicgames.com/p/x", fetchedAt = 1L,
+        )
+        val steam = com.borasarang.macjupjup.data.db.entity.AppSourceMapping(
+            appId = "a", sourceName = "Steam", sourceUrl = "https://store.steampowered.com/app/9/", fetchedAt = 2L,
+        )
+        val out = com.borasarang.macjupjup.data.repository.preferredMapping(
+            "game,epic,epic-weekly-free",
+            listOf(steam, epic),
+        )
+        assertEquals("https://store.epicgames.com/p/x", out?.sourceUrl)
+        val outSteam = com.borasarang.macjupjup.data.repository.preferredMapping(
+            "game,steam,steam-appid:9",
+            listOf(epic, steam),
+        )
+        assertEquals("https://store.steampowered.com/app/9/", outSteam?.sourceUrl)
+    }
+
+    @Test
+    fun appElement_supportedLanguages_노출_널이면생략() {
+        val withLang = Json.parseToJsonElement(
+            appsJson(listOf(AppListItem(app().copy(supportedLanguages = "en,ko"), null, null)), 1, 1, 50),
+        ).toString()
+        assertTrue(withLang.contains(""""supportedLanguages":"en,ko""""))
+        val withoutLang = Json.parseToJsonElement(
+            appsJson(listOf(AppListItem(app(), null, null)), 1, 1, 50),
+        ).toString()
+        assertFalse(withoutLang.contains("supportedLanguages"))
+    }
+
+    @Test
+    fun appElement_레거시긴_snippet은_발췌상한_longDescription_승계() {
+        val legacy = "L".repeat(8000)
+        val json = Json.parseToJsonElement(
+            appsJson(listOf(AppListItem(app().copy(descriptionSnippet = legacy), null, null)), 1, 1, 50),
+        ).toString()
+        val snip = Regex(""""descriptionSnippet":"([^"]+)"""").find(json)?.groupValues?.get(1)
+        val long = Regex(""""longDescription":"([^"]+)"""").find(json)?.groupValues?.get(1)
+        assertEquals(300, snip!!.length)
+        assertEquals(8000, long!!.length)
     }
 
     @Test

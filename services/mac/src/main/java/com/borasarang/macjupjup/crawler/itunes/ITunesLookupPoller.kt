@@ -56,17 +56,36 @@ class ITunesLookupPoller(
                     val needsEnrich = app.screenshotUrls.isNullOrBlank() && !r.screenshotUrls.isNullOrEmpty() ||
                         app.averageRating == null && r.averageRating != null ||
                         app.descriptionSnippet.isNullOrBlank() && !r.description.isNullOrBlank() ||
-                        app.iconUrl.isNullOrBlank() && r.artwork != null
+                        app.longDescription.isNullOrBlank() && !r.description.isNullOrBlank() ||
+                        app.iconUrl.isNullOrBlank() && r.artwork != null ||
+                        app.supportedLanguages.isNullOrBlank() && !r.supportedLanguages.isNullOrBlank()
                     if (versionChanged || app.version == null && r.version != null || needsEnrich) {
                         if (versionChanged) bumped++ else enriched++
+                        val appleDesc = r.description
                         val updated = app.copy(
                             version = r.version ?: app.version,
                             prevVersion = if (versionChanged) app.version else app.prevVersion,
-                            releaseNotesSummary = r.releaseNotes?.take(500) ?: app.releaseNotesSummary,
-                            releaseNotes = r.releaseNotes?.take(2000) ?: app.releaseNotes,
+                            releaseNotesSummary = r.releaseNotes
+                                ?.take(com.borasarang.macjupjup.util.Constants.MAX_SUMMARY_LEN)
+                                ?: app.releaseNotesSummary,
+                            releaseNotes = r.releaseNotes
+                                ?.take(com.borasarang.macjupjup.util.Constants.RELEASE_NOTES_MAX)
+                                ?: app.releaseNotes,
                             releaseDate = r.releaseDate ?: app.releaseDate,
-                            descriptionSnippet = app.descriptionSnippet
-                                ?: r.description?.take(2000),
+                            // 짧은 소개: 기존이 짧으면 Apple 전문에서 재추출, 전문: 긴 쪽
+                            descriptionSnippet = when {
+                                app.descriptionSnippet.isNullOrBlank() ->
+                                    appleDesc?.take(com.borasarang.macjupjup.util.Constants.APP_SUMMARY_LEN)
+                                appleDesc != null && (app.descriptionSnippet?.length ?: 0) <
+                                    com.borasarang.macjupjup.util.Constants.APP_SUMMARY_LEN &&
+                                    appleDesc.length > (app.descriptionSnippet?.length ?: 0) ->
+                                    appleDesc.take(com.borasarang.macjupjup.util.Constants.APP_SUMMARY_LEN)
+                                else -> app.descriptionSnippet
+                            },
+                            longDescription = longerText(
+                                app.longDescription,
+                                appleDesc?.take(com.borasarang.macjupjup.util.Constants.APP_BODY_MAX),
+                            ),
                             screenshotUrls = app.screenshotUrls
                                 ?: r.screenshotUrls?.take(10)?.joinToString("\n"),
                             averageRating = app.averageRating ?: r.averageRating,
@@ -76,6 +95,7 @@ class ITunesLookupPoller(
                             fileSize = app.fileSize ?: r.fileSize,
                             minOs = app.minOs ?: r.minOs,
                             contentRating = app.contentRating ?: r.contentRating,
+                            supportedLanguages = app.supportedLanguages ?: r.supportedLanguages,
                             category = if (app.sourceId == com.borasarang.macjupjup.util.Constants.SOURCE_CHART_RSS) {
                                 app.category
                             } else {
@@ -107,6 +127,12 @@ class ITunesLookupPoller(
         drafts
     }
 
+    private fun longerText(a: String?, b: String?): String? {
+        if (a.isNullOrBlank()) return b
+        if (b.isNullOrBlank()) return a
+        return if (b.length > a.length) b else a
+    }
+
     data class LookupResult(
         val trackId: Long,
         val version: String?,
@@ -123,6 +149,8 @@ class ITunesLookupPoller(
         val fileSize: Long?,
         val minOs: String?,
         val contentRating: String?,
+        /** 지원언어 ISO CSV (languageCodesISO2A 배열 → "en,ko") */
+        val supportedLanguages: String?,
     )
 
     internal fun parseLookup(body: String): List<LookupResult> {
@@ -138,6 +166,15 @@ class ITunesLookupPoller(
                     ?: return@mapNotNull null
                 val shots = o["screenshotUrls"]?.jsonArray?.mapNotNull {
                     if (it is JsonNull) null else it.jsonPrimitive.content
+                }
+                val langs = o["languageCodesISO2A"]?.let { arrEl ->
+                    try {
+                        arrEl.jsonArray.mapNotNull { item ->
+                            if (item is JsonNull) null else item.jsonPrimitive.content
+                        }.filter { it.isNotBlank() }.ifEmpty { null }
+                    } catch (_: Exception) {
+                        null
+                    }
                 }
                 LookupResult(
                     trackId = trackId,
@@ -157,6 +194,7 @@ class ITunesLookupPoller(
                     fileSize = o.str("fileSizeBytes")?.toLongOrNull(),
                     minOs = o.str("minimumOsVersion"),
                     contentRating = o.str("trackContentRating"),
+                    supportedLanguages = langs?.joinToString(","),
                 )
             } catch (_: Exception) {
                 null

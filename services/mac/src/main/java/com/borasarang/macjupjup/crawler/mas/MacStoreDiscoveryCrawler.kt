@@ -73,10 +73,13 @@ class MacStoreDiscoveryCrawler(
                     price = price,
                     trackId = trackId,
                     version = version,
-                    releaseNotesSummary = notes?.take(500),
-                    releaseNotes = notes?.take(2000),
+                    releaseNotesSummary = notes?.take(com.borasarang.macjupjup.util.Constants.MAX_SUMMARY_LEN),
+                    releaseNotes = notes?.take(com.borasarang.macjupjup.util.Constants.RELEASE_NOTES_MAX),
                     releaseDate = releaseDate,
-                    descriptionSnippet = o.str("description")?.take(2000),
+                    descriptionSnippet = o.str("description")
+                        ?.take(com.borasarang.macjupjup.util.Constants.APP_SUMMARY_LEN),
+                    longDescription = o.str("description")
+                        ?.take(com.borasarang.macjupjup.util.Constants.APP_BODY_MAX),
                     detailUrl = trackViewUrl ?: "https://apps.apple.com/us/app/id$trackId",
                 ) ?: return@mapNotNull null
                 val app = draft.app.copy(

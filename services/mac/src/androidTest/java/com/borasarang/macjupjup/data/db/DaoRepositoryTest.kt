@@ -45,6 +45,7 @@ class DaoRepositoryTest {
         fileSize = null, minOs = null, contentRating = null, forks = null,
         issues = null, licenseName = null, firstSeenAt = 1, lastUpdatedAt = 2,
         isNew = isNew, sourceId = sourceId, licenseOverride = null,
+        supportedLanguages = null,
     )
 
     private fun source(id: String = "t", name: String = "T") = CrawlSource(

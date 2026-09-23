@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.borasarang.macjupjup.data.db.dao.AppDao
 import com.borasarang.macjupjup.data.db.dao.AppSourceMappingDao
+import com.borasarang.macjupjup.data.db.dao.CommunityPostDao
 import com.borasarang.macjupjup.data.db.dao.CrawlLogDao
 import com.borasarang.macjupjup.data.db.dao.CrawlSourceDao
 import com.borasarang.macjupjup.data.db.dao.NewsArticleDao
@@ -13,6 +14,7 @@ import com.borasarang.macjupjup.data.db.dao.NotificationLogDao
 import com.borasarang.macjupjup.data.db.dao.VersionHistoryDao
 import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.AppSourceMapping
+import com.borasarang.macjupjup.data.db.entity.CommunityPost
 import com.borasarang.macjupjup.data.db.entity.CrawlLog
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.data.db.entity.NewsAppRelation
@@ -21,8 +23,12 @@ import com.borasarang.macjupjup.data.db.entity.NotificationLog
 import com.borasarang.macjupjup.data.db.entity.VersionHistory
 
 @Database(
-    entities = [App::class, AppSourceMapping::class, CrawlSource::class, VersionHistory::class, CrawlLog::class, NotificationLog::class, NewsArticle::class, NewsAppRelation::class],
-    version = 8,
+    entities = [
+        App::class, AppSourceMapping::class, CrawlSource::class, VersionHistory::class,
+        CrawlLog::class, NotificationLog::class, NewsArticle::class, NewsAppRelation::class,
+        CommunityPost::class,
+    ],
+    version = 11,
     exportSchema = false,
 )
 abstract class MacDatabase : RoomDatabase() {
@@ -33,6 +39,7 @@ abstract class MacDatabase : RoomDatabase() {
     abstract fun crawlLogDao(): CrawlLogDao
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun newsArticleDao(): NewsArticleDao
+    abstract fun communityPostDao(): CommunityPostDao
 
     companion object {
         const val DB_NAME = "macjupjup.db"
@@ -54,7 +61,8 @@ abstract class MacDatabase : RoomDatabase() {
                 DB_NAME,
             ).addMigrations(
                 MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-                MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
+                MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
+                MIGRATION_9_10, MIGRATION_10_11,
             )
             if (allowDestructive) builder.fallbackToDestructiveMigration(true)
             return builder.build()

@@ -36,13 +36,15 @@ interface AppDao {
           AND (:updatedOnly = 0 OR prevVersion IS NOT NULL)
           AND (:newOnly = 0 OR isNew = 1)
           AND (:filterBySource = 0 OR sourceId IN (:sourceIds))
+          AND (:excludeGames = 0 OR category != '게임')
         ORDER BY
           CASE WHEN :sort = 'mas' THEN (CASE WHEN trackId IS NOT NULL THEN 0 ELSE 1 END) END ASC,
           CASE WHEN :sort = 'stars' THEN stars END DESC,
           CASE WHEN :sort = 'rating' THEN averageRating END DESC,
-          CASE WHEN :sort = 'updated' THEN lastUpdatedAt END DESC,
+          CASE WHEN :sort = 'updated' THEN COALESCE(releaseDate, lastUpdatedAt) END DESC,
           CASE WHEN :sort = 'priceAsc' THEN price END ASC,
-          lastUpdatedAt DESC
+          CASE WHEN :sort = 'firstSeen' THEN firstSeenAt END DESC,
+          COALESCE(releaseDate, lastUpdatedAt) DESC
         LIMIT :limit OFFSET :offset"""
     )
     suspend fun listFiltered(
@@ -58,6 +60,7 @@ interface AppDao {
         newOnly: Boolean = false,
         filterBySource: Boolean = false,
         sourceIds: List<String> = emptyList(),
+        excludeGames: Boolean = false,
     ): List<App>
 
     @Query(
@@ -69,7 +72,8 @@ interface AppDao {
           AND (:bumped = 0 OR (isNew = 0 AND version IS NOT NULL))
           AND (:updatedOnly = 0 OR prevVersion IS NOT NULL)
           AND (:newOnly = 0 OR isNew = 1)
-          AND (:filterBySource = 0 OR sourceId IN (:sourceIds))"""
+          AND (:filterBySource = 0 OR sourceId IN (:sourceIds))
+          AND (:excludeGames = 0 OR category != '게임')"""
     )
     suspend fun countFiltered(
         license: String?,
@@ -81,7 +85,41 @@ interface AppDao {
         newOnly: Boolean = false,
         filterBySource: Boolean = false,
         sourceIds: List<String> = emptyList(),
+        excludeGames: Boolean = false,
     ): Int
+
+    /** 맥 게임 목록 (PLAN_v21). genre는 tags LIKE '%{genre}%' (한글 장르) */
+    @Query(
+        """SELECT * FROM apps
+        WHERE category = '게임'
+          AND (:genre IS NULL OR tags LIKE '%' || :genre || '%')
+          AND (:store IS NULL OR tags LIKE '%' || :store || '%')
+          AND (:sourceId IS NULL OR sourceId = :sourceId)
+          AND (:q IS NULL OR name LIKE '%' || :q || '%')
+        ORDER BY
+          CASE WHEN :sort = 'rating' THEN averageRating END DESC,
+          COALESCE(releaseDate, lastUpdatedAt) DESC
+        LIMIT :limit OFFSET :offset"""
+    )
+    suspend fun listGames(
+        genre: String?,
+        store: String?,
+        sourceId: String?,
+        q: String?,
+        sort: String,
+        limit: Int,
+        offset: Int,
+    ): List<App>
+
+    @Query(
+        """SELECT COUNT(*) FROM apps
+        WHERE category = '게임'
+          AND (:genre IS NULL OR tags LIKE '%' || :genre || '%')
+          AND (:store IS NULL OR tags LIKE '%' || :store || '%')
+          AND (:sourceId IS NULL OR sourceId = :sourceId)
+          AND (:q IS NULL OR name LIKE '%' || :q || '%')"""
+    )
+    suspend fun countGames(genre: String?, store: String?, sourceId: String?, q: String?): Int
 
     @Query("SELECT * FROM apps WHERE trackId = :trackId LIMIT 1")
     suspend fun getByTrackId(trackId: Long): App?
@@ -98,6 +136,35 @@ interface AppDao {
     /** 제거된 수집처의 대표 앱 id 목록 (고아 판정용) */
     @Query("SELECT id FROM apps WHERE sourceId = :sourceId")
     suspend fun getIdsBySourceId(sourceId: String): List<String>
+
+    /** 본문(발췌·전문) 보유 id — 목록 초안이 전부 null이어도 상세 보강 순서 결정용 */
+    @Query(
+        """SELECT id FROM apps WHERE id IN (:ids)
+        AND (COALESCE(TRIM(longDescription), '') != ''
+          OR COALESCE(TRIM(descriptionSnippet), '') != '')""",
+    )
+    suspend fun getIdsWithBody(ids: List<String>): List<String>
+
+    /** README 전문(longDescription) 보유 id — README 우선순위 전용 (snippet은 미포함) */
+    @Query(
+        """SELECT id FROM apps WHERE id IN (:ids)
+        AND COALESCE(TRIM(longDescription), '') != ''""",
+    )
+    suspend fun getIdsWithLongDescription(ids: List<String>): List<String>
+
+    /** GitHub README 미수집 행 (JupJup-zxa) — 이번 검색에 없어도 주기 보강. lastUpdatedAt 오래된 순 회전 */
+    @Query(
+        """SELECT * FROM apps
+        WHERE repoFullName IS NOT NULL
+          AND COALESCE(TRIM(longDescription), '') = ''
+          AND id NOT IN (:excludeIds)
+        ORDER BY lastUpdatedAt ASC
+        LIMIT :limit""",
+    )
+    suspend fun getGithubMissingLongDescription(
+        excludeIds: List<String>,
+        limit: Int,
+    ): List<App>
 
     /** 고아 앱 삭제. 반환 = 삭제 행 수 */
     @Query("DELETE FROM apps WHERE id = :id")
@@ -119,24 +186,29 @@ interface AppDao {
         """SELECT * FROM apps
         WHERE (descriptionKo IS NULL AND descriptionSnippet IS NOT NULL)
            OR (releaseNotesKo IS NULL AND releaseNotes IS NOT NULL)
+           OR (longDescriptionKo IS NULL AND longDescription IS NOT NULL
+               AND length(longDescription) <= 4000)
            OR (descriptionSnippet LIKE '%' || char(10) || '%'
                AND (descriptionKo IS NULL OR descriptionKo NOT LIKE '%' || char(10) || '%'))
-        ORDER BY lastUpdatedAt DESC LIMIT :limit"""
+        ORDER BY lastUpdatedAt DESC LIMIT :limit""",
     )
     suspend fun getUntranslated(limit: Int): List<App>
 
     /** 번역 부분 업데이트. null인 쪽은 기존값 보존 (전체 덮어쓰기 번역 소실 방지, P0-1) */
     @Query(
         """UPDATE apps SET descriptionKo = COALESCE(:descKo, descriptionKo),
-        releaseNotesKo = COALESCE(:notesKo, releaseNotesKo) WHERE id = :id"""
+        releaseNotesKo = COALESCE(:notesKo, releaseNotesKo),
+        longDescriptionKo = COALESCE(:longKo, longDescriptionKo) WHERE id = :id"""
     )
-    suspend fun updateKo(id: String, descKo: String?, notesKo: String?)
+    suspend fun updateKo(id: String, descKo: String?, notesKo: String?, longKo: String? = null)
 
     /** 미번역 행 수 (인사이트 번역 커버리지용, T-131 개행 복구분 포함) */
     @Query(
         """SELECT COUNT(*) FROM apps
         WHERE (descriptionKo IS NULL AND descriptionSnippet IS NOT NULL)
            OR (releaseNotesKo IS NULL AND releaseNotes IS NOT NULL)
+           OR (longDescriptionKo IS NULL AND longDescription IS NOT NULL
+               AND length(longDescription) <= 4000)
            OR (descriptionSnippet LIKE '%' || char(10) || '%'
                AND (descriptionKo IS NULL OR descriptionKo NOT LIKE '%' || char(10) || '%'))"""
     )

@@ -178,36 +178,72 @@ class HttpServerService : Service() {
     }
 
     private fun startServer(port: Int) {
-        server = embeddedServer(CIO, port = port, host = "0.0.0.0") {
-            com.borasarang.common.server.LanGuard.install(this)
-            com.borasarang.common.server.AdminAuth.install(this,
-                { app().preferences.getAdminCredential() },
-                { app().preferences.getAdminToken() })
-            install(StatusPages) {
-                exception<Throwable> { call, cause ->
-                    DebugLogger.e(
-                        "서버",
-                        "E-AND-SRV-0103",
-                        "API 오류 ${call.request.local.uri}: ${cause.message}",
-                        cause,
-                    )
-                    call.respondText(
-                        """{"error":"${escapeJson(cause.message ?: "internal error")}"}""",
-                        ContentType.Application.Json,
-                        HttpStatusCode.InternalServerError,
-                    )
+        try {
+            server?.stop(1000, 2000)
+        } catch (_: Exception) {
+        }
+        server = null
+        // 재시작 레이스: 구 프로세스/구 서버가 아직 포트를 쥐고 있으면 잠시 대기
+        var waitedMs = 0L
+        while (isPortOpen(port) && waitedMs < 5000L) {
+            try {
+                Thread.sleep(250)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+            waitedMs += 250
+        }
+        try {
+            server = embeddedServer(CIO, port = port, host = "0.0.0.0") {
+                com.borasarang.common.server.LanGuard.install(this)
+                com.borasarang.common.server.AdminAuth.install(this,
+                    { app().preferences.getAdminCredential() },
+                    { app().preferences.getAdminToken() })
+                install(StatusPages) {
+                    exception<Throwable> { call, cause ->
+                        DebugLogger.e(
+                            "서버",
+                            "E-AND-SRV-0103",
+                            "API 오류 ${call.request.local.uri}: ${cause.message}",
+                            cause,
+                        )
+                        call.respondText(
+                            """{"error":"${escapeJson(cause.message ?: "internal error")}"}""",
+                            ContentType.Application.Json,
+                            HttpStatusCode.InternalServerError,
+                        )
+                    }
+                }
+                routing {
+                    macAssetRoutes(this)
+                    macItemRoutes(this)
+                    macNewsRoutes(this)
+                    macCommunityRoutes(this)
+                    macCollectRoutes(this)
+                    macStatsRoutes(this)
+                    macNotifRoutes(this)
+                    macSettingsRoutes(this)
+                }
+            }.also { it.start(wait = false) }
+        } catch (e: Throwable) {
+            // BindException 등으로 프로세스를 죽이지 않고 지연 재시도
+            server = null
+            DebugLogger.e("서버", "E-AND-SRV-0103", "서버 바인드 실패 재시도 port=$port: ${e.message}", e)
+            updateNotification("포트 $port 사용 불가 — 재시도 중")
+            scope.launch {
+                delay(2000)
+                if (server == null) {
+                    try {
+                        startServer(port)
+                        updateNotification(runningText(port))
+                        DebugLogger.i("서버", "바인드 재시도 성공 port=$port")
+                    } catch (e2: Exception) {
+                        DebugLogger.e("서버", "E-AND-SRV-0103", "바인드 재시도 실패: ${e2.message}", e2)
+                    }
                 }
             }
-            routing {
-                macAssetRoutes(this)
-                macItemRoutes(this)
-                macNewsRoutes(this)
-                macCollectRoutes(this)
-                macStatsRoutes(this)
-                macNotifRoutes(this)
-                macSettingsRoutes(this)
-            }
-        }.start(wait = false)
+        }
     }
 
     // ---------- Watchdog ----------

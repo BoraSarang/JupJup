@@ -85,7 +85,8 @@ class RedditMacAppsCrawler(
                     name = name,
                     // 같은 앱을 다른 유저가 올려도 병합되도록 소스명 고정
                     developer = DEVELOPER,
-                    descriptionSnippet = text.take(500),
+                    descriptionSnippet = text.take(com.borasarang.macjupjup.util.Constants.APP_SUMMARY_LEN),
+                    longDescription = text.take(com.borasarang.macjupjup.util.Constants.APP_BODY_MAX),
                     homepageUrl = homepageUrl,
                     releaseDate = created,
                     iconUrl = iconUrl,

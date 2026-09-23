@@ -30,8 +30,27 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
             ContentType.Application.Json,
         )
     }
+    route.get("/api/games") {
+        val params = call.queryParameters
+        val result = application.appRepository.games(
+            genre = params["genre"]?.takeIf { it.isNotBlank() && it != "전체" },
+            source = params["source"]?.takeIf { it.isNotBlank() },
+            sourceId = params["sourceId"]?.takeIf { it.isNotBlank() },
+            q = params["q"]?.takeIf { it.isNotBlank() },
+            sort = params["sort"] ?: "newest",
+            page = params["page"]?.toIntOrNull() ?: 1,
+            pageSize = params["pageSize"]?.toIntOrNull()
+                ?.coerceIn(1, Constants.API_MAX_PAGE_SIZE)
+                ?: Constants.API_DEFAULT_PAGE_SIZE,
+        )
+        call.respondText(
+            gamesJson(result.apps, result.total, result.page, result.pageSize),
+            ContentType.Application.Json,
+        )
+    }
     route.get("/api/apps") {
         val params = call.queryParameters
+        // 통합 검색(q)은 게임 포함, 나머지 앱 목록은 게임 제외 (PLAN_v21)
         val filter = AppFilter(
             license = params["license"]?.takeIf { it.isNotBlank() },
             category = params["category"]?.takeIf { it.isNotBlank() },
@@ -46,6 +65,7 @@ internal fun HttpServerService.macItemRoutes(route: Route) {
             bumped = params["bumped"]?.toBooleanStrictOrNull() ?: false,
             updatedOnly = params["updatedOnly"]?.toBooleanStrictOrNull() ?: false,
             newOnly = params["newOnly"]?.toBooleanStrictOrNull() ?: false,
+            excludeGames = params["q"] == null,
         )
         val result = application.appRepository.list(filter)
         call.respondText(

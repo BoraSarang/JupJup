@@ -5,6 +5,7 @@ import com.borasarang.macjupjup.data.db.entity.App
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MergeTest {
@@ -30,6 +31,7 @@ class MergeTest {
         fileSize = null, minOs = null, contentRating = null, forks = null,
         issues = null, licenseName = null, firstSeenAt = 1, lastUpdatedAt = 2,
         isNew = true, sourceId = "s", licenseOverride = null,
+        supportedLanguages = null,
     )
 
     private val repo = AppRepository(mockk(relaxed = true))
@@ -46,15 +48,54 @@ class MergeTest {
     }
 
     @Test
-    fun `설명은_긴쪽_버전변경시_새노트`() {
+    fun `설명은_카드용발췌_전문은_longDescription`() {
+        val longBody = "much longer description here".repeat(50)
         val merged = repo.mergeApps(
             app(desc = "short", version = "1.0"),
-            app(desc = "much longer description here", version = "2.0",
-                releaseNotesSummary = null),
+            app(desc = longBody.take(300), version = "2.0",
+                releaseNotesSummary = null).copy(longDescription = longBody),
         )
-        assertEquals("much longer description here", merged.descriptionSnippet)
+        assertTrue(merged.descriptionSnippet!!.length <= 300)
+        assertEquals(longBody, merged.longDescription)
         assertEquals("1.0", merged.prevVersion)
         assertEquals("2.0", merged.version)
+    }
+
+    @Test
+    fun `레거시긴_snippet은_전문으로_승계_발췌는_상한`() {
+        val legacy = ("L".repeat(100) + " ").repeat(30).trim() // >300
+        val merged = repo.mergeApps(
+            app(desc = legacy),
+            app(desc = null),
+        )
+        assertTrue(merged.descriptionSnippet!!.length <= 300)
+        assertEquals(legacy, merged.longDescription)
+    }
+
+    @Test
+    fun `draft_snippet이_현저히_짧으면_기존_유지`() {
+        val good = "A well-written product description that explains features clearly. ".repeat(4).trim()
+        val junk = "tmp"
+        val merged = repo.mergeApps(app(desc = good), app(desc = junk))
+        assertEquals(good, merged.descriptionSnippet)
+        // draft가 더 길거나 동등하면 채택
+        val newer = repo.mergeApps(app(desc = "short"), app(desc = "updated longer description that is better"))
+        assertEquals("updated longer description that is better", newer.descriptionSnippet)
+        // draft null → 기존 유지
+        val keep = repo.mergeApps(app(desc = good), app(desc = null))
+        assertEquals(good, keep.descriptionSnippet)
+    }
+
+    @Test
+    fun `preferSnippet_단위`() {
+        assertEquals("keep", repo.preferSnippet("keep", null))
+        assertEquals("keep", repo.preferSnippet("keep", "  "))
+        assertEquals("new", repo.preferSnippet(null, "new"))
+        assertEquals(
+            "much longer existing body text here",
+            repo.preferSnippet("much longer existing body text here", "x"),
+        )
+        assertEquals("draft wins", repo.preferSnippet("old", "draft wins"))
     }
 
     @Test
@@ -92,5 +133,23 @@ class MergeTest {
         )
         assertEquals(false, merged.isNew)
         assertEquals("1.0", merged.prevVersion)
+    }
+
+    @Test
+    fun `supportedLanguages_draft우선_null은기존유지`() {
+        assertEquals(
+            "en,ko",
+            repo.mergeApps(
+                app().copy(supportedLanguages = "en"),
+                app().copy(supportedLanguages = "en,ko"),
+            ).supportedLanguages,
+        )
+        assertEquals(
+            "en,ja",
+            repo.mergeApps(
+                app().copy(supportedLanguages = "en,ja"),
+                app().copy(supportedLanguages = null),
+            ).supportedLanguages,
+        )
     }
 }

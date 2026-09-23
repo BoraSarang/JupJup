@@ -17,9 +17,18 @@ object Constants {
     const val API_MAX_PAGE_SIZE = 100
     const val API_DEFAULT_PAGE_SIZE = 50
 
-    /** 본문 절단 정책: 요약 500자 / 전문 2000자 (크롤러 공통) */
+    /** 본문 절단 정책: 카드 요약 / 전문 (크롤러 공통) */
     const val MAX_SUMMARY_LEN = 500
+    /** 카드·목록용 짧은 소개 (앱) */
+    const val APP_SUMMARY_LEN = 300
+    /** 앱 전문 (README·스토어 설명) */
+    const val APP_BODY_MAX = 20000
+    /** 릴리즈노트 전문 */
+    const val RELEASE_NOTES_MAX = 20000
+    /** 하위 호환용 (이전 2000 — 새 코드는 APP_BODY_MAX 사용) */
     const val MAX_BODY_LEN = 2000
+    /** 뉴스: 이 미만이면 원문 페이지까지 fetch해 전문 확보 */
+    const val NEWS_FULL_BODY_MIN_LEN = 800
 
     const val CRAWL_REQUEST_DELAY_MS = 1000L
     // 느린 서버 1건이 워커를 최대 ~60s 점유하던 것을 단축 (수집 예의 delay 1s는 유지)
@@ -38,6 +47,18 @@ object Constants {
     const val SOURCE_NAME_MATCH = "name_match"
     const val SOURCE_MAS_DISCOVERY = "mas_discovery"
     const val SOURCE_REDDIT_MACAPPS = "reddit_macapps"
+    const val SOURCE_STEAM_FREE_MAC = "steam_free_mac"
+    const val SOURCE_EPIC_FREE = "epic_free_games"
+    const val SOURCE_APPSTORRENT_GAMES = "appstorrent_games"
+    const val SOURCE_APPSTORRENT_PROGRAMS = "appstorrent_programs"
+
+    // 커뮤니티 소스 (PLAN_v23, InitialDataSeeder와 일치)
+    const val SOURCE_COMMUNITY_DAMOANG_APPLE = "community_damoang_apple"
+    const val SOURCE_COMMUNITY_DAMOANG_MAC = "community_damoang_mac"
+    const val SOURCE_COMMUNITY_DAMOANG_AI = "community_damoang_ai"
+    const val SOURCE_COMMUNITY_CLIEN_MAC = "community_clien_mac"
+    const val SOURCE_COMMUNITY_DC_APPLE = "community_dc_apple"
+    const val SOURCE_COMMUNITY_DC_MACBOOK = "community_dc_macbook"
 
     // 소스 타입
     const val TYPE_GITHUB_SEARCH = "GITHUB_SEARCH"
@@ -48,6 +69,19 @@ object Constants {
     const val TYPE_MAS_DISCOVERY = "MAS_DISCOVERY"
     const val TYPE_NEWS_RSS = "NEWS_RSS"
     const val TYPE_REDDIT_JSON = "REDDIT_JSON"
+    const val TYPE_STEAM_FREETOMAC = "STEAM_FREETOMAC"
+    const val TYPE_EPIC_FREE = "EPIC_FREE"
+    const val TYPE_APPSTORRENT_GAMES = "APPSTORRENT_GAMES"
+    const val TYPE_APPSTORRENT_PROGRAMS = "APPSTORRENT_PROGRAMS"
+    const val TYPE_COMMUNITY_BOARD = "COMMUNITY_BOARD"
+
+    /** 커뮤니티 카테고리 main (PLAN_v23) */
+    const val MAIN_APPLE = "apple"
+    const val MAIN_MAC_COMMUNITY = "mac"
+    const val MAIN_AI_COMMUNITY = "ai"
+
+    /** 커뮤니티 수집 주기(분). WorkManager 최소 15분 */
+    const val COMMUNITY_INTERVAL_MINUTES = 30
 
     // 뉴스 RSS 소스 ID (R32 PLAN_v17, InitialDataSeeder와 일치)
     const val SOURCE_NEWS_MACRUMORS = "news_macrumors"
@@ -83,4 +117,8 @@ object Constants {
 
     const val PLATFORM_MACOS = "macOS"
     const val STORE_COUNTRY = "us"
+
+    /** 게임 구분 카테고리 (Setapp 10종 밖, apps 테이블 공용) */
+    const val CATEGORY_GAME = "게임"
+    const val TAG_GAME = "game"
 }

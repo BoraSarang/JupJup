@@ -1,6 +1,134 @@
 # CHANGELOG — JupJup
 
+## 정렬 통일 · GitHub README 백필 (JupJup-a8n · JupJup-zxa)
+
+- **정렬 규칙**: 대상 시간(`releaseDate`) 있으면 그 시간, 없으면 수집 시간(`lastUpdatedAt`) — «최신순»은 수집 시각이 아님
+- **앱 `listFiltered`**: 기본·`updated` → `COALESCE(releaseDate, lastUpdatedAt) DESC` · `firstSeen` 신규 키 추가 (신규 등록 칩 = `firstSeenAt` 내림차순)
+- **게임 `listGames`**: `releaseDate DESC` → `COALESCE(releaseDate, lastUpdatedAt)` — null이 목록 바닥 고정 제거
+- **프론트**: 신규 등록 칩 `sort:'firstSeen'` · 대시보드/세일 카드 날짜 `releaseDate || lastUpdatedAt`
+- **GitHub README 백필 (JupJup-zxa)**: 이번 `sort=updated` 검색에 없는 DB 빈 `longDescription` 행을 `loadMissingReadme`로 합류 후 README 보강 · 우선순위는 `getIdsWithLongDescription`(전문만, snippet 미포함) · 백필 성공분만 저장 대상 · `lastUpdatedAt ASC` 회전으로 주기 보강
+- **PAT 등록**: 설정 `githubToken` 등록 후 `token=true` · 런당 README 90건(`limit=90`) · 미인증 30/h 상한 해소
+- **백필 실측**: GitHub empty `longDescription` 963 → **39** · `homoglyph-inspector` `longDescription=6071` (README 전문, 404 선두 고착 제외 잔여는 404 skip)
+- 검증: unit **142/0** · `node --check` · Room 쿼리 KSP 통과 · 기기 API 스모크(`sort=newest`/`firstSeen`/`/api/games?sort=newest` 모노토닉) · `bd close` a8n·zxa
+
+## 본문 품질·표시 복구 (JupJup-ggb)
+
+- **모달 표시 P0**: 번역 ON·KO 미번역(4000자 초과) 시 `funcShow` 동등성 붕괴로 수집 `longDescription`이 화면에서 숨김 → EN 전문 폴백 + KO 짧은소개+EN 전문 연결(CHANGELOG에만 있던 concat 실현) · 원문보기 토글 개선
+- **GitHub README**: `stars take(90)` → **DB 본문 없는 id 우선** + stars 세컨더리 · 10건 체크포인트(NonCancellable) · CE 재던지기 · 403/429 연속 3회 중단 · 미인증 README 상한 30 · README 첫 줄 배지/H1은 snippet 무시
+- **id 충돌 P1**: `MergeUtils.normalizeName` — 키릴·CJK 보존 + 전부 특수문자 시 hex fallback (러시아어 제목 + "AppStorrent" → 모두 `appstorrent` 단일 id → 상호 덮어쓰기 원인 제거)
+- **AppStorrent 본문**: `body` 전체 폴백 제거(`#content,main` 한정) · 내비 라인 제거 · `MAX_BODY_FALLBACK=8000` · 끝마커 `idx>10`
+- **병합**: `preferSnippet` — draft snippet이 existing 50% 미만이면 기존 유지 (쓰레기 단축 덮어쓰기 방어)
+- **번역 적체**: `getUntranslated`에 `length(longDescription)<=4000` — 4000+ 행이 최신순 TOP100 영구 점유 제거 · 프론트 EN 폴백으로 해결
+- **워커 RUNNING 고착**: 취소 시 `lastStatus=RUNNING` 유지 버그 → `SourceRepository.clearRunning` + `CrawlWorker` NonCancellable 연결 (programs RUNNING→SUCCESS 확인)
+- 검증: unit **142/0** · `node --check` · 모달 smoke(KO 미번역·KO 전문) · 설치 Success · 실기 programs **270/266/4** SUCCESS · games **294** SUCCESS · watchlist 3소스 SUCCESS · GitHub README 보강 `readmeMap=30`·long coverage **213→228**(total 1116, empty 888)
+
+## AppStorrent 소개 비어 있음 해소 (JupJup-dui)
+
+- 원인: 목록 초안 전건 `description=null`이라 draft 기준 우선순위가 무의미 + 저장 전 `JobCancellationException`으로 보강분 전건 유실 + `runCatching`이 CE 삼킴
+- **DB 본문보유 id 우선순위**: `AppDao.getIdsWithBody` + `CrawlerFactory` → `loadBodyIds` 주입 — 재수집마다 공백분 선행
+- **체크포인트 저장**: 상세 보강 10건마다 `onCheckpoint`(NonCancellable `saveApps`) — 중단 시 진행량 유지. 성공 경로 final save도 NonCancellable
+- **CE 재던지기**: 목록/상세/본문조회·crawl() 래퍼에서 `CancellationException` 명시 분기 (runCatching 제거)
+- `DETAIL_LIMIT` 30→**60** · `CHECKPOINT_EVERY=10** · `extractDescription` 폴백 강화(`#content, main, body`)
+- 검증: unit **135/0** (AppStorrentParseTest 14) · `node --check` · 기기 설치 Success
+- 실기: programs **266/270** · games **287/294** `longDescription` (시작 60/60) · over300=0 · 워커 완료 updated=266/287
+- 잔여: 목록 파싱 미포함 고아 11건(홈페이지 미노출) — 주기 재수집 시 목록 재진입분만 추가 채움
+
+## PLAN_v25 — 본문 전체화 풀패치 (JupJup-qai)
+
+- 스키마: `App.longDescription`/`longDescriptionKo` · DB **v11** `Migration10to11` (ALTER, 데이터 이관 없음 — 재수집으로 채움)
+- 상수: `APP_SUMMARY_LEN=300` · `APP_BODY_MAX=20000` · `RELEASE_NOTES_MAX=20000` · `NEWS_FULL_BODY_MIN_LEN=800`
+- GitHub: README 보강 `readmeLimit 10→90` · 전문→`longDescription` · 짧은 소개→`descriptionSnippet` (— README — 마커 제거)
+- 뉴스: 피드 본문 없음/짧음/HTML 없음 → 원문 fetch · 기존 짧은 행 `updateContentBody` 백필
+- 앱·게임: MAS/iTunes/Reddit/Steam/Epic/AppStorrent snippet(300)·long(20000) 분리 · releaseNotes 20000
+- API/프론트: `longDescription(Ko)` 출력 · 모달 소개=발췌·세부=전문 · 새 기능=전문 우선
+- 번역: `longDescriptionKo` ≤4000자 ML Kit · 미번역 쿼리에 전문 조건 포함
+- 병합·API: snippet/Ko `APP_SUMMARY_LEN` 상한 · 레거시 긴 snippet → `longDescription` 승계(병합+`appElement` 방어) · 프론트 `excerpt` 300자
+- 검증: unit **132/0** · `node --check` · 기기 설치 Success · 실기 앱 100/100 long·snip≤300·게임 snip≤300·잔여건 상세 snip300/long8000·뉴스 7k·`/api/sync` 202
+
+## PLAN_v24 — 각 대메뉴 수집 소스 필터 (JupJup-1dq)
+
+- 사이드바 **정렬 아래「수집 소스」**: 앱 스토어·맥 게임 (정렬 하단 `.schoice`), 커뮤니티 (목록 칼럼 상단 필터 카드), 뉴스 (A/B 공통 필터 바)
+- 소스 목록: `/api/watchlist` type 기반 분기 — NEWS_RSS / COMMUNITY_BOARD / STEAM·EPIC·APPSTORRENT_GAMES / 나머지(앱)
+- API: `/api/apps?sourceIds=`(기존), `/api/games|/api/news|/api/community?sourceId=` 신규 — DAO WHERE `sourceId = :sourceId`
+- state `filters.sourceId`·`games.sourceId`·`news.sourceId`·`community.sourceId` + 페이지·상세 초기화 후 재조회
+- 검증: unit **130/0** · `node --check` · 기기 설치 Success · API news_macrumors 45/317 · damoang 24/24/23 · steam 40/epic 2 · chart_rss 86/reddit 29
+
+## PLAN_v23 — mac 커뮤니티 메뉴
+
+- 메뉴 5번째 **커뮤니티** (메인·앱스토어·맥게임·커뮤니티·뉴스), 설정 소스 그룹 4번째
+- 카테고리 애플/맥/AI(+전체), 소스 6(다모앙3·클리앙 MAC·DC apple·DC macbook), 30분 주기
+- arch=B: `TYPE_COMMUNITY_BOARD` + `community_posts` DB v10 + `/api/community`
+- 다모앙 Googlebot UA, 클리앙 공지 제외, DC body 0bytes → 시드 off
+
 ## [Unreleased]
+
+### AppStorrent 게임·프로그램 수집 + 설정 소스 3분리 (JupJup-67v)
+- **소스**: `appstorrent_games` / `appstorrent_programs` — DLE 목록·상세 HTML 파서 (`AppStorrentHtmlCrawler`)
+- **CF 우회**: 일반 브라우저 UA 403 → **Googlebot UA** 200. 목록 `article.games-item`/`soft-item`, 상세 `#tabs-1` + `.screenshots`
+- **정책**: 메타데이터 전용 — 다운로드·magnet·torrent URI 제거, **출처 상세 링크만** (AGENTS.local 크랙 규칙 갱신)
+- **설정**: 수집 소스 **앱 스토어 / 게임 / 뉴스** 3그룹 분리
+- **태그**: 게임 `game,{장르},appstorrent` · 프로그램 `appstorrent` · `gameStoreOf`/`preferredMapping` appstorrent 지원
+- **격리**: CF 403/0건 `ChallengeFail` → 소스 **FAILED** · 수동수집 `KEEP` 백오프 막힘 → cancel+**REPLACE**
+- 검증: AppStorrentParseTest 12/12 · unit **122/0** · `node --check` · 기기 **SUCCESS** 게임 287·프로그램 266 · magnet/btih 유출 0 · 상세 본문/스크린샷 상위 30건
+
+### 게임 모달 소개 — KO 짧은 소개 + EN README 본문 (스팀 본문 누락)
+- **원인**: `descriptionKo`는 짧은 소개만(≈100자), README 전체 본문은 `descriptionSnippet`에만 있음 → `mdBlock` KO 우선으로 본문이 안 보임
+- **수정**: 게임 모달에서 KO에 README 마커가 없으면 KO 짧은 소개 뒤에 EN README 본문 연결
+- 검증: unit · agent-browser Catson 소개 len≈1545(Hello 본문 포함)·Mindcop len≈1080(Merrylin)·Shogun len≈572(Turn-based)
+
+### Epic 주간 무료 — Steam 본문·스크린샷·언어·요건 보강
+- **원인**: `freeGamesPromotions`는 짧은 소개(~200자)만, Epic 페이지/GraphQL/content API는 CF 403·404
+- **수정**: `EpicFreeGamesCrawler.enrichFromSteam` — Steam `storesearch` 이름 정확 일치 → `appdetails`로 README·SYSREQ·스크린샷·언어 구성. 스토어 URL·태그는 Epic 유지, Steam mac 필터 없음
+- **공용**: `SteamDetails` (compose/markdown/sysreq/screenshots/langs/searchAppId) 분리 — Steam 크롤러는 위임
+- 검증: EpicParseTest 9/9 · unit 111/0 · 기기 `epic_free_games` SUCCESS — Mindcop README·shots=9·langs en,zh,fr,de,es · Shogun README·shots=9·langs en,ko,ja,… · tags `steam-appid` · 모달 3탭(소개 본문·언어·요건 / 스크린샷 img=9)
+
+### 뉴스 뷰 우측 패널 빈 상태 (JupJup-v8u)
+- **원인**: B형 자동 상세가 `window.innerWidth > 1200`에 묶여 폭 ≤1200에서 상세 미오픈, A형→B 전환 시 `loadNews()` 미호출로 목록 비김, `#layoutToggle` 미존재
+- **수정**: B형 진입 시 폭 무관 첫 기사 자동 오픈 · 하이브리드/대시보드/A→B 경로 모두 `loadNews()` · `index.html`에 A/B 토글 복원 · `openNewsDetail`이 A형이면 B 전환 후 목록 로드
+- 검증: agent-browser 1100px B형 list=5/detail=663 · 하이브리드 클릭·대시보드 진입 list+detail 채워짐 · `node --check`
+
+### 서버 BindException 크래시 (앱 사망)
+- **원인**: `adb reverse tcp:3010`이 기기 3010을 adbd(uid 2000)에 점유 → 앱 `BindException: Address already in use` 연쇄 FATAL · Ktor acceptJob 비동기 예외는 기존 try-catch 미포착
+- **수정**: reverse 제거 후 `adb forward` 전환(host→device, 토큰 루프백 유지) · `HttpServerService.startServer` 포트 방어 대기 + 바인드 실패 시 프로세스 유지·지연 재시도
+- 검증: 설치 후 pid 유지 · API 200 · 신규 crash buffer에 jupjup BindException 없음
+
+### Steam 게임 모달 — 소개 본문·언어·요건·스크린샷 (JupJup-zr0)
+- **수집**: `appdetails` filters에 `about_the_game,detailed_description,screenshots,pc_requirements,mac_requirements` 추가 — 전건 enrich(예의 딜레이)
+- **본문**: `descriptionSnippet` = 짧은소개 + `— README —` + 소개 마크다운 + `— SYSREQ —` + 시스템요건 HTML (상한 8000)
+- **필드**: `screenshotUrls`(최대 10), `minOs=macOS`, tags에 `windows`/`linux`
+- **모달(게임 전용)**: 탭 **소개** 전체 본문 · **언어·요건** 언어 칩 + 요건 HTML + 장르/플랫폼/출시 · **스크린샷** 그리드
+- **앱 모달**: 기존 소개/특징/새 기능 유지
+- **내성성**: Steam이 간헐 HTML 반환 시 `search_result_row` 폴백 + 1회 재요청 (`retryNonJson`)
+- 검증: SteamParseTest 13/13 · mac unit 109/0 · `node --check` · 기기 재수집 SUCCESS(39건 README·스크린샷) · agent-browser 모달 3탭(소개/언어·요건/스크린샷·img=5)
+
+### Epic 제품 페이지 URL pageSlug 우선 (JupJup-6lg)
+- **문제**: `freeGamesPromotions`의 `urlSlug`가 오퍼 해시일 때 `/p/{해시}` 오류 링크, `productSlug` 미존재 시 잘못된 슬러그
+- **수정**: `EpicFreeGamesCrawler.pageStoreUrl` — `offerMappings/catalogNs.mappings`의 `productHome` **pageSlug** 우선 → `productSlug`(`/home` 제거) → `urlSlug`
+- **검증**: EpicParseTest(pageSlug·해시 제외) · mac unit · 기기 `/api/sync` 재수집 후 실기 2건 bugs=0  
+  (Mindcop `/p/mindcop-78e6c1`, Shogun `/p/shogun-showdown-61832d`)  
+  ※ store.epicgames.com은 봇에 CF 403 — 브라우저에서 challenge 후 정상 접근
+
+### 게임 본문 스토어 링크 수정 (JupJup-kz2)
+- **문제**: 게임 상세 모달 CTA가 스팀으로 고정될 수 있음 (steam-appid 우선, detail에 상단 sourceUrl 없음)
+- **수정**: `gameStoreUrl`는 tags 스토어(epic/steam) 우선 — epic 게임은 절대 스팀 URL 반환 금지
+- **수정**: `preferredMapping` — 목록·상세 `sourceUrl`을 스토어 태그와 매칭되는 출처로 선택 + detail 최상단 `sourceUrl` 노출
+- **UI**: CTA 라벨 `Steam에서 보기` / `Epic에서 보기`로 구분
+- 검증: MacServerJsonTest 신규 2건 · `node --check` · unit · 설치 후 실기 41건 CTA bugs=0
+
+### 게임 상세 내부 모달 + 한국어 배지 + 한글본문 (JupJup-dqj)
+- **카드**: 게임 카드 외부링크 제거 → 클릭 시 내부 상세 모달, 스토어 CTA는 모달 푸터
+- **언어**: `supportedLanguages` 파이프라인(Migration8to9, Steam/iTunes 수집, appElement 노출) + 카드·모달 «한국어» 배지
+- **본문**: `descriptionKo` 있으면 한글본문 기본 노출, Steam `DETAIL_LIMIT` 40
+- 검증: unit · `node --check` · assembleDebug
+
+### 맥 게임 메뉴 (PLAN_v21)
+- **메뉴**: 상단 4열 메인 · 앱 스토어 · **맥 게임** · 뉴스 + 카운트 배지
+- **수집**: Steam 무료 macOS 게임 (`search/results` os=mac, 상위 40 + appdetails 장르 보강), Epic 주간 무료 (`freeGamesPromotions`, browse CF 403 우회)
+- **저장**: `apps` 재사용 `category='게임'`, tags `game,{장르},{steam|epic}` — 마이그레이션 없음
+- **API**: `GET /api/games` (genre/source/sort), `/api/main`에 `counts.games`·`games[]`, `/api/apps`는 목록에서 게임 제외(q 검색은 포함)
+- **포털**: `/games` 뷰(장르 칩·소스 필터·와이드 카드·Epic 주간 히어로), 메인 하이라이트 4th + «새로운 맥 게임» 가로스크롤 + 히어로 게임 통계
+- **테스트**: SteamParseTest · EpicParseTest fixture
+- 검증: `node --check` · unit 96 통과 · `build_and_run.sh build` 설치 · 실기 E2E (메뉴 4pill 배지, `/api/games` 41건, `/api/apps` games=0·q 검색 포함, 메인 하이라이트 GAME 4th+가로스크롤, games 뷰 히어로·필터·페이지네이션)
 
 ### 메인 UI 폴리시 + 설정서랍 (JupJup-344)
 - **폰트 크기 조절**: 헤더 A−/A+ 버튼, 12~20px 범위, localStorage(`macjupjup_font_px`)로 재방문 시 유지

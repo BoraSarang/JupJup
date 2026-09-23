@@ -46,6 +46,23 @@ interface NewsArticleDao {
     @Query("SELECT id FROM news_articles WHERE id IN (:ids)")
     suspend fun getExistingIds(ids: List<String>): List<String>
 
+    /** 본문이 짧은 기존 행 — 전문 백필 대상 */
+    @Query(
+        """SELECT id FROM news_articles
+        WHERE id IN (:ids)
+          AND (contentHtml IS NULL OR LENGTH(COALESCE(contentHtml, '')) < :minLen)"""
+    )
+    suspend fun getExistingShortContentIds(ids: List<String>, minLen: Int): List<String>
+
+    /** 본문·요약 갱신 (백필 — insert IGNORE 우회) */
+    @Query(
+        """UPDATE news_articles
+        SET contentHtml = :contentHtml, summary = COALESCE(:summary, summary),
+            collectedAt = :now
+        WHERE id = :id"""
+    )
+    suspend fun updateContentBody(id: String, contentHtml: String?, summary: String?, now: Long)
+
     @Query("SELECT appId FROM news_app_relation WHERE newsId = :newsId")
     suspend fun getAppIdsByNewsId(newsId: String): List<String>
 
@@ -57,6 +74,7 @@ interface NewsArticleDao {
         """SELECT * FROM news_articles
         WHERE (:main IS NULL OR `main` = :main)
           AND (:sub IS NULL OR sub = :sub)
+          AND (:sourceId IS NULL OR sourceId = :sourceId)
           AND (:q IS NULL OR title LIKE '%' || :q || '%' OR summary LIKE '%' || :q || '%')
         ORDER BY publishedAt DESC
         LIMIT :limit OFFSET :offset"""
@@ -64,6 +82,7 @@ interface NewsArticleDao {
     suspend fun listFiltered(
         main: String?,
         sub: String?,
+        sourceId: String?,
         q: String?,
         limit: Int,
         offset: Int,
@@ -73,11 +92,13 @@ interface NewsArticleDao {
         """SELECT COUNT(*) FROM news_articles
         WHERE (:main IS NULL OR `main` = :main)
           AND (:sub IS NULL OR sub = :sub)
+          AND (:sourceId IS NULL OR sourceId = :sourceId)
           AND (:q IS NULL OR title LIKE '%' || :q || '%' OR summary LIKE '%' || :q || '%')"""
     )
     suspend fun countFiltered(
         main: String?,
         sub: String?,
+        sourceId: String?,
         q: String?,
     ): Int
 

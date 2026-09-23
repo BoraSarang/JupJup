@@ -50,8 +50,9 @@ class GitHubReleasesCrawler(
                     val updated = app.copy(
                         version = latest.tag,
                         prevVersion = app.version,
-                        releaseNotesSummary = notes?.take(500),
-                        releaseNotes = notes?.take(2000) ?: app.releaseNotes,
+                        releaseNotesSummary = notes?.take(com.borasarang.macjupjup.util.Constants.MAX_SUMMARY_LEN),
+                        releaseNotes = notes?.take(com.borasarang.macjupjup.util.Constants.RELEASE_NOTES_MAX)
+                            ?: app.releaseNotes,
                         lastUpdatedAt = now,
                         isNew = false,
                     )

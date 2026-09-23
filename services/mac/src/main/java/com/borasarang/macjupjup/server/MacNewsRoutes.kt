@@ -31,6 +31,7 @@ internal fun HttpServerService.macNewsRoutes(route: Route) {
             NewsFilter(
                 main = main,
                 sub = sub,
+                sourceId = params["sourceId"]?.takeIf { it.isNotBlank() },
                 q = params["q"]?.takeIf { it.isNotBlank() },
                 page = params["page"]?.toIntOrNull() ?: 1,
                 pageSize = params["pageSize"]?.toIntOrNull()
@@ -91,6 +92,9 @@ internal fun HttpServerService.macNewsRoutes(route: Route) {
         val related = news.relatedByNews(
             (recentMac + recentAi + recentSec).map { it.id },
         )
+        // PLAN_v21: 맥 게임 (최신 8 + 건수)
+        val gamesPage = application.appRepository.games(page = 1, pageSize = 8, sort = "newest")
+        val gameCount = gamesPage.total
         call.respondText(
             buildJsonObject {
                 put("todayNews", today)
@@ -99,10 +103,23 @@ internal fun HttpServerService.macNewsRoutes(route: Route) {
                     put(NewsCategories.MAIN_MAC, counts[NewsCategories.MAIN_MAC] ?: 0)
                     put(NewsCategories.MAIN_AI, counts[NewsCategories.MAIN_AI] ?: 0)
                     put(NewsCategories.MAIN_SEC, counts[NewsCategories.MAIN_SEC] ?: 0)
+                    put("games", gameCount)
                 })
                 put("mac", newsArray(recentMac, related))
                 put("ai", newsArray(recentAi, related))
                 put("sec", newsArray(recentSec, related))
+                put("games", buildJsonArray {
+                    gamesPage.apps.forEach { item ->
+                        add(
+                            buildJsonObject {
+                                appElement(item.app).entries.forEach { (key, value) -> put(key, value) }
+                                put("store", storeOfTags(item.app.tags))
+                                put("genres", genreArray(item.app.tags))
+                                item.sourceUrl?.let { put("sourceUrl", it) }
+                            },
+                        )
+                    }
+                })
                 put("updatedApps", buildJsonArray {
                     updatedApps.apps.forEach { item ->
                         add(

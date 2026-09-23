@@ -18,6 +18,8 @@
       <nav class="mainnav" aria-label="메인 메뉴" id="mainNav">
         <button type="button" class="navpill active" data-view="dashboard">메인</button>
         <button type="button" class="navpill" data-view="appstore">앱 스토어 <span class="navcount" id="navAppCount">-</span></button>
+        <button type="button" class="navpill" data-view="games">맥 게임 <span class="navcount" id="navGameCount">-</span></button>
+        <button type="button" class="navpill" data-view="community">커뮤니티 <span class="navcount" id="navCommunityCount">-</span></button>
         <button type="button" class="navpill" data-view="news">뉴스 <span class="navcount" id="navNewsCount">-</span></button>
       </nav>
       <div class="top-actions">
@@ -36,6 +38,8 @@
     <nav class="mobilenav" id="mobileNav" aria-label="모바일 메뉴">
       <button type="button" class="navpill active" data-view="dashboard">메인</button>
       <button type="button" class="navpill" data-view="appstore">앱 스토어 <span class="navcount" id="navAppCountM">-</span></button>
+      <button type="button" class="navpill" data-view="games">맥 게임 <span class="navcount" id="navGameCountM">-</span></button>
+      <button type="button" class="navpill" data-view="community">커뮤니티 <span class="navcount" id="navCommunityCountM">-</span></button>
       <button type="button" class="navpill" data-view="news">뉴스 <span class="navcount" id="navNewsCountM">-</span></button>
     </nav>
   </header>
@@ -62,6 +66,13 @@
       </div>
       <div class="hscroll" id="dashApps" role="list" aria-label="최근 업데이트 앱"></div>
       <div class="scrollbar"><span id="dashAppsBar"></span></div>
+
+      <div class="sechead">
+        <h2>새로운 맥 게임 <span class="countpill" id="dashGameCount">-</span></h2>
+        <button type="button" class="linkmore" id="dashGamesMore">전체 보기 →</button>
+      </div>
+      <div class="hscroll" id="dashGames" role="list" aria-label="새로운 맥 게임"></div>
+      <div class="scrollbar"><span id="dashGamesBar"></span></div>
 
       <div class="cols">
         <div class="main-col">
@@ -143,6 +154,10 @@
               <label>정렬</label>
               <div class="sortgrid" id="sortChoices"></div>
             </div>
+            <div class="sfgroup">
+              <label>수집 소스</label>
+              <div class="schoice" id="appSourceChoices"></div>
+            </div>
             <div class="sfnote mono">본체 강조: 앱 스토어가 기존 사이트 본체<br>2단 네비 11개 카테고리 항상 노출<br>/apps/{cat} 경로 느낌</div>
           </section>
           <section class="sfilter-card dim">
@@ -170,6 +185,98 @@
       </div>
     </section>
 
+    <!-- ============ 맥 게임 (PLAN_v21) ============ -->
+    <section id="view-games" class="view view-games" aria-label="맥 게임" hidden>
+      <div class="storenav">
+        <span class="mono storenav-label">/games · 카테고리</span>
+        <div class="chiprow" id="gameChips" aria-label="게임 장르 바로가기"></div>
+        <span class="store-live mono"><span class="pulse-dot" aria-hidden="true"></span><span id="gameCountLabel">0 games · FREE</span></span>
+      </div>
+
+      <div class="store-cols2">
+        <aside class="store-side2" aria-label="맥 게임 필터">
+          <section class="sfilter-card">
+            <div class="sfilter-head"><span class="mono">/games 필터</span><span class="pulse-dot small" aria-hidden="true"></span></div>
+            <div class="sfgroup">
+              <label>소스</label>
+              <div class="schoice" id="gameSourceChoices"></div>
+            </div>
+            <div class="sfgroup">
+              <label>장르</label>
+              <div class="schoice" id="gameGenreChoices"></div>
+            </div>
+            <div class="sfgroup">
+              <label>정렬</label>
+              <div class="sortgrid" id="gameSortChoices"></div>
+            </div>
+            <div class="sfgroup">
+              <label>수집 소스</label>
+              <div class="schoice" id="gameCollectSourceChoices"></div>
+            </div>
+            <div class="sfnote mono">Steam: macOS 무료 · Epic: 주간 무료(스토어 호환 확인)<br>/games · 외부 스토어로 이동</div>
+          </section>
+        </aside>
+
+        <div class="store-main2">
+          <div class="store-panel">
+            <div class="store-panel-head">
+              <span class="mono">/games · <b id="gamesPanelCount">0</b> GAMES</span>
+              <span class="cat-lime mono" id="gameActiveGenre">전체</span>
+            </div>
+            <div class="game-hero" id="gameHero" hidden></div>
+            <div class="sechead" style="padding:10px 16px 0;margin:0;">
+              <h2 style="font-size:0.9643rem;">이번 주 등록 <span class="countpill" id="gameNewCount">-</span></h2>
+            </div>
+            <div class="hscroll" id="gameNewRow" style="padding:8px 16px 4px;" role="list" aria-label="이번 주 등록 게임"></div>
+            <div class="game-grid" id="gameGrid" role="list" aria-label="맥 게임 목록"></div>
+            <div class="empty-state" id="emptyGames" hidden>
+              <div class="empty-state-icon">🎮</div>
+              <p class="empty-state-title">조건에 맞는 게임이 없습니다</p>
+              <p class="empty-state-desc">필터를 조정하거나 잠시 후 다시 시도해보세요.</p>
+            </div>
+            <nav class="pagination" id="gamesPagination" aria-label="게임 페이지네이션"></nav>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 뉴스 ============ -->
+    <!-- ============ 커뮤니티 (PLAN_v23) ============ -->
+    <section id="view-community" class="view view-community" aria-label="커뮤니티" hidden>
+      <div class="newsnav">
+        <div class="newsmains" role="tablist" aria-label="커뮤니티 카테고리" id="communityMains">
+          <button type="button" class="mainpill active" data-main="apple" role="tab" aria-selected="true">애플 <span class="mono" id="cmcount-apple">-</span></button>
+          <button type="button" class="mainpill" data-main="mac" role="tab" aria-selected="false">맥 <span class="mono" id="cmcount-mac">-</span></button>
+          <button type="button" class="mainpill" data-main="ai" role="tab" aria-selected="false">AI <span class="mono" id="cmcount-ai">-</span></button>
+          <button type="button" class="mainpill" data-main="all" role="tab" aria-selected="false">전체 <span class="mono" id="cmcount-all">-</span></button>
+        </div>
+        <div class="layout-toggle" role="group" aria-label="검색">
+          <input type="search" id="communityQ" class="cmsearch" placeholder="커뮤니티 검색" aria-label="커뮤니티 검색" autocomplete="off">
+        </div>
+      </div>
+      <div class="cm-layout">
+        <div class="cm-list-col">
+          <section class="sfilter-card" aria-label="커뮤니티 필터">
+            <div class="sfilter-head"><span class="mono">/community 필터</span><span class="pulse-dot small" aria-hidden="true"></span></div>
+            <div class="sfgroup" style="margin-bottom:0">
+              <label>수집 소스</label>
+              <div class="schoice" id="cmSourceChoices"></div>
+            </div>
+          </section>
+          <header class="nlist-head"><span class="mono" id="cmListTitle">APPLE / 전체</span><span class="live-dot sm"></span></header>
+          <div id="communityList" role="list" aria-label="커뮤니티 글 목록"></div>
+          <nav class="pagination" id="communityPagination" aria-label="커뮤니티 페이지네이션"></nav>
+          <footer class="nlist-foot"><span>크롤링 30분</span><span class="ok">• 커뮤니티</span></footer>
+        </div>
+        <article class="ndetail" id="communityDetail" aria-label="커뮤니티 상세"></article>
+      </div>
+      <div class="empty-state" id="emptyCommunity" hidden>
+        <div class="empty-state-icon">💬</div>
+        <p class="empty-state-title">아직 수집된 글이 없습니다</p>
+        <p class="empty-state-desc">설정 → 수집 소스에서 커뮤니티를 켜고 즉시 수집을 실행해보세요.</p>
+      </div>
+    </section>
+
     <!-- ============ 뉴스 ============ -->
     <section id="view-news" class="view view-news" aria-label="뉴스" hidden>
       <div class="newsnav">
@@ -178,12 +285,23 @@
           <button type="button" class="mainpill" data-main="ai" role="tab" aria-selected="false">AI 소식 <span class="mono" id="ncount-ai">-</span></button>
           <button type="button" class="mainpill" data-main="sec" role="tab" aria-selected="false">보안 소식 <span class="mono" id="ncount-sec">-</span></button>
         </div>
+        <div class="layout-toggle" id="layoutToggle" role="group" aria-label="뉴스 레이아웃">
+          <button type="button" class="ltbtn" data-layout="A">A</button>
+          <button type="button" class="ltbtn" data-layout="B">B</button>
+        </div>
       </div>
 
       <div class="ticker" aria-label="실시간 속보">
         <span class="livedot">LIVE CRWL</span>
         <div class="ticker-view"><div class="ticker-move" id="tickerMove"></div></div>
       </div>
+
+      <section class="sfilter-card news-srcbar" aria-label="뉴스 수집 소스 필터">
+        <div class="sfgroup" style="margin-bottom:0">
+          <label>수집 소스</label>
+          <div class="schoice" id="newsSourceChoices"></div>
+        </div>
+      </section>
 
       <div class="news-hybrid" id="newsHybrid" hidden>
         <div class="curation-head">
@@ -300,6 +418,10 @@
         <div id="adminSources">
           <p class="srcgroup-label">앱 스토어</p>
           <div id="adminSourcesApps"><p class="tiny-note">불러오는 중…</p></div>
+          <p class="srcgroup-label">게임</p>
+          <div id="adminSourcesGames"><p class="tiny-note">불러오는 중…</p></div>
+          <p class="srcgroup-label">커뮤니티</p>
+          <div id="adminSourcesCommunity"><p class="tiny-note">불러오는 중…</p></div>
           <p class="srcgroup-label">뉴스</p>
           <div id="adminSourcesNews"><p class="tiny-note">불러오는 중…</p></div>
         </div>

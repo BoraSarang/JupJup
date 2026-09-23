@@ -81,15 +81,16 @@ class CrawlScheduler(private val context: Context) {
                 .setInitialDelay((index * 20).toLong(), TimeUnit.SECONDS)
                 .addTag(TAG_CRAWL)
                 .build()
+            // 수동 즉시수집: 기존 백오프/실패 잔여 워커가 KEEP으로 신규 요청을 막지 않도록
+            // 취소 후 REPLACE. 실행 중 동일 소스는 SourceLocks가 중복 스킵.
+            wm.cancelUniqueWork("crawl_once_$id")
             wm.enqueueUniqueWork(
                 "crawl_once_$id",
-                // P0-2: REPLACE는 실행 중 워커까지 취소해 수집이 증발하므로 KEEP.
-                // 중복 실행은 CrawlWorker의 SourceLocks가 스킵한다.
-                ExistingWorkPolicy.KEEP,
+                ExistingWorkPolicy.REPLACE,
                 req,
             )
         }
-        DebugLogger.i("수동수집", "즉시 수집 예약 ${ids.size}건")
+        DebugLogger.i("수동수집", "즉시 수집 예약 ${ids.size}건 (replace)")
     }
 
     fun cancelAll() {

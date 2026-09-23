@@ -19,6 +19,7 @@ class LookupParseTest {
        "releaseNotes":"AI 채팅 개선","currentVersionReleaseDate":"2026-09-01T00:00:00Z",
        "description":"Launcher app","screenshotUrls":["https://a","https://b"],
        "averageUserRating":4.8,"userRatingCount":1200,
+       "languageCodesISO2A":["en","ko","ja"],
        "primaryGenreName":"Productivity","trackViewUrl":"https://apps.apple.com/us/app/id591560477"},
       {"trackId":123,"description":null,"screenshotUrls":[]}
     ]}
@@ -38,6 +39,16 @@ class LookupParseTest {
         assertEquals(2, r.screenshotUrls?.size)
         assertEquals(4.8, r.averageRating!!, 0.001)
         assertEquals("Productivity", r.appleCategory)
+        assertEquals("en,ko,ja", r.supportedLanguages)
         assertNotNull(r.releaseDate)
+    }
+
+    @Test
+    fun `lookup_languageCodesISO2A_없으면_null`() {
+        val results = ITunesLookupPoller(
+            source,
+            repoProvider = { emptyList<com.borasarang.macjupjup.data.db.entity.App>() },
+        ).parseLookup(body)
+        assertEquals(null, results[1].supportedLanguages)
     }
 }

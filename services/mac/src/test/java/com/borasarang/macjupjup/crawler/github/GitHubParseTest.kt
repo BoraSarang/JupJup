@@ -2,6 +2,7 @@ package com.borasarang.macjupjup.crawler.github
 
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -93,5 +94,36 @@ class GitHubParseTest {
     fun `epoch_파싱`() {
         assertTrue((GitHubSearchCrawler.parseEpoch("2026-09-01T00:00:00Z") ?: 0) > 0)
         assertNull(GitHubSearchCrawler.parseEpoch("bad-date"))
+    }
+
+    @Test
+    fun `본문없는_id_우선_정렬_동순위는_stars`() {
+        val c = GitHubSearchCrawler(source)
+        val a = GitHubSearchCrawler(source).parseRepos(searchJson)
+        // bodyIds에 이미 보유 id → 뒤로. 없는 id → 앞으로.
+        val withBody = a[0].app.id // RaycastClone (본문 보유로 가정)
+        val prioritized = c.prioritizeForReadme(a, setOf(withBody))
+        assertEquals("NoDesc", prioritized[0].app.name)
+        assertEquals("RaycastClone", prioritized[1].app.name)
+        // 동순위(둘 다 본문 없음)면 stars desc
+        val emptySetOrder = c.prioritizeForReadme(a, emptySet())
+        assertEquals("RaycastClone", emptySetOrder[0].app.name) // 120 stars > 5
+    }
+
+    @Test
+    fun `README_첫줄_배지는_snippet_무시`() {
+        val c = GitHubSearchCrawler(source)
+        assertTrue(c.isBadgeOrHeading("# TokenMini"))
+        assertTrue(c.isBadgeOrHeading("[![CI](https://img.shields.io/...)](...)"))
+        assertTrue(c.isBadgeOrHeading("![icon](https://example.com/i.png)"))
+        assertTrue(c.isBadgeOrHeading("<div align=\"center\">"))
+        assertTrue(c.isBadgeOrHeading("https://github.com/o/r"))
+        assertFalse(c.isBadgeOrHeading("Free AI usage monitor for Mac."))
+    }
+
+    @Test
+    fun `체크포인트_주기는_10건`() {
+        assertEquals(10, GitHubSearchCrawler.CHECKPOINT_EVERY)
+        assertEquals(3, GitHubSearchCrawler.RATE_LIMIT_ABORT)
     }
 }
