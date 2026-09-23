@@ -1,4 +1,4 @@
-package com.borasarang.planjupjup.data.db
+package com.borasarang.planjupjup.data.db.migration
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase

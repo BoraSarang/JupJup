@@ -21,6 +21,16 @@ import com.borasarang.macjupjup.data.db.entity.NewsAppRelation
 import com.borasarang.macjupjup.data.db.entity.NewsArticle
 import com.borasarang.macjupjup.data.db.entity.NotificationLog
 import com.borasarang.macjupjup.data.db.entity.VersionHistory
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_1_2
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_10_11
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_2_3
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_3_4
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_4_5
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_5_6
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_6_7
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_7_8
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_8_9
+import com.borasarang.macjupjup.data.db.migration.MIGRATION_9_10
 
 @Database(
     entities = [

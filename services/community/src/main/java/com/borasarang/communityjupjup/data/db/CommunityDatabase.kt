@@ -14,6 +14,12 @@ import com.borasarang.communityjupjup.data.db.entity.CrawlLog
 import com.borasarang.communityjupjup.data.db.entity.CrawlSource
 import com.borasarang.communityjupjup.data.db.entity.NotificationLog
 import com.borasarang.communityjupjup.data.db.entity.SiteBoard
+import com.borasarang.communityjupjup.data.db.migration.MIGRATION_1_2
+import com.borasarang.communityjupjup.data.db.migration.MIGRATION_2_3
+import com.borasarang.communityjupjup.data.db.migration.MIGRATION_3_4
+import com.borasarang.communityjupjup.data.db.migration.MIGRATION_4_5
+import com.borasarang.communityjupjup.data.db.migration.MIGRATION_5_6
+import com.borasarang.communityjupjup.data.db.migration.MIGRATION_6_7
 
 @Database(
     entities = [CommunityPost::class, SiteBoard::class, CrawlSource::class, CrawlLog::class, NotificationLog::class],

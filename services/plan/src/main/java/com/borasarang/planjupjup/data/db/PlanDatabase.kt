@@ -16,6 +16,11 @@ import com.borasarang.planjupjup.data.db.entity.CrawlSource
 import com.borasarang.planjupjup.data.db.entity.NotificationLog
 import com.borasarang.planjupjup.data.db.entity.Plan
 import com.borasarang.planjupjup.data.db.entity.PlanSourceMapping
+import com.borasarang.planjupjup.data.db.migration.MIGRATION_1_2
+import com.borasarang.planjupjup.data.db.migration.MIGRATION_2_3
+import com.borasarang.planjupjup.data.db.migration.MIGRATION_3_4
+import com.borasarang.planjupjup.data.db.migration.MIGRATION_4_5
+import com.borasarang.planjupjup.data.db.migration.MIGRATION_5_6
 
 @Database(
     entities = [Plan::class, PlanSourceMapping::class, CrawlSource::class, CarrierBrand::class, CrawlLog::class, NotificationLog::class],

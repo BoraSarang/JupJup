@@ -17,3 +17,4 @@ keystore.properties
 .dolt/
 *.db
 .beads-credential-key
+.kotlin
