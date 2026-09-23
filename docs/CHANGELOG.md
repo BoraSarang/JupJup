@@ -1,5 +1,15 @@
 # CHANGELOG — JupJup
 
+## 내부 패키지 재그룹 1~4단계 (perf/stability-refactor)
+
+- **1단계** `10b7618`: Room 마이그레이션 `*Migration.kt` → `data/db/migration/` (mac 9·plan 5·community 6, pj 인라인 유지) — `*Database.kt`에 FQN import
+- **2단계** `6d53336`: `*Routes.kt` → `server/routes/` (mac 8·plan 6·community 7·pj 2) — `HttpServerService`·`*ServerJson.kt` 위치 불변, routes에서 확장 함수 import
+- **3단계** `6bcb336`: util 도메인 분리 — mac `category/`·`merge/`·`translate/`, community `category/`·`text/`·`merge/`, common `net/`(NetUtils·NetMeter·NetBudget) · 루트 `Constants`/`DebugLogger`/`TimeUtils`/`Throttler`/`CrawlStats`/`BaseTimeUtils` 유지
+- **4단계**: plan 루트 테스트 7개 → 소스 패키지 미러 (`crawler` 3 + `crawler.carrier` 1 + `util` 2 + `data.repository` 1) — 루트 테스트 0
+- 불변: namespace·applicationId·모듈 구조·리소스 접두사·포트·DataStore 파일명·최상단 패키지·`java` 소스셋 경로
+- 검증: assembleDebug · lintDebug · unit **273/0** (app 6·common 33·community 21·mac 144·plan 64·pj 5)
+
+
 ## 정렬 통일 · README 백필 follow-up (JupJup-dih · JupJup-cej)
 
 - **community/news 최신순 (dih)**: `ORDER BY COALESCE(NULLIF(publishedAt, 0), collectedAt) DESC` — 대상 시간 있으면 그 시간, 없으면 수집 시간 (뉴스 `recentByMain` 동일)
