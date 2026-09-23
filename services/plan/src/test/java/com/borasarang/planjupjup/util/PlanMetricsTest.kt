@@ -1,6 +1,5 @@
-package com.borasarang.planjupjup
+package com.borasarang.planjupjup.util
 
-import com.borasarang.planjupjup.util.PlanMetrics
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

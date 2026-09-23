@@ -1,6 +1,5 @@
-package com.borasarang.planjupjup
+package com.borasarang.planjupjup.crawler.carrier
 
-import com.borasarang.planjupjup.crawler.carrier.KtmMobileCrawler
 import com.borasarang.planjupjup.data.db.entity.CrawlSource
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray

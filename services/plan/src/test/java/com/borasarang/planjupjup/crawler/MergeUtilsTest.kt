@@ -1,6 +1,5 @@
-package com.borasarang.planjupjup
+package com.borasarang.planjupjup.crawler
 
-import com.borasarang.planjupjup.crawler.MergeUtils
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

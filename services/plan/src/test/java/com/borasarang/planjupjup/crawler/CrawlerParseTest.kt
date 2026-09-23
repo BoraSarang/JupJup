@@ -1,4 +1,4 @@
-package com.borasarang.planjupjup
+package com.borasarang.planjupjup.crawler
 
 import com.borasarang.planjupjup.crawler.compare.MoyoCrawler
 import com.borasarang.planjupjup.crawler.compare.MvnohubCrawler

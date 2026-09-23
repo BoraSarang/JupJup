@@ -1,10 +1,8 @@
-package com.borasarang.planjupjup
+package com.borasarang.planjupjup.data.repository
 
 import com.borasarang.planjupjup.data.db.PlanDatabase
 import com.borasarang.planjupjup.data.db.dao.PlanDao
 import com.borasarang.planjupjup.data.db.dao.PlanStatsRow
-import com.borasarang.planjupjup.data.repository.PlanDistribution
-import com.borasarang.planjupjup.data.repository.StatsRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
