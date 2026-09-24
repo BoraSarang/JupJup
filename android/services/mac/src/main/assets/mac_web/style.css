@@ -337,7 +337,8 @@ h1, h2, h3, h4, p { margin: 0; }
 .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); flex: none; animation: pulse 1.6s infinite; }
 .pulse-dot.small { width: 6px; height: 6px; }
 
-.store-cols2 { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; margin-top: 14px; align-items: start; }
+.store-cols2 { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 16px; margin-top: 14px; align-items: start; }
+.store-cols2 > * { min-width: 0; }
 .store-side2 { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 72px; }
 .sfilter-card { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius); padding: 16px 18px; }
 .sfilter-card.dim { background: var(--card); }
@@ -929,6 +930,7 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 @media (max-width: 1200px) {
   .news3, .news3.has-detail { grid-template-columns: 280px minmax(0, 1fr); }
+  .store-cols2 { grid-template-columns: 280px minmax(0, 1fr); }
   .nrail { grid-column: 1 / -1; position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .news3.has-detail .nrail { display: none; }
 }
@@ -942,13 +944,13 @@ h1, h2, h3, h4, p { margin: 0; }
   .cols { grid-template-columns: 1fr; }
   .side { position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .hl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .store-cols2 { grid-template-columns: 1fr; }
-  .store-side2 { position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
 }
 @media (max-width: 760px) {
   .mobilenav { display: flex; }
   .mainnav { display: none; }
   .news3, .news3.has-detail { grid-template-columns: 1fr; }
+  .store-cols2 { grid-template-columns: 1fr; }
+  .store-side2 { position: static; display: grid; grid-template-columns: 1fr; align-items: start; }
   .layout-toggle { margin-left: 0; }
   .newsnav { flex-wrap: wrap; }
   .searchbox input { width: 80px; }
