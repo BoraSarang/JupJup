@@ -646,11 +646,11 @@ h1, h2, h3, h4, p { margin: 0; }
 .app-modal {
   position: fixed;
   inset: 0;
-  margin: auto;
+  margin: 12px auto 0;
   width: min(840px, 94vw);
   max-width: 94vw;
   height: fit-content;
-  max-height: 88vh;
+  max-height: calc(100vh - 24px);
   background: var(--card); color: var(--text);
   border: 1px solid var(--border);
   border-radius: 18px; padding: 0;
@@ -660,7 +660,7 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 .app-modal:not([open]) { display: none !important; }
 .app-modal::backdrop { background: rgba(0, 0, 0, 0.6); }
-.modal-form { display: flex; flex-direction: column; flex: 1; min-height: 0; max-height: 88vh; overflow: hidden; }
+.modal-form { display: flex; flex-direction: column; flex: 1; min-height: 0; max-height: calc(100vh - 24px); overflow: hidden; }
 .modal-head { flex: none; position: relative; background: var(--card); z-index: 2; }
 .modal-hero { display: flex; gap: 14px; padding: 20px 56px 0 20px; align-items: center; }
 .modal-icon { width: 64px; height: 64px; border-radius: 16px; flex: none; }

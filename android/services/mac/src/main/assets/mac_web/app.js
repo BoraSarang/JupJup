@@ -639,6 +639,7 @@
     state.news.sub = '';
     state.news.page = 1;
     state.news.detailId = id;
+    pendingDetailScroll = true;
     if (state.news.layout !== 'B') setNewsLayout('B');
     switchView('news');
     loadNews();
@@ -1721,6 +1722,7 @@
         const mini = ev.target.closest('[data-app]');
         if (mini) { ev.stopPropagation(); openModal(mini.dataset.app); return; }
         state.news.detailId = el.dataset.id;
+        pendingDetailScroll = true;
         if (el.dataset.main && el.dataset.main !== state.news.main) {
           state.news.main = el.dataset.main;
           state.news.sub = '';
@@ -1850,6 +1852,14 @@
   }
 
   let pendingEdge = null;
+  let pendingDetailScroll = false;
+  function scrollToDetail(el) {
+    if (!el) return;
+    const hdr = document.querySelector('.top');
+    const offset = (hdr && hdr.offsetHeight ? hdr.offsetHeight : 0) + 8;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo(0, Math.max(0, top));
+  }
   function goNewsPage(target, edge) {
     const pages = Math.max(1, Math.ceil((state.news.total || 0) / NEWS_PAGE_SIZE));
     if (target < 1 || target > pages) return;
@@ -1866,11 +1876,11 @@
     applyNewsLayout();
     $$('#newsList .ncard').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
     const box = $('newsDetail');
-    if (!silent && box) box.scrollIntoView({ block: 'nearest' });
     // A형에서는 상세가 숨김 → B형 강제 전환 후 목록 로드 (재진입은 B라 무한루프 없음)
     if (state.news.layout === 'A') {
       setNewsLayout('B');
       applyNewsLayout();
+      if (!silent) pendingDetailScroll = true;
       loadNews();
       return;
     }
@@ -1878,6 +1888,10 @@
       if (state.news.detailId !== id) return;
       renderNewsDetail(n);
       renderRailApps(n);
+      if (!silent || pendingDetailScroll) {
+        pendingDetailScroll = false;
+        scrollToDetail(box);
+      }
     }).catch((e) => {
       console.error('[뉴스] 상세 실패', e);
       box.innerHTML = '<div class="empty-state"><p class="empty-state-title">불러오기 실패</p></div>';
@@ -2209,12 +2223,13 @@
     if (!state.community.detailId && !cmPendingEdge) {
       state.community.detailId = posts[0].id;
     }
+    const fromEdge = !!cmPendingEdge;
     if (cmPendingEdge) {
       const pick = cmPendingEdge === 'first' ? state.community.listIds[0] : state.community.listIds[state.community.listIds.length - 1];
       cmPendingEdge = null;
       if (pick) state.community.detailId = pick;
     }
-    openCommunityDetail(state.community.detailId, true);
+    openCommunityDetail(state.community.detailId, !fromEdge);
     renderCommunityPagination(d);
   }
 
@@ -2284,7 +2299,7 @@
           else goCommunityPage(state.community.page + 1, 'first');
         };
       });
-      if (!skipListHighlight) window.scrollTo(0, 0);
+      if (!skipListHighlight) scrollToDetail(det);
     }).catch(e => {
       console.error('[커뮤니티] 상세 실패', e);
       det.innerHTML = '<p class="tiny-note">상세를 불러오지 못했습니다</p>';
