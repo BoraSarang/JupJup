@@ -1681,7 +1681,10 @@
     const hybrid = state.news.layout === 'A';
     const h = $('newsHybrid'), n3 = $('news3');
     if (h) h.hidden = !hybrid;
-    if (n3) n3.hidden = hybrid;
+    if (n3) {
+      n3.hidden = hybrid;
+      n3.classList.toggle('has-detail', !!state.news.detailId);
+    }
     $$('#layoutToggle .ltbtn').forEach(b => b.classList.toggle('active', b.dataset.layout === state.news.layout));
   }
   function loadNews() {
@@ -1701,24 +1704,9 @@
       if (seq !== newsSeq) return;
       if (main) renderNewsChrome(main);
       if (state.news.layout === 'A') {
-        if (main) renderCuration(main);
         if (list) renderHybridList(list);
       } else if (list) renderNewsList(list);
     });
-  }
-
-  /* R49: A형 — 큐레이션 8앱 상단 그리드 */
-  function renderCuration(d) {
-    const apps = (d.updatedApps || []).slice(0, 8);
-    $('curCount').textContent = String(apps.length || 8);
-    $('curationGrid').innerHTML = apps.map(a =>
-      '<button type="button" class="curcard" data-id="' + esc(a.id) + '" role="listitem">' +
-      appIcon(a, 'hicon') +
-      '<b>' + esc(a.name) + '</b>' +
-      '<span class="ver">' + esc([verText(a), a.category].filter(Boolean).join(' · ')) + '</span>' +
-      priceText(a) + '</button>'
-    ).join('') || '<div class="empty-state">큐레이션 없음</div>';
-    $$('#curationGrid .curcard').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
   }
 
   /* R49: A형 — 뉴스 행 + 인라인 관련앱 미니카드 */
@@ -1896,6 +1884,7 @@
 
   function openNewsDetail(id, silent) {
     state.news.detailId = id;
+    applyNewsLayout();
     $$('#newsList .ncard').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
     const box = $('newsDetail');
     if (!silent && box) box.scrollIntoView({ block: 'nearest' });
