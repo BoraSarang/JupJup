@@ -181,3 +181,5 @@ enum class Service { MAC, PLAN, PROMPTJOURNAL }
 - AI 토큰은 커밋·로그에 절대 노출 금지
 - FGS `foregroundServiceType="dataSync"` — app 매니페스트에서 `tools:node="merge"`로 주입
 - Connected 테스트 시 DB 초기화됨 (재수집으로 복구)
+
+> **상태: 서비스 삭제됨 (2026-09).** 아래 내용은 역사 기록. 재사용 조각은 `:services:common` 승격됨.

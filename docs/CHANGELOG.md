@@ -1,5 +1,13 @@
 # CHANGELOG — JupJup
 
+## pj·cm 서비스 삭제 · 공통 승격 (perf/stability-refactor)
+
+- **삭제 대상**: `:services:promptjournal`(3030)·`:services:community`(3040) 모듈 전체 + app 셸 언와이어(Service enum 2종, 세그먼트 2열, 대시보드 2카드, about 행/토큰, 문자열) + `settings.gradle.kts` include·`app` 의존성·`build_and_run.sh` 테스트 타깃 제거
+- **common 승격**: `CrawlHttp`(슈퍼셋 CrawlHttpClient)·`TimeParser`·`SelectorConfig`·`PriceParser`·`UrlCanonical`·`Texts`·`UrlGuard`·`AiRetry`·`GroundingCollector`·`ExaKeyStore`·`AiAdminRoutes`·`SearchKeyRoutes`·`millisUntilTime` — mac/plan facade 교체, mac CommunityBoardCrawler는 common 타입 사용(CommunityTimeParser/SelectorConfig 삭제)
+- **보존**: `common/ai`·`common/search`(향후 AI 인프라), 맥 포털 `crawler/community`(mac community 메뉴 — `:services:community`와 무관), plans 히스토리·CHANGELOG 과거 항목
+- **문서**: README(한/영)·AGENTS.local·ENDPOINTS·DESIGN 현행화, `error_message_ko.json`에서 pj 전용 `E-AND-REPORT-0802~0805` 제거
+- **검증**: assembleDebug · unit(app+common+mac+plan) · lintDebug **BUILD SUCCESSFUL**
+
 ## 저장소 재구조: Gradle 루트 → `android/` (perf/stability-refactor)
 
 - **이동**: `app`·`services`·`build-logic`·`settings.gradle.kts`·`build.gradle.kts`·`gradle.properties`·`gradle/`·`gradlew`·`local.properties` → `android/` (410 renames, `local.properties` untracked 순수 mv)

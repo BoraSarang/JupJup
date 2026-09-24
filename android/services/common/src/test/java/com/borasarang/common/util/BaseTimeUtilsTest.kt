@@ -44,4 +44,12 @@ class BaseTimeUtilsTest {
         assertTrue(midnight in now - 86_400_000L..now)
         assertTrue(tu.millisUntilNextHour(9) in 1..86_400_000L)
     }
+
+    @Test
+    fun `millisUntilTime_HHMM`() {
+        val d = tu.millisUntilTime("09:30")
+        assertTrue(d in 0..86_400_000L)
+        val bad = tu.millisUntilTime("bad", fallbackMillis = 3_600_000L)
+        assertEquals(3_600_000L, bad)
+    }
 }

@@ -1,5 +1,7 @@
 package com.borasarang.macjupjup.crawler.community
 
+import com.borasarang.common.crawl.SelectorConfig
+import com.borasarang.common.crawl.TimeParser
 import com.borasarang.macjupjup.data.db.MacDatabase
 import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.util.Constants
@@ -11,7 +13,7 @@ import org.junit.Test
 
 class CommunityBoardCrawlerTest {
 
-    private val damoangCfg = CommunitySelectorConfig.parse(
+    private val damoangCfg = SelectorConfig.parse(
         """{"main":"apple","listRow":"a.post-row","title":".post-title","author":".post-meta-text","time":".post-meta-text","detailContent":".prose"}""",
     )
 
@@ -32,7 +34,7 @@ class CommunityBoardCrawlerTest {
         </body></html>
     """.trimIndent()
 
-    private val clienCfg = CommunitySelectorConfig.parse(
+    private val clienCfg = SelectorConfig.parse(
         """{"main":"mac","listRow":"div.list_item","title":"a.list_subject, .list_title a","author":".nickname","time":".list_time","excludeRow":".notice","detailContent":".post_content article","comments":".list_reply .line"}""",
     )
 
@@ -66,7 +68,7 @@ class CommunityBoardCrawlerTest {
         selectorConfigJson = null,
     )
 
-    private fun newCrawler(src: CrawlSource, cfg: CommunitySelectorConfig): CommunityBoardCrawler =
+    private fun newCrawler(src: CrawlSource, cfg: SelectorConfig): CommunityBoardCrawler =
         CommunityBoardCrawler(src, mockk<MacDatabase>(relaxed = true), cfg)
 
     @Test
@@ -123,7 +125,7 @@ class CommunityBoardCrawlerTest {
     @Test
     fun `시간_파서_HHMM`() {
         val now = System.currentTimeMillis()
-        val ts = CommunityTimeParser.parse("08:35")
+        val ts = TimeParser.parse("08:35")
         assertNotNull(ts)
         assertTrue(ts!! <= now)
         assertTrue(now - ts < 86_400_000L + 3_600_000L)
@@ -132,7 +134,7 @@ class CommunityBoardCrawlerTest {
     @Test
     fun `시간_파서_상대`() {
         val now = System.currentTimeMillis()
-        val ts = CommunityTimeParser.parse("5분 전")
+        val ts = TimeParser.parse("5분 전")
         assertNotNull(ts)
         assertTrue(now - ts!! in 0..6 * 60_000L)
     }

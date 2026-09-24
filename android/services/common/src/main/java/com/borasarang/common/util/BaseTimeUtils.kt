@@ -70,6 +70,34 @@ open class BaseTimeUtils {
         return next.timeInMillis - now.timeInMillis
     }
 
+    /**
+     * HH:mm 형식까지의 지연 밀리초. 이미 지났으면 다음 날 같은 시각.
+     * 파싱 실패 시 [fallbackMillis] (기본 1시간).
+     */
+    fun millisUntilTime(timeValue: String, fallbackMillis: Long = java.util.concurrent.TimeUnit.HOURS.toMillis(1)): Long {
+        return try {
+            val parts = timeValue.split(":")
+            val hour = parts[0].toInt()
+            val minute = parts[1].toInt()
+
+            val now = java.util.Calendar.getInstance()
+            val target = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, hour)
+                set(java.util.Calendar.MINUTE, minute)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+
+            if (target.before(now)) {
+                target.add(java.util.Calendar.DAY_OF_MONTH, 1)
+            }
+
+            target.timeInMillis - now.timeInMillis
+        } catch (_: Exception) {
+            fallbackMillis
+        }
+    }
+
     /** 60→"1시간마다", 1440→"24시간마다", 10080→"주 1회", 43200→"월 1회" (plan은 재정의) */
     open fun formatInterval(minutes: Int): String {
         return when {

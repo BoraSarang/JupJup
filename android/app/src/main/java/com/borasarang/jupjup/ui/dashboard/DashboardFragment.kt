@@ -18,7 +18,7 @@ import com.borasarang.jupjup.ui.nav.Service
 import com.borasarang.macjupjup.util.DebugLogger as MacDebugLogger
 import kotlinx.coroutines.launch
 /**
- * 줍줍 시리즈 대시보드 — 네 서비스를 카드로 병렬 표시.
+ * 줍줍 시리즈 대시보드 — 서비스 카드를 병렬 표시.
  *
  * 각 카드: 실행 상태(도트)·접속 주소·통계 3개·[지금 수집][수집 중지/재개][서버 시작/중지].
  */
@@ -62,7 +62,6 @@ class DashboardFragment : Fragment() {
         if (isAdded) viewModel.refresh()
     }
 
-    /** 맥줍줍 카드 액션 */
     private fun bindActions() {
         binding.dashboardMacBtnCrawl.setOnClickListener {
             if (_binding?.dashboardMacBtnToggle?.isEnabled != true) return@setOnClickListener
@@ -85,36 +84,12 @@ class DashboardFragment : Fragment() {
         binding.dashboardPlanBtnServer.setOnClickListener {
             viewModel.toggleServer(Service.PLAN)
         }
-
-        binding.dashboardPjBtnCrawl.setOnClickListener {
-            if (_binding?.dashboardPjBtnToggle?.isEnabled != true) return@setOnClickListener
-            viewModel.triggerCrawl(Service.PROMPTJOURNAL)
-        }
-        binding.dashboardPjBtnToggle.setOnClickListener {
-            viewModel.toggleCrawl(Service.PROMPTJOURNAL)
-        }
-        binding.dashboardPjBtnServer.setOnClickListener {
-            viewModel.toggleServer(Service.PROMPTJOURNAL)
-        }
-
-        binding.dashboardCmBtnCrawl.setOnClickListener {
-            if (_binding?.dashboardCmBtnToggle?.isEnabled != true) return@setOnClickListener
-            viewModel.triggerCrawl(Service.COMMUNITY)
-        }
-        binding.dashboardCmBtnToggle.setOnClickListener {
-            viewModel.toggleCrawl(Service.COMMUNITY)
-        }
-        binding.dashboardCmBtnServer.setOnClickListener {
-            viewModel.toggleServer(Service.COMMUNITY)
-        }
     }
 
     private fun render(state: DashboardUiState) {
         applyActiveHighlight()
         renderMac(state.mac)
         renderPlan(state.plan)
-        renderPj(state.pj)
-        renderCm(state.cm)
     }
 
     /** 관리 토큰 표시 + 탭하여 복사 (R48, 웹 관리 입력용) */
@@ -142,8 +117,6 @@ class DashboardFragment : Fragment() {
         if (!isAdded) return
         val macActive = activeService == Service.MAC
         val planActive = activeService == Service.PLAN
-        val pjActive = activeService == Service.PROMPTJOURNAL
-        val cmActive = activeService == Service.COMMUNITY
         val strokePx = (2 * resources.displayMetrics.density).toInt()
         val primary = com.google.android.material.color.MaterialColors.getColor(
             requireContext(),
@@ -156,12 +129,6 @@ class DashboardFragment : Fragment() {
         b.dashboardPlanCard.strokeWidth = if (planActive) strokePx else 0
         b.dashboardPlanCard.strokeColor = if (planActive) primary else android.graphics.Color.TRANSPARENT
         b.dashboardPlanActiveBadge.visibility = if (planActive) View.VISIBLE else View.GONE
-        b.dashboardPjCard.strokeWidth = if (pjActive) strokePx else 0
-        b.dashboardPjCard.strokeColor = if (pjActive) primary else android.graphics.Color.TRANSPARENT
-        b.dashboardPjActiveBadge.visibility = if (pjActive) View.VISIBLE else View.GONE
-        b.dashboardCmCard.strokeWidth = if (cmActive) strokePx else 0
-        b.dashboardCmCard.strokeColor = if (cmActive) primary else android.graphics.Color.TRANSPARENT
-        b.dashboardCmActiveBadge.visibility = if (cmActive) View.VISIBLE else View.GONE
     }
 
     private fun renderMac(s: DashboardServiceUi) {
@@ -227,74 +194,6 @@ class DashboardFragment : Fragment() {
         binding.dashboardPlanBtnToggle.isEnabled = !s.isCrawling
 
         binding.dashboardPlanBtnServer.text =
-            getString(if (s.isServerRunning) R.string.dashboard_btn_stop_server else R.string.dashboard_btn_start_server)
-    }
-
-    private fun renderPj(s: DashboardServiceUi) {
-        binding.dashboardPjDot.backgroundTintList = ContextCompat.getColorStateList(
-            requireContext(),
-            if (s.isServerRunning) com.borasarang.promptjournaljupjup.R.color.pj_status_success
-            else com.borasarang.promptjournaljupjup.R.color.pj_status_error,
-        )
-        binding.dashboardPjStatus.text =
-            if (s.isServerRunning) getString(R.string.dashboard_status_running)
-            else getString(R.string.dashboard_status_stopped)
-
-        binding.dashboardPjAddress.text =
-            s.address.ifBlank { getString(R.string.dashboard_address_placeholder) }
-
-        binding.dashboardPjStatValue1.text = s.statValue1.toString()
-        binding.dashboardPjStatValue2.text = s.statValue2.toString()
-        binding.dashboardPjStatValue3.text =
-            listOf(
-                s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) },
-                s.netLabel.takeIf { it.isNotBlank() },
-            ).filterNotNull().joinToString("\n")
-
-        bindToken(binding.dashboardPjToken, s.adminToken)
-        binding.dashboardPjBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
-        binding.dashboardPjBtnCrawl.text =
-            getString(if (s.isCrawling) R.string.dashboard_pj_btn_running else R.string.dashboard_pj_btn_run_now)
-
-        binding.dashboardPjBtnToggle.text =
-            getString(if (s.crawlEnabled) R.string.dashboard_pj_btn_disable else R.string.dashboard_pj_btn_enable)
-        binding.dashboardPjBtnToggle.isEnabled = !s.isCrawling
-
-        binding.dashboardPjBtnServer.text =
-            getString(if (s.isServerRunning) R.string.dashboard_pj_btn_stop_server else R.string.dashboard_pj_btn_start_server)
-    }
-
-    private fun renderCm(s: DashboardServiceUi) {
-        binding.dashboardCmDot.backgroundTintList = ContextCompat.getColorStateList(
-            requireContext(),
-            if (s.isServerRunning) com.borasarang.communityjupjup.R.color.cm_status_success
-            else com.borasarang.communityjupjup.R.color.cm_status_error,
-        )
-        binding.dashboardCmStatus.text =
-            if (s.isServerRunning) getString(R.string.dashboard_status_running)
-            else getString(R.string.dashboard_status_stopped)
-
-        binding.dashboardCmAddress.text =
-            s.address.ifBlank { getString(R.string.dashboard_address_placeholder) }
-
-        binding.dashboardCmStatValue1.text = s.statValue1.toString()
-        binding.dashboardCmStatValue2.text = s.statValue2.toString()
-        binding.dashboardCmStatValue3.text =
-            listOf(
-                s.lastCollectedLabel.ifBlank { getString(R.string.dashboard_stat_zero) },
-                s.netLabel.takeIf { it.isNotBlank() },
-            ).filterNotNull().joinToString("\n")
-
-        bindToken(binding.dashboardCmToken, s.adminToken)
-        binding.dashboardCmBtnCrawl.isEnabled = s.crawlEnabled && !s.isCrawling
-        binding.dashboardCmBtnCrawl.text =
-            getString(if (s.isCrawling) R.string.dashboard_btn_crawling else R.string.dashboard_btn_crawl_now)
-
-        binding.dashboardCmBtnToggle.text =
-            getString(if (s.crawlEnabled) R.string.dashboard_btn_pause else R.string.dashboard_btn_resume)
-        binding.dashboardCmBtnToggle.isEnabled = !s.isCrawling
-
-        binding.dashboardCmBtnServer.text =
             getString(if (s.isServerRunning) R.string.dashboard_btn_stop_server else R.string.dashboard_btn_start_server)
     }
 

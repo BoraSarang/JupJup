@@ -34,3 +34,5 @@
 - 단위 7/7, 빌드·lint SUCCESS
 - 실기: providers = OR 6·GAS 3·ZEN 8 (NIM 소멸), nemotron enabled, 프롬프트 2건 값 유지
 - 잔여: Zen 키 등록 후 동기화·실행 1건 (사용자 키 필요)
+
+> **상태: 서비스 삭제됨 (2026-09).** 아래 내용은 역사 기록. 재사용 조각은 `:services:common` 승격됨.

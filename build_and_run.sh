@@ -39,8 +39,8 @@ case "$CMD" in
         echo "⚠️  connected 테스트는 기기 앱을 재설치해 DB가 초기화됩니다 (재수집으로 복구)"
         ./gradlew test connectedAndroidTest 2>&1 | tail -8
     else
-        echo "🧪 단위 테스트 (app + services 공통/요금/맥/저널/커뮤니티)…"
-        ./gradlew :app:testDebugUnitTest :services:common:testDebugUnitTest :services:mac:testDebugUnitTest :services:plan:testDebugUnitTest :services:promptjournal:testDebugUnitTest :services:community:testDebugUnitTest 2>&1 | tail -8
+        echo "🧪 단위 테스트 (app + services 공통/요금/맥)…"
+        ./gradlew :app:testDebugUnitTest :services:common:testDebugUnitTest :services:mac:testDebugUnitTest :services:plan:testDebugUnitTest 2>&1 | tail -8
     fi
     ;;
   lint)
