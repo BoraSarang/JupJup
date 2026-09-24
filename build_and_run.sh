@@ -5,6 +5,8 @@ set -e
 set -o pipefail
 CMD="${1:-build}"
 SCOPE="${2:-unit}"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT/android"
 
 if [ -d "/Applications/Android Studio.app/Contents/jbr/Contents/Home" ]; then
     export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
@@ -42,14 +44,14 @@ case "$CMD" in
     fi
     ;;
   lint)
+    echo "🔎 lintDebug…"
     ./gradlew lintDebug 2>&1 | tail -8
     ;;
   clean)
+    echo "🧹 clean…"
     ./gradlew clean
-    echo "🧹 클린 완료"
     ;;
   *)
-    echo "usage: ./build_and_run.sh build|test [unit|full]|lint|clean"
-    exit 1
+    echo "usage: $0 build|test|lint|clean [unit|full|smoke]"; exit 1
     ;;
 esac

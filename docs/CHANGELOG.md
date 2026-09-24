@@ -1,5 +1,24 @@
 # CHANGELOG — JupJup
 
+## 저장소 재구조: Gradle 루트 → `android/` (perf/stability-refactor)
+
+- **이동**: `app`·`services`·`build-logic`·`settings.gradle.kts`·`build.gradle.kts`·`gradle.properties`·`gradle/`·`gradlew`·`local.properties` → `android/` (410 renames, `local.properties` untracked 순수 mv)
+- **루트 유지**: `docs/`, `README.md`·`README.en.md`, `AGENTS.local.md`, `error_message_ko.json`, `.github/`, `.agent/`, `build_and_run.sh`, `.gitignore`
+- **경로 수정**: `build_and_run.sh` → `cd "$ROOT/android"` · CI `working-directory: android` · release APK `android/app/build/outputs/...` · README/AGENTS.local 빌드·구조·`libs.versions.toml` 경로
+- **불변**: `:app`/`:services:*` include·module path, namespace·applicationId, 모듈 내부 relative 경로 (build-logic 카탈로그 `../gradle/libs.versions.toml` 포함)
+- **검증**: assembleDebug · lintDebug · unit **273/0** · `./build_and_run.sh build|test|lint` 전 경로 통과 · 루트 잔여 빈 `build-logic`/`.gradle` 제거
+- 주의: lint 첫 실행은 이전 `build/intermediates` stale로 `lintAnalyzeDebugUnitTest` 1회 실패 — 재실행 통과 (소스 무관)
+
+## 내부 패키지 재그룹 1~4단계 (perf/stability-refactor)
+
+- **1단계** `10b7618`: Room 마이그레이션 `*Migration.kt` → `data/db/migration/` (mac 9·plan 5·community 6, pj 인라인 유지) — `*Database.kt`에 FQN import
+- **2단계** `6d53336`: `*Routes.kt` → `server/routes/` (mac 8·plan 6·community 7·pj 2) — `HttpServerService`·`*ServerJson.kt` 위치 불변, routes에서 확장 함수 import
+- **3단계** `6bcb336`: util 도메인 분리 — mac `category/`·`merge/`·`translate/`, community `category/`·`text/`·`merge/`, common `net/`(NetUtils·NetMeter·NetBudget) · 루트 `Constants`/`DebugLogger`/`TimeUtils`/`Throttler`/`CrawlStats`/`BaseTimeUtils` 유지
+- **4단계**: plan 루트 테스트 7개 → 소스 패키지 미러 (`crawler` 3 + `crawler.carrier` 1 + `util` 2 + `data.repository` 1) — 루트 테스트 0
+- 불변: namespace·applicationId·모듈 구조·리소스 접두사·포트·DataStore 파일명·최상단 패키지·`java` 소스셋 경로
+- 검증: assembleDebug · lintDebug · unit **273/0** (app 6·common 33·community 21·mac 144·plan 64·pj 5)
+
+
 ## 정렬 통일 · README 백필 follow-up (JupJup-dih · JupJup-cej)
 
 - **community/news 최신순 (dih)**: `ORDER BY COALESCE(NULLIF(publishedAt, 0), collectedAt) DESC` — 대상 시간 있으면 그 시간, 없으면 수집 시간 (뉴스 `recentByMain` 동일)
