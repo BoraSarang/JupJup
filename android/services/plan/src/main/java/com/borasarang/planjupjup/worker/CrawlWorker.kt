@@ -218,14 +218,19 @@ class CrawlWorker(
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setOngoing(true)
             .build()
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            ForegroundInfo(
+        // dataSync는 Android 15+ 제한 시간(6h/24h) 대상 → API 34+는 specialUse로 회피
+        return when {
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> ForegroundInfo(
+                Constants.NOTIFICATION_ID_CRAWL_BASE + sourceName.hashCode() % 100,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+            )
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q -> ForegroundInfo(
                 Constants.NOTIFICATION_ID_CRAWL_BASE + sourceName.hashCode() % 100,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
             )
-        } else {
-            ForegroundInfo(
+            else -> ForegroundInfo(
                 Constants.NOTIFICATION_ID_CRAWL_BASE + sourceName.hashCode() % 100,
                 notification,
             )
