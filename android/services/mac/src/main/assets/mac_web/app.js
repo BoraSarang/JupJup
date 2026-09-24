@@ -2191,14 +2191,14 @@
     const posts = d.posts || [];
     state.community.total = d.total || 0;
     state.community.listIds = posts.map(p => p.id);
-    if (state.community.detailId && state.community.listIds.indexOf(state.community.detailId) < 0) {
-      state.community.detailId = null;
-    }
     if (!posts.length) {
       box.innerHTML = '<div class="mini-empty">글이 없습니다</div>';
       if (empty) empty.hidden = (d.total || 0) > 0;
-      const det = $('communityDetail');
-      if (det) det.innerHTML = '';
+      if (state.community.detailId) openCommunityDetail(state.community.detailId, true);
+      else {
+        const det = $('communityDetail');
+        if (det) det.innerHTML = '';
+      }
       return;
     }
     if (empty) empty.hidden = true;
@@ -2331,19 +2331,6 @@
       state.community.detailId = null;
       loadCommunity();
     }; });
-    const cmQ = $('communityQ');
-    if (cmQ) {
-      let cmQTimer = null;
-      cmQ.oninput = () => {
-        clearTimeout(cmQTimer);
-        cmQTimer = setTimeout(() => {
-          state.community.q = cmQ.value.trim();
-          state.community.page = 1;
-          state.community.detailId = null;
-          loadCommunity();
-        }, 350);
-      };
-    }
     // 뉴스 TopTab
     $$('#topTabs .toptab').forEach(b => { b.onclick = () => switchNewsTop(b.dataset.top); });
     // 뉴스 main 탭
@@ -2380,7 +2367,7 @@
         }).catch((e) => { console.error('[대시보드] 더보기 실패', e); });
       });
     };
-    // 통합 검색 (앱 + 뉴스 → 드롭다운)
+    // 통합 검색 (앱 + 게임 + 뉴스 + 커뮤니티 → 드롭다운)
     let searchTimer = null;
     let searchSeq = 0;
     const searchInput = $('globalSearch');
@@ -2395,11 +2382,22 @@
       const ch = (a.name || '?').trim().charAt(0).toUpperCase();
       return '<span class="sd-icon text" style="background:' + iconBg(a.name) + '">' + esc(ch) + '</span>';
     }
-    function renderSearchDrop(q, apps, news) {
+    function openCommunitySearchHit(id, main, q) {
+      state.community.main = main || 'all';
+      state.community.page = 1;
+      state.community.q = q || '';
+      state.community.sourceId = '';
+      state.community.detailId = id;
+      switchView('community');
+      openCommunityDetail(id);
+    }
+    function renderSearchDrop(q, apps, news, games, posts) {
       if (!q) { closeSearchDrop(); return; }
-      const appRows = (apps || []).slice(0, 6);
+      const appRows = (apps || []).filter(a => !isGameApp(a)).slice(0, 6);
+      const gameRows = (games || []).slice(0, 6);
       const newsRows = (news || []).slice(0, 6);
-      if (!appRows.length && !newsRows.length) {
+      const postRows = (posts || []).slice(0, 6);
+      if (!appRows.length && !gameRows.length && !newsRows.length && !postRows.length) {
         searchDrop.innerHTML = '<div class="sd-empty">“' + esc(q) + '” 결과 없음</div>';
         searchDrop.hidden = false;
         return;
@@ -2413,6 +2411,14 @@
           '<span class="sd-sub">' + esc(a.category || '') + '</span></button>'
         ).join('');
       }
+      if (gameRows.length) {
+        html += '<div class="sd-head">게임</div>' + gameRows.map(g =>
+          '<button type="button" class="sd-item" data-kind="game" data-id="' + esc(g.id) + '" role="option">' +
+          searchIconHtml(g) +
+          '<span class="sd-title">' + esc(g.name) + '</span>' +
+          '<span class="sd-sub">' + esc((g.store || 'mac').toUpperCase()) + '</span></button>'
+        ).join('');
+      }
       if (newsRows.length) {
         html += '<div class="sd-head">뉴스</div>' + newsRows.map(n =>
           '<button type="button" class="sd-item" data-kind="news" data-id="' + esc(n.id) + '" data-main="' + esc(n.main || 'mac') + '" role="option">' +
@@ -2421,21 +2427,31 @@
           '<span class="sd-sub">' + esc(n.main || '') + '</span></button>'
         ).join('');
       }
+      if (postRows.length) {
+        html += '<div class="sd-head">커뮤니티</div>' + postRows.map(p =>
+          '<button type="button" class="sd-item" data-kind="community" data-id="' + esc(p.id) + '" data-main="' + esc(p.main || 'all') + '" role="option">' +
+          '<span class="sd-icon text" style="background:#333">' + esc(logoText(p.sourceName)) + '</span>' +
+          '<span class="sd-title">' + esc(p.title) + '</span>' +
+          '<span class="sd-sub">' + esc(p.sourceName || '') + '</span></button>'
+        ).join('');
+      }
       searchDrop.innerHTML = html;
       searchDrop.hidden = false;
       $$('.sd-item', searchDrop).forEach(btn => {
         btn.onclick = () => {
           closeSearchDrop();
           searchInput.blur();
-          if (btn.dataset.kind === 'app') openModal(btn.dataset.id);
-          else openDashboardNews(btn.dataset.main, btn.dataset.id);
+          const kind = btn.dataset.kind;
+          if (kind === 'app' || kind === 'game') openModal(btn.dataset.id);
+          else if (kind === 'news') openDashboardNews(btn.dataset.main, btn.dataset.id);
+          else if (kind === 'community') openCommunitySearchHit(btn.dataset.id, btn.dataset.main, q);
         };
       });
     }
     function runUnifiedSearch(q) {
       const seq = ++searchSeq;
       if (!q) {
-        searchDrop.innerHTML = '<div class="sd-empty">앱·뉴스를 함께 검색합니다</div>';
+        searchDrop.innerHTML = '<div class="sd-empty">앱·게임·뉴스·커뮤니티를 함께 검색합니다</div>';
         searchDrop.hidden = false;
         return;
       }
@@ -2443,12 +2459,14 @@
       searchDrop.hidden = false;
       Promise.all([
         api('/api/apps?q=' + encodeURIComponent(q) + '&page=1&pageSize=6&sort=newest').catch(() => null),
-        api('/api/news?q=' + encodeURIComponent(q) + '&page=1&pageSize=6').catch(() => null)
-      ]).then(([ad, nd]) => {
+        api('/api/news?q=' + encodeURIComponent(q) + '&page=1&pageSize=6').catch(() => null),
+        api('/api/games?q=' + encodeURIComponent(q) + '&page=1&pageSize=6&sort=newest').catch(() => null),
+        api('/api/community?q=' + encodeURIComponent(q) + '&page=1&pageSize=6').catch(() => null)
+      ]).then(([ad, nd, gd, cd]) => {
         if (seq !== searchSeq) return;
         const cur = searchInput.value.trim();
         if (cur !== q) return;
-        renderSearchDrop(q, ad && ad.apps, nd && nd.news);
+        renderSearchDrop(q, ad && ad.apps, nd && nd.news, gd && gd.games, cd && cd.posts);
       });
     }
     searchInput.addEventListener('input', e => {
