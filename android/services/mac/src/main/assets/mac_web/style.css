@@ -291,14 +291,6 @@ h1, h2, h3, h4, p { margin: 0; }
 .tagcloud { display: flex; flex-wrap: wrap; gap: 7px; }
 .tag { font-size: 0.8571rem; color: var(--muted); border: 1px solid var(--border); background: var(--card2); border-radius: 999px; padding: 4px 11px; }
 .tag .mono { color: var(--faint); margin-left: 3px; }
-.salerow { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 8px 0; border-top: 1px solid var(--border-soft); }
-.salerow:first-of-type { border-top: none; }
-.salerow .hicon { width: 40px; height: 40px; font-size: 1.286rem; }
-.salerow b { display: block; font-size: 0.9286rem; }
-.salerow small { font-size: 0.7857rem; color: var(--faint); }
-.saleprice { margin-left: auto; text-align: right; font-size: 0.8571rem; }
-.saleprice s { display: block; color: var(--faint); font-size: 0.7857rem; }
-.saleprice .now { color: var(--green); font-weight: 700; }
 .cattiles { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .cattile {
   display: flex; gap: 9px; align-items: center; text-align: left;
@@ -341,7 +333,6 @@ h1, h2, h3, h4, p { margin: 0; }
 .store-cols2 > * { min-width: 0; }
 .store-side2 { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 72px; }
 .sfilter-card { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius); padding: 16px 18px; }
-.sfilter-card.dim { background: var(--card); }
 .sfilter-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .sfilter-head .mono { color: var(--muted); letter-spacing: 0.5px; }
 .sfilter-head .pulse-dot { margin-left: auto; }
@@ -370,17 +361,6 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 .news-srcbar { margin-bottom: 14px; }
 .cm-list-col > .sfilter-card { margin-bottom: 12px; }
-#todayPicks { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-.sfilter-card.dim { padding-top: 12px; padding-bottom: 12px; }
-.pickrow {
-  display: flex; gap: 10px; align-items: center; width: 100%; text-align: left;
-  border: 1px solid var(--border-soft); background: var(--bg);
-  border-radius: 11px; padding: 8px 10px;
-}
-.pickrow:hover { border-color: var(--faint); }
-.pickrow .hicon { width: 30px; height: 30px; border-radius: 9px; font-size: 1.071rem; flex: none; }
-.pickrow b { display: block; font-size: 0.8571rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pickrow small { display: block; font-size: 0.7143rem; color: var(--faint); font-family: var(--mono); }
 
 .store-main2 { min-width: 0; }
 .store-panel { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius); overflow: hidden; }
@@ -407,7 +387,6 @@ h1, h2, h3, h4, p { margin: 0; }
 .ac-badges { display: flex; gap: 4px; }
 .ac-badge { font-family: var(--mono); font-size: 0.5714rem; font-weight: 700; border-radius: 999px; padding: 2px 7px; letter-spacing: 0.4px; }
 .ac-badge.new { background: var(--red); color: #fff; }
-.ac-badge.sale { background: var(--lime); color: #000; }
 .ac-badge.upd { background: #fff; color: #000; }
 .app-name { font-size: 1rem; font-weight: 600; letter-spacing: -0.2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ac-sub { display: flex; align-items: center; gap: 6px; margin-top: 5px; min-width: 0; }
@@ -423,7 +402,7 @@ h1, h2, h3, h4, p { margin: 0; }
   overflow-wrap: anywhere; word-break: break-word;
   min-height: 34px;
 }
-.ac-foot { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; }
+.ac-foot { display: flex; align-items: baseline; gap: 8px; margin-top: auto; padding-top: 12px; }
 .ac-price { font-size: 0.9286rem; font-weight: 600; color: var(--text); }
 .ac-price.free { color: var(--muted); font-weight: 500; }
 .ac-foot .mono { color: var(--faint); margin-left: auto; }
@@ -868,7 +847,8 @@ h1, h2, h3, h4, p { margin: 0; }
   transition: border-color 130ms;
 }
 .game-card:hover { border-color: var(--faint); }
-.g-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
+.g-top { position: relative; margin-bottom: 11px; }
+.g-top .ac-badges { position: absolute; top: 8px; right: 8px; z-index: 1; }
 .g-thumb {
   width: 100%; max-width: 231px; aspect-ratio: 231 / 87;
   border-radius: 10px; object-fit: cover; background: var(--card);
@@ -964,7 +944,6 @@ h1, h2, h3, h4, p { margin: 0; }
   .app-card { padding: 13px; }
   .storenav { flex-wrap: nowrap; }
   .store-live { display: none; }
-  .pickrow .hicon { width: 26px; height: 26px; }
   .brand-en { display: none; }
   .brand-name { white-space: nowrap; }
   .top-inner { gap: 8px; }

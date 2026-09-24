@@ -694,20 +694,6 @@
       };
     });
 
-    // 세일 중인 앱 — App 엔티티에 세일 필드 없음(R50 확인): 유료+최근 갱신 근사 셀렉션 유지
-    const renderSale = (paid) => {
-      $('sideSaleCount').textContent = paid.length + '개';
-      $('sideSale').innerHTML = paid.map(a =>
-        '<button type="button" class="salerow" data-id="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
-        '<span><b>' + esc(a.name) + '</b><small>' + esc(a.category || '') + ' · ' + fmtTime(a.releaseDate || a.lastUpdatedAt) + '</small></span>' +
-        '<span class="saleprice">' + priceText(a) + '</span></button>'
-      ).join('') || '<div class="mini-empty">세일 앱 없음</div>';
-      $$('#sideSale .salerow').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
-    };
-    const paid = (d.updatedApps || []).filter(a => a.license === 'PAID').slice(0, 3);
-    if (paid.length) renderSale(paid);
-    else api('/api/apps?license=PAID&page=1&pageSize=3&sort=mas').then(r => renderSale(r.apps || [])).catch(() => renderSale([]));
-
     // 카테고리 바로가기 (실측 카운트)
     const byCat = ((trends || {}).byCategory) || {};
     const tiles = [
@@ -751,6 +737,7 @@
     if (Array.isArray(g.genres) && g.genres.length) return g.genres;
     const raw = String(g.tags || '').split(',').map(s => s.trim());
     return raw.filter(t => t && t !== 'game' && t !== 'steam' && t !== 'epic' && t !== 'appstorrent' &&
+      t !== 'steam-header' &&
       t.indexOf('steam-appid:') !== 0 && t.indexOf('epic-') !== 0 && t.indexOf('genre:') !== 0);
   }
 
@@ -801,8 +788,7 @@
     // 카드 클릭 → 내부 상세 모달 (외부 스토어 링크 제거, data-url은 폴백/참조용)
     return '<article class="game-card" role="listitem" data-id="' + esc(g.id) + '" data-url="' + esc(url) + '" tabindex="0">' +
       '<div class="g-top">' + img +
-      '<div class="ac-badges"><span class="ac-badge sale">FREE</span>' +
-      (g.isNew ? '<span class="ac-badge new">NEW</span>' : '') + '</div></div>' +
+      (g.isNew ? '<div class="ac-badges"><span class="ac-badge new">NEW</span></div>' : '') + '</div>' +
       '<div class="app-name">' + esc(g.name) + '</div>' +
       '<div class="ac-sub">' +
       genres.map(t => '<span class="badge">' + esc(t) + '</span>').join('') +
@@ -1106,13 +1092,6 @@
         '<button type="button" class="ticker-item" data-main="' + esc(n.main || 'mac') + '" data-id="' + esc(n.id) + '"><b>' + esc(newsTitle(n)) + '</b><span class="srcbadge">' + esc(n.sourceName) + '</span></button>'
       ).join('');
       fillTicker($('storeTicker'), itemHtml);
-      // 오늘의 픽 (업데이트 순 3건)
-      const picks = (d.updatedApps || []).slice(0, 3);
-      $('todayPicks').innerHTML = picks.length ? picks.map(a =>
-        '<button type="button" class="pickrow" data-id="' + esc(a.id) + '">' + appIcon(a, 'hicon') +
-        '<span style="min-width:0"><b>' + esc(a.name) + '</b><small>' + esc(verText(a)) + ' 업데이트</small></span></button>'
-      ).join('') : '<div class="mini-empty">오늘 픽 없음</div>';
-      $$('#todayPicks .pickrow').forEach(el => { el.onclick = () => openModal(el.dataset.id); });
     }).catch((e) => { console.error('[스토어] 크롬 실패', e); });
   }
 
