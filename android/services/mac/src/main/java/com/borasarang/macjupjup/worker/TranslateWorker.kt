@@ -98,7 +98,8 @@ class TranslateWorker(
     }
 
     companion object {
-        const val MAX_PER_RUN = 100
-        const val MAX_NEWS_PER_RUN = 80
+        // CPU(ML Kit) 부하 완화: 실행당 배치 축소 — 적체는 6h 주기가 흡수
+        const val MAX_PER_RUN = 30
+        const val MAX_NEWS_PER_RUN = 30
     }
 }

@@ -1,7 +1,6 @@
 package com.borasarang.macjupjup.worker
 
 import android.content.Context
-import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -12,9 +11,12 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.borasarang.macjupjup.MacJupJupRuntime
 import com.borasarang.macjupjup.util.DebugLogger
-import java.util.concurrent.TimeUnit/**
- * 소스별 개별 주기 스케줄 + 즉시 실행.
- * WorkManager 최소 주기 15분 — 그 미만은 15분으로 올림.
+import java.util.concurrent.TimeUnit
+
+/**
+ * 수집 스케줄 — C1 단일 파이프라인.
+ * 주기 수집은 15분 1회 PipelineWorker, 수동 즉시수집은 CrawlWorker(one-time).
+ * 구 소스별 PeriodicWork는 scheduleAll 시 일괄 폐기.
  */
 class CrawlScheduler(private val context: Context) {
 
@@ -23,50 +25,55 @@ class CrawlScheduler(private val context: Context) {
         .setRequiresBatteryNotLow(true)
         .build()
 
-    /** 활성 소스 전체를 각자 주기로 예약 (앱 시작 시 1회) */
+    /**
+     * 단일 파이프라인 예약 (앱 시작·수집 재개 시 1회).
+     * 구 소스별 PeriodicWork(crawl_{id})를 전부 취소하고 파이프라인만 유지.
+     */
     suspend fun scheduleAll() {
         val wm = WorkManager.getInstance(context)
-        val sources = MacJupJupRuntime.database.crawlSourceDao().getEnabled()
-        for (s in sources) {
-            wm.enqueueUniquePeriodicWork(
-                "crawl_${s.id}",
-                ExistingPeriodicWorkPolicy.KEEP,
-                buildPeriodic(s.id, s.intervalMinutes),
-            )
-            DebugLogger.i("스케줄", "예약 source=${s.name} ${s.intervalMinutes}분마다")
+        // 레거시 소스별 주기 워커 일괄 폐기 (C1 마이그레이션)
+        val allSources = MacJupJupRuntime.database.crawlSourceDao().getAll()
+        for (s in allSources) {
+            wm.cancelUniqueWork("crawl_${s.id}")
         }
-    }
+        wm.cancelAllWorkByTag(TAG_CRAWL)
 
-    /** 단일 소스 재예약 (토글 on·주기 변경 시) */
-    fun scheduleSource(source: com.borasarang.macjupjup.data.db.entity.CrawlSource) {
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "crawl_${source.id}",
-            ExistingPeriodicWorkPolicy.REPLACE,
-            buildPeriodic(source.id, source.intervalMinutes),
+        val offsetMin = 0L
+        val request = PeriodicWorkRequestBuilder<PipelineWorker>(
+            PipelineLogic.PIPELINE_INTERVAL_MINUTES.toLong(),
+            TimeUnit.MINUTES,
         )
-        DebugLogger.i("스케줄", "재예약 source=${source.name} ${source.intervalMinutes}분마다")
+            .setConstraints(constraints())
+            .setInitialDelay(offsetMin, TimeUnit.MINUTES)
+            .addTag(TAG_CRAWL)
+            .addTag(PipelineWorker.TAG)
+            .build()
+        wm.enqueueUniquePeriodicWork(
+            PipelineWorker.UNIQUE_NAME,
+            ExistingPeriodicWorkPolicy.REPLACE,
+            request,
+        )
+        DebugLogger.i(
+            "스케줄",
+            "파이프라인 예약 ${PipelineLogic.PIPELINE_INTERVAL_MINUTES}분 주기 (레거시 ${allSources.size}건 폐기)",
+        )
     }
 
-    /** 단일 소스 예약 취소 (토글 off 시) */
+    /** 소스 단위 재예약 — C1에서는 파이프라인이 due를 판정하므로 no-op (레거시 호환) */
+    fun scheduleSource(source: com.borasarang.macjupjup.data.db.entity.CrawlSource) {
+        WorkManager.getInstance(context).cancelUniqueWork("crawl_${source.id}")
+        DebugLogger.i("스케줄", "C1: 소스별 주기 폐기 source=${source.name} (파이프라인 due 판정)")
+    }
+
+    /** 단일 소스 예약 취소 (토글 off·소스 제거 시) */
     fun cancelSource(sourceId: String) {
-        WorkManager.getInstance(context).cancelUniqueWork("crawl_$sourceId")
+        val wm = WorkManager.getInstance(context)
+        wm.cancelUniqueWork("crawl_$sourceId")
+        wm.cancelUniqueWork("crawl_once_$sourceId")
         DebugLogger.i("스케줄", "예약 취소 source=$sourceId")
     }
 
-    private fun buildPeriodic(
-        sourceId: String,
-        intervalMinutes: Int,
-    ): androidx.work.PeriodicWorkRequest {
-        val minutes = intervalMinutes.coerceAtLeast(15).toLong()
-        return PeriodicWorkRequestBuilder<CrawlWorker>(minutes, TimeUnit.MINUTES)
-            .setConstraints(constraints())
-            .setInputData(workDataOf(CrawlWorker.KEY_SOURCE_ID to sourceId))
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
-            .addTag(TAG_CRAWL)
-            .build()
-    }
-
-    /** 즉시 수집: sourceId null이면 전체 활성 소스 (R3: plan과 동일 시그니처) */
+    /** 즉시 수집: sourceId null이면 전체 활성 소스 */
     suspend fun triggerImmediate(sourceId: String?) {
         val wm = WorkManager.getInstance(context)
         val ids = if (sourceId.isNullOrBlank()) {
@@ -81,8 +88,6 @@ class CrawlScheduler(private val context: Context) {
                 .setInitialDelay((index * 20).toLong(), TimeUnit.SECONDS)
                 .addTag(TAG_CRAWL)
                 .build()
-            // 수동 즉시수집: 기존 백오프/실패 잔여 워커가 KEEP으로 신규 요청을 막지 않도록
-            // 취소 후 REPLACE. 실행 중 동일 소스는 SourceLocks가 중복 스킵.
             wm.cancelUniqueWork("crawl_once_$id")
             wm.enqueueUniqueWork(
                 "crawl_once_$id",
@@ -94,10 +99,13 @@ class CrawlScheduler(private val context: Context) {
     }
 
     fun cancelAll() {
-        WorkManager.getInstance(context).cancelAllWorkByTag(TAG_CRAWL)
+        val wm = WorkManager.getInstance(context)
+        wm.cancelAllWorkByTag(TAG_CRAWL)
+        wm.cancelAllWorkByTag(PipelineWorker.TAG)
+        wm.cancelUniqueWork(PipelineWorker.UNIQUE_NAME)
     }
 
-    /** 오전 9시 일일 요약 예약 (24h 주기, KEEP — 1회성이던 문제 수정) */
+    /** 오전 9시 일일 요약 예약 (24h 주기) */
     fun scheduleDailySummary() {
         val delayMs = com.borasarang.macjupjup.util.TimeUtils.millisUntilNextHour(9)
         val req = PeriodicWorkRequestBuilder<DailySummaryWorker>(24, TimeUnit.HOURS)
@@ -105,7 +113,6 @@ class CrawlScheduler(private val context: Context) {
             .addTag(TAG_SUMMARY)
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            // 기존 1회성 예약과 별도 이름 (충돌 방지, 구 예약은 1회 실행 후 소멸)
             "daily_summary_periodic",
             ExistingPeriodicWorkPolicy.KEEP,
             req,
@@ -113,19 +120,18 @@ class CrawlScheduler(private val context: Context) {
         DebugLogger.i("스케줄", "일일 요약 예약 24h 주기 (${delayMs / 3600000}시간 후 첫 실행)")
     }
 
-    /** 번역 워커 3시간 주기 예약 (T-150: 적체 해소용 단축, 수집과 독립 생명주기) */
+    /** 번역 워커 6시간 주기 예약 */
     fun scheduleTranslate() {
-        val req = PeriodicWorkRequestBuilder<TranslateWorker>(3, TimeUnit.HOURS)
+        val req = PeriodicWorkRequestBuilder<TranslateWorker>(6, TimeUnit.HOURS)
             .setConstraints(constraints())
             .addTag(TAG_TRANSLATE)
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "translate_ko",
-            // T-150: REPLACE — 기존 설치분의 6h 예약을 3h로 교체 (KEEP이면 구 주기 유지됨)
             ExistingPeriodicWorkPolicy.REPLACE,
             req,
         )
-        DebugLogger.i("스케줄", "번역 워커 예약 3시간마다")
+        DebugLogger.i("스케줄", "번역 워커 예약 6시간마다")
     }
 
     /** 번역 즉시 실행 (포털·설정에서 수동) */

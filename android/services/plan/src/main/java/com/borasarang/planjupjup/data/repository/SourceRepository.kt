@@ -76,6 +76,25 @@ class SourceRepository(private val db: PlanDatabase) {
         db.crawlSourceDao().updateRunStatus(id, System.currentTimeMillis(), Constants.STATUS_RUNNING, null)
     }
 
+    /**
+     * 워커 취소(REPLACE)·예산 초과로 RUNNING이 남지 않도록 이전 종료 상태로 복원.
+     * crawl_log를 FAILED로 남기지 않아 실패 스트릭을 오염시키지 않는다.
+     */
+    suspend fun clearRunning(id: String) {
+        val current = db.crawlSourceDao().getById(id) ?: return
+        if (current.lastStatus != Constants.STATUS_RUNNING) return
+        val prev = db.crawlLogDao().getRecentBySource(id, 1)
+            .firstOrNull()?.status
+            ?.takeIf { it != Constants.STATUS_RUNNING }
+            ?: Constants.STATUS_NEVER_RUN
+        db.crawlSourceDao().updateRunStatus(
+            id,
+            current.lastRunAt ?: System.currentTimeMillis(),
+            prev,
+            null,
+        )
+    }
+
     suspend fun logResult(
         sourceId: String,
         sourceName: String,

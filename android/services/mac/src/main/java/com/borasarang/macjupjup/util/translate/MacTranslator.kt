@@ -27,8 +27,15 @@ object MacTranslator {
     private val translatorCache = mutableMapOf<String, Translator>()
     private val readyModels = mutableSetOf<String>()
 
+    /** B3: 언어감지 캐시 — 동일 텍스트(앞 200자) 재감지 스킵 (ML Kit 호출 절감) */
+    private val langIdCache = object : LinkedHashMap<String, String>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>): Boolean = size > 128
+    }
+
     /** BCP-47 감지 → ML Kit 번역 코드. 미지원·불명 시 영어 폴백 */
     suspend fun identifySource(text: String): String {
+        val key = text.take(200)
+        synchronized(langIdCache) { langIdCache[key] }?.let { return it }
         val tag = try {
             withTimeoutOrNull(10_000) {
                 suspendCancellableCoroutine { cont ->
@@ -40,12 +47,15 @@ object MacTranslator {
         } catch (_: Exception) {
             null
         } ?: "und"
-        if (tag == "und") return TranslateLanguage.ENGLISH
-        return try {
-            TranslateLanguage.fromLanguageTag(tag) ?: TranslateLanguage.ENGLISH
-        } catch (_: Exception) {
-            TranslateLanguage.ENGLISH
+        val result = if (tag == "und") TranslateLanguage.ENGLISH else {
+            try {
+                TranslateLanguage.fromLanguageTag(tag) ?: TranslateLanguage.ENGLISH
+            } catch (_: Exception) {
+                TranslateLanguage.ENGLISH
+            }
         }
+        synchronized(langIdCache) { langIdCache[key] = result }
+        return result
     }
 
     @Synchronized
@@ -297,6 +307,7 @@ object MacTranslator {
         } finally {
             translatorCache.clear()
             readyModels.clear()
+            synchronized(langIdCache) { langIdCache.clear() }
         }
     }
 }

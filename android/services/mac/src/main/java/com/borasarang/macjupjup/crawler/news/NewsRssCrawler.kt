@@ -105,6 +105,7 @@ class NewsRssCrawler(
         var bodyText = d.feedText
         var bodyHtml = d.feedHtml
         var thumb = d.thumbnailUrl
+        var alreadySanitized = false
         // 피드 본문이 없거나 짧으면 원문 fetch (전문 기본)
         val needFull = bodyText.isBlank() ||
             bodyText.length < Constants.NEWS_FULL_BODY_MIN_LEN ||
@@ -116,6 +117,8 @@ class NewsRssCrawler(
                 if (extracted.text.isNotBlank() && extracted.text.length > bodyText.length) {
                     bodyText = extracted.text
                     bodyHtml = extracted.html
+                    // extractBody가 sanitize 완료 — 이중 파싱 제거
+                    alreadySanitized = true
                 }
                 if (thumb == null) thumb = extracted.firstImage
             } catch (e: Exception) {
@@ -123,9 +126,11 @@ class NewsRssCrawler(
                 if (bodyText.isBlank()) throw IllegalStateException("본문 없음")
             }
         }
-        if (bodyHtml != null) {
+        if (bodyHtml != null && !alreadySanitized) {
             bodyHtml = sanitizeHtml(bodyHtml, d.link)
             if (thumb == null) thumb = firstImageOf(bodyHtml)
+        } else if (bodyHtml != null && thumb == null) {
+            thumb = firstImageOf(bodyHtml)
         }
         if (bodyText.isBlank()) throw IllegalStateException("본문 없음")
         // 피드 설명만 있고 HTML이 없으면 텍스트를 문단 단위로 나눠 본문 구성 (단일 <p> 한줄 표시 방지)
@@ -151,14 +156,16 @@ class NewsRssCrawler(
         )
     }
 
-    /** 제목에 앱 이름이 있으면 연동 (3자 이상, 대소문자 무시) */
+    /** 제목에 앱 이름이 있으면 연동 (3자 이상, 대소문자 무시). 이름 목록·Regex 1회 컴파일 후 재사용 */
     private suspend fun matchApps(articles: List<NewsArticle>): List<NewsAppRelation> {
         if (articles.isEmpty()) return emptyList()
         val names = db.appDao().getAllNames().filter { it.name.length >= 3 }
         if (names.isEmpty()) return emptyList()
+        // 기사마다 names.map 재생성·Regex 재컴파일 제거 — 프리컴파일 패턴 1회 생성
+        val compiled = compileNamePatterns(names.map { it.id to it.name })
         val relations = mutableListOf<NewsAppRelation>()
         for (a in articles) {
-            for (appId in matchAppIds(a.title, names.map { it.id to it.name })) {
+            for (appId in matchAppIdsCompiled(a.title, compiled)) {
                 relations += NewsAppRelation(newsId = a.id, appId = appId)
             }
         }
@@ -229,21 +236,28 @@ class NewsRssCrawler(
          * 한글 등 비ASCII는 한글/영숫자 경계("앱스토어"에 "앱스" 오탐 방지).
          * 3자 미만 이름 스킵. 순수 JVM (단위테스트 가능).
          */
-        internal fun matchAppIds(title: String, names: List<Pair<String, String>>): List<String> {
-            val out = mutableListOf<String>()
-            for ((id, name) in names) {
-                if (name.length < 3) continue
-                val matched = if (name.all { it.isLetterOrDigit() && it.code < 128 }) {
+        internal fun matchAppIds(title: String, names: List<Pair<String, String>>): List<String> =
+            matchAppIdsCompiled(title, compileNamePatterns(names))
+
+        /** 앱 이름 (id, name) → 컴파일된 Regex 목록. 호출부에서 1회만 만들어 재사용 */
+        internal fun compileNamePatterns(names: List<Pair<String, String>>): List<Pair<String, Regex>> =
+            names.filter { it.second.length >= 3 }.map { (id, name) ->
+                id to if (name.all { it.isLetterOrDigit() && it.code < 128 }) {
                     Regex("(?i)(?<![A-Za-z0-9])" + Regex.escape(name) + "(?![A-Za-z0-9])")
-                        .containsMatchIn(title)
                 } else {
                     // 한글·혼합: 양쪽에 한글/영숫자가 바로 붙으면 부분문자열 오탐으로 간주
                     Regex(
                         "(?<![가-힣A-Za-z0-9])" + Regex.escape(name) + "(?![가-힣A-Za-z0-9])",
                         RegexOption.IGNORE_CASE,
-                    ).containsMatchIn(title)
+                    )
                 }
-                if (matched) out += id
+            }
+
+        /** 프리컴파일 패턴 기반 매칭 (수집 루프에서 기사당 재컴파일 방지) */
+        internal fun matchAppIdsCompiled(title: String, compiled: List<Pair<String, Regex>>): List<String> {
+            val out = mutableListOf<String>()
+            for ((id, pattern) in compiled) {
+                if (pattern.containsMatchIn(title)) out += id
             }
             return out.distinct()
         }
@@ -424,14 +438,26 @@ class NewsRssCrawler(
             return null
         }
 
-        /** 본문 추출 (jsoup 휴리스틱). 이미지 절대경로 + 속성 강제 */
+        /** 본문 추출 (jsoup 휴리스틱). 이미지 절대경로 + 속성 강제. 제자리 정제 후 clean 1회 (B3) */
         internal fun extractBody(html: String, baseUrl: String): ExtractedBody {
             val doc = Jsoup.parse(html, baseUrl)
             val body = doc.selectFirst("article")
                 ?: doc.selectFirst("[role=main]")
                 ?: doc.selectFirst(".post-content, .entry-content, .article-body, .article-content, main")
                 ?: doc.body()
-            val cleaned = sanitizeHtml(body.html(), baseUrl)
+            body.select("script, iframe, style, noscript, form, button").remove()
+            for (img in body.select("img")) {
+                img.attr("src", img.absUrl("src"))
+                img.attr("referrerpolicy", "no-referrer")
+                img.attr("loading", "lazy")
+                img.removeAttr("srcset")
+            }
+            for (a in body.select("a")) {
+                a.attr("href", a.absUrl("href"))
+            }
+            val safelist = Safelist.relaxed()
+                .addAttributes("img", "referrerpolicy", "loading")
+            val cleaned = Jsoup.clean(body.html(), baseUrl, safelist)
             return ExtractedBody(
                 text = body.text(),
                 html = cleaned,

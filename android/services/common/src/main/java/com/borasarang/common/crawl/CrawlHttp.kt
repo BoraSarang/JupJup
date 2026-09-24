@@ -222,7 +222,7 @@ class CrawlHttpClient(
     }
 
     companion object {
-        const val DEFAULT_TIMEOUT_SEC = 20L
+        const val DEFAULT_TIMEOUT_SEC = 10L
     }
 }
 
