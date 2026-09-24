@@ -14,7 +14,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
 .header { background: var(--card-bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
-.header-content { max-width: 1400px; margin: 0 auto; padding: var(--spacing); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.header-content { max-width: 1080px; margin: 0 auto; padding: var(--spacing); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .logo { font-size: 1.25rem; font-weight: 700; }
 .logo-link { background: none; border: none; cursor: pointer; color: var(--text); font-family: inherit; line-height: 1.2; padding: 2px 0; -webkit-tap-highlight-color: transparent; }
 .header-info { display: flex; gap: 12px; align-items: center; font-size: 0.875rem; color: var(--text-muted); }
@@ -50,7 +50,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD G
 .curation-tags::-webkit-scrollbar { display: none; }
 .curation-tag { background: var(--bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .curation-tag.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-.main { display: grid; grid-template-columns: 1fr; max-width: 1400px; margin: 0 auto; padding: 14px; gap: var(--spacing); }
+.main { display: grid; grid-template-columns: 1fr; max-width: 1080px; margin: 0 auto; padding: 14px; gap: var(--spacing); }
 body.filter-open .main { grid-template-columns: 280px 1fr; }
 .filter-panel { display: none; background: var(--card-bg); border-radius: var(--radius); padding: var(--spacing); height: fit-content; position: sticky; top: 90px; box-shadow: var(--shadow); max-height: calc(100vh - 110px); overflow-y: auto; }
 body.filter-open .filter-panel { display: block; }
@@ -167,7 +167,7 @@ body.filter-open .filter-panel { display: block; }
 .fail-row .fl-error { color: var(--text-muted); margin-top: 2px; word-break: break-all; }
 
 /* ---------- 통계 대시보드 ---------- */
-.top-nav { display: flex; align-items: center; gap: 8px; max-width: 1400px; margin: 0 auto; padding: 4px var(--spacing) 0; }
+.top-nav { display: flex; align-items: center; gap: 8px; max-width: 1080px; margin: 0 auto; padding: 4px var(--spacing) 0; }
 .tab-btn { background: transparent; border: 2px solid transparent; padding: 8px 14px; border-radius: 20px; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 .tab-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 .stats-section { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--spacing); min-width: 0; }
