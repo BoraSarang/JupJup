@@ -2162,8 +2162,19 @@
     { id: 'ai', label: 'AI' },
     { id: 'all', label: '전체' }
   ];
-  const CM_PAGE_SIZE = 30;
+  const CM_PAGE_SIZE = 5;
   let communitySeq = 0;
+  let cmPendingEdge = null;
+
+  function goCommunityPage(target, edge) {
+    const pages = Math.max(1, Math.ceil((state.community.total || 0) / CM_PAGE_SIZE));
+    if (target < 1 || target > pages) return;
+    state.community.page = target;
+    cmPendingEdge = edge || null;
+    state.community.detailId = null;
+    loadCommunity();
+    window.scrollTo(0, 0);
+  }
 
   function syncCommunityMains() {
     $$('#communityMains .mainpill').forEach(b => {
@@ -2227,8 +2238,13 @@
     $$('.cmrow', box).forEach(el => {
       el.onclick = () => openCommunityDetail(el.dataset.id);
     });
-    if (!state.community.detailId) {
+    if (!state.community.detailId && !cmPendingEdge) {
       state.community.detailId = posts[0].id;
+    }
+    if (cmPendingEdge) {
+      const pick = cmPendingEdge === 'first' ? state.community.listIds[0] : state.community.listIds[state.community.listIds.length - 1];
+      cmPendingEdge = null;
+      if (pick) state.community.detailId = pick;
     }
     openCommunityDetail(state.community.detailId, true);
     renderCommunityPagination(d);
@@ -2269,6 +2285,13 @@
     if (!det) return;
     det.innerHTML = '<p class="tiny-note">불러오는 중…</p>';
     api('/api/community/' + encodeURIComponent(id)).then(p => {
+      if (state.community.detailId !== id) return;
+      const idx = state.community.listIds.indexOf(id);
+      const lastOnPage = idx >= 0 && idx === state.community.listIds.length - 1;
+      const firstOnPage = idx === 0;
+      const totalPages = Math.max(1, Math.ceil((state.community.total || 0) / CM_PAGE_SIZE));
+      const hasPrev = idx > 0 || (firstOnPage && state.community.page > 1);
+      const hasNext = (idx >= 0 && idx < state.community.listIds.length - 1) || (lastOnPage && state.community.page < totalPages);
       det.innerHTML =
         '<header class="ndetail-head">' +
         '<div class="nmeta"><span class="subpill">' + esc(cmMainLabel(p.main)) + '</span>' +
@@ -2280,7 +2303,19 @@
         (p.contentHtml
           ? '<div class="ndbody">' + p.contentHtml + '</div>'
           : (p.summary ? '<div class="ndbody"><p>' + esc(p.summary) + '</p></div>' : '')) +
-        '<footer class="ndfoot"><a class="btn-primary" href="' + esc(p.originalUrl) + '" target="_blank" rel="noopener noreferrer">원문 보기 ↗</a></footer>';
+        '<footer class="ndfoot"><a class="btn-primary" href="' + esc(p.originalUrl) + '" target="_blank" rel="noopener noreferrer">원문 보기 ↗</a></footer>' +
+        '<nav class="nd-nav" aria-label="글 이전/다음">' +
+        '<button type="button" class="nd-prev' + (hasPrev ? '' : ' disabled') + '" data-dir="-1"' + (hasPrev ? '' : ' disabled') + '>‹ 이전 글</button>' +
+        '<span class="nd-navpos mono">' + (idx >= 0 ? (idx + 1) + ' / ' + state.community.listIds.length : '') + '</span>' +
+        '<button type="button" class="nd-next' + (hasNext ? '' : ' disabled') + '" data-dir="1"' + (hasNext ? '' : ' disabled') + '>다음 글 ›</button></nav>';
+      $$('.nd-nav [data-dir]', det).forEach(b => {
+        b.onclick = () => {
+          const i = state.community.listIds.indexOf(id) + (b.dataset.dir === '1' ? 1 : -1);
+          if (i >= 0 && i < state.community.listIds.length) openCommunityDetail(state.community.listIds[i]);
+          else if (i < 0) goCommunityPage(state.community.page - 1, 'last');
+          else goCommunityPage(state.community.page + 1, 'first');
+        };
+      });
       if (!skipListHighlight) window.scrollTo(0, 0);
     }).catch(e => {
       console.error('[커뮤니티] 상세 실패', e);
