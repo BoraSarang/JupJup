@@ -5,7 +5,9 @@ object Constants {
     const val DEFAULT_PORT = 3010
     const val DEFAULT_RETENTION_DAYS = 30
     const val DEFAULT_AUTO_START = true
-    const val DEFAULT_WATCHDOG_INTERVAL_SEC = 60
+    const val DEFAULT_WATCHDOG_INTERVAL_SEC = 300
+    /** 워커 런타임 예산 — 초과 시 부분 저장(체크포인트) 후 retry로 분할 (B1) */
+    const val CRAWL_RUNTIME_BUDGET_MS = 90_000L
 
     const val MIN_PORT = 1024
     const val MAX_PORT = 65535
@@ -31,8 +33,8 @@ object Constants {
     const val NEWS_FULL_BODY_MIN_LEN = 800
 
     const val CRAWL_REQUEST_DELAY_MS = 1000L
-    // 느린 서버 1건이 워커를 최대 ~60s 점유하던 것을 단축 (수집 예의 delay 1s는 유지)
-    const val CRAWL_TIMEOUT_SEC = 20L
+    // 느린 서버가 워커를 길게 점유하던 것 단축 — 10초 초과분은 실패→백오프 재시도
+    const val CRAWL_TIMEOUT_SEC = 10L
     const val USER_AGENT = "MacJupJup/0.1 (Linux; Android) Mac-App-Trend-Portal; contact leeborasarang@gmail.com"
 
     const val NOTIFICATION_ID_SERVER = 1001
@@ -80,8 +82,8 @@ object Constants {
     const val MAIN_MAC_COMMUNITY = "mac"
     const val MAIN_AI_COMMUNITY = "ai"
 
-    /** 커뮤니티 수집 주기(분). WorkManager 최소 15분 */
-    const val COMMUNITY_INTERVAL_MINUTES = 30
+    /** 커뮤니티 수집 주기(분). WorkManager 최소 15분. CPU 부하 완화 위해 60분 */
+    const val COMMUNITY_INTERVAL_MINUTES = 60
 
     // 뉴스 RSS 소스 ID (R32 PLAN_v17, InitialDataSeeder와 일치)
     const val SOURCE_NEWS_MACRUMORS = "news_macrumors"
@@ -97,8 +99,8 @@ object Constants {
     const val SOURCE_NEWS_BOAN = "news_boan"
     const val SOURCE_NEWS_DAILYSECU = "news_dailysecu"
 
-    /** 뉴스 수집 주기(분). WorkManager 최소 15분 */
-    const val NEWS_INTERVAL_MINUTES = 15
+    /** 뉴스 수집 주기(분). WorkManager 최소 15분. CPU 부하 완화 위해 30분 */
+    const val NEWS_INTERVAL_MINUTES = 30
 
     /** 뉴스 본문 상한 (기사 전문, 앱 2000자보다 넉넉히) */
     const val NEWS_MAX_BODY_LEN = 20000

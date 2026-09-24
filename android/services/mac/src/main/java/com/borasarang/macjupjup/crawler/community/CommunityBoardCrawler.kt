@@ -225,7 +225,7 @@ class CommunityBoardCrawler(
         } ?: doc.select(".prose, .post_content, article, .post_article, .write_note").firstOrNull()
             ?: doc.body()
 
-        val cleaned = bodyEl?.let { sanitize(it.html(), post.originalUrl) }
+        val cleaned = bodyEl?.let { sanitizeInPlace(it, post.originalUrl) }
         val text = bodyEl?.text()?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
         val summary = text.take(Constants.MAX_SUMMARY_LEN).ifBlank { null }
         val thumb = doc.select("meta[property=og:image]").firstOrNull()
@@ -237,17 +237,17 @@ class CommunityBoardCrawler(
         return DetailFill(content, summary, thumb)
     }
 
-    private fun sanitize(html: String, baseUrl: String): String {
-        val doc = Jsoup.parse(html, baseUrl)
-        doc.select("script, style, iframe, form, noscript").remove()
-        for (img in doc.select("img")) {
+    /** 이미 파싱된 bodyEl에 제자리 정제 → Jsoup.clean 1회만 (이중 파싱 제거, B3) */
+    private fun sanitizeInPlace(bodyEl: Element, baseUrl: String): String {
+        bodyEl.select("script, style, iframe, form, noscript").remove()
+        for (img in bodyEl.select("img")) {
             val abs = img.attr("abs:src").ifBlank { img.attr("src") }
             if (abs.isNotBlank()) img.attr("src", abs)
         }
-        for (a in doc.select("a[href]")) {
+        for (a in bodyEl.select("a[href]")) {
             a.attr("href", a.attr("abs:href").ifBlank { a.attr("href") })
         }
-        return Jsoup.clean(doc.body()?.html().orEmpty(), Safelist.relaxed())
+        return Jsoup.clean(bodyEl.html(), baseUrl, Safelist.relaxed())
     }
 
     private fun firstText(row: Element, selector: String): String? =

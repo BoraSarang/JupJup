@@ -32,9 +32,11 @@ class PreferencesManager(private val context: Context) {
         val ADMIN_TOKEN = stringPreferencesKey("admin_token")
         val ADMIN_ID = stringPreferencesKey("admin_id")
         val ADMIN_PW = stringPreferencesKey("admin_pw")
+        val WATCHDOG_MIGRATED = booleanPreferencesKey("watchdog_migrated_v300")
     }
 
     suspend fun getSettings(): SettingsData {
+        migrateWatchdogOnce()
         return context.settingsStore.data.map { prefs ->
             SettingsData(
                 port = prefs[Keys.PORT] ?: Constants.DEFAULT_PORT,
@@ -48,6 +50,18 @@ class PreferencesManager(private val context: Context) {
                 crawlEnabled = prefs[Keys.CRAWL_ENABLED] ?: true,
             )
         }.first()
+    }
+
+    /** B4: 구 기본 60초 저장분을 300초로 1회 승격 (이후 사용자 60초 설정은 유지) */
+    private suspend fun migrateWatchdogOnce() {
+        context.settingsStore.edit { prefs ->
+            if (prefs[Keys.WATCHDOG_MIGRATED] == true) return@edit
+            val current = prefs[Keys.WATCHDOG_SEC]
+            if (current == null || current == OLD_DEFAULT_WATCHDOG_SEC) {
+                prefs[Keys.WATCHDOG_SEC] = Constants.DEFAULT_WATCHDOG_INTERVAL_SEC
+            }
+            prefs[Keys.WATCHDOG_MIGRATED] = true
+        }
     }
 
     suspend fun saveSettings(settings: SettingsData) {
@@ -99,6 +113,9 @@ class PreferencesManager(private val context: Context) {
     }
 
     companion object {
+        /** B4 마이그레이션 판별용 구 기본 watchdog(초) */
+        private const val OLD_DEFAULT_WATCHDOG_SEC = 60
+
         @Volatile
         private var instance: PreferencesManager? = null
 

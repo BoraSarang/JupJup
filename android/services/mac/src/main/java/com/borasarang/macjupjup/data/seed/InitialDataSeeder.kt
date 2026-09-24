@@ -319,6 +319,7 @@ object InitialDataSeeder {
     suspend fun seedIfEmpty(db: MacDatabase) {
         if (db.crawlSourceDao().getAll().isNotEmpty()) {
             seedMissing(db)
+            migrateIntervals(db)
             return
         }
         DebugLogger.i("시드", "초기 수집 소스 시드 시작")
@@ -333,5 +334,26 @@ object InitialDataSeeder {
         if (missing.isEmpty()) return
         DebugLogger.i("시드", "신규 소스 추가: ${missing.map { it.id }}")
         dao.upsertAll(missing)
+    }
+
+    /**
+     * CPU 부하 완화용 주기 하향 마이그레이션 (기존 설치분).
+     * 뉴스 <30분 → 30분, 커뮤니티 <60분 → 60분. 이미 긴 값은 유지.
+     */
+    suspend fun migrateIntervals(db: MacDatabase) {
+        val dao = db.crawlSourceDao()
+        var updated = 0
+        for (s in dao.getAll()) {
+            val target = when (s.type) {
+                Constants.TYPE_NEWS_RSS -> Constants.NEWS_INTERVAL_MINUTES
+                Constants.TYPE_COMMUNITY_BOARD -> Constants.COMMUNITY_INTERVAL_MINUTES
+                else -> continue
+            }
+            if (s.intervalMinutes < target) {
+                dao.updateInterval(s.id, target, target / 60)
+                updated++
+            }
+        }
+        if (updated > 0) DebugLogger.i("시드", "수집 주기 마이그레이션 ${updated}건 (뉴스≥${Constants.NEWS_INTERVAL_MINUTES}분·커뮤니티≥${Constants.COMMUNITY_INTERVAL_MINUTES}분)")
     }
 }
