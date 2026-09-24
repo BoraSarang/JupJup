@@ -42,7 +42,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Ktor CIO 임베디드 서버를 품은 포그라운드 서비스 (type=dataSync).
+ * Ktor CIO 임베디드 서버를 품은 포그라운드 서비스 (type=specialUse, API 34+ / dataSync 이하).
  * - START_STICKY: 시스템이 죽여도 재시작
  * - onCreate 최상단 startForeground (5초 룰)
  * - Watchdog: 주기적 로컬 포트 헬스체크로 무응답 시 자동 재시작
@@ -154,11 +154,18 @@ class HttpServerService : Service() {
         DebugLogger.i("서버", "서비스 종료 — 서버 정리")
         watchdogJob?.cancel()
         watchdogJob = null
-        try {
-            server?.stop(1000, 2000)
-        } catch (_: Exception) {
-        }
+        // stop(1000,2000)은 최대 ~3초 블로킹 → 메인스레드에 두면 FGS 10초 정지 규칙 위험
+        val dying = server
         server = null
+        Thread(
+            {
+                try {
+                    dying?.stop(1000, 2000)
+                } catch (_: Exception) {
+                }
+            },
+            "ktor-stop",
+        ).start()
         scope.cancel()
         super.onDestroy()
     }
@@ -324,14 +331,19 @@ class HttpServerService : Service() {
         if (isForeground) return
         try {
             val notification = buildNotification(text ?: runningText(currentPort))
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
+            // dataSync는 Android 15+ 제한 시간(6h/24h) 대상 → API 34+는 specialUse로 회피
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> startForeground(
+                    Constants.NOTIFICATION_ID_SERVER,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                )
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> startForeground(
                     Constants.NOTIFICATION_ID_SERVER,
                     notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
                 )
-            } else {
-                startForeground(Constants.NOTIFICATION_ID_SERVER, notification)
+                else -> startForeground(Constants.NOTIFICATION_ID_SERVER, notification)
             }
             isForeground = true
             DebugLogger.i("서버", "포그라운드 승격 완료")
