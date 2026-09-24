@@ -22,6 +22,8 @@
 
 ## 🗂️ 멀티모듈 구조
 
+Gradle 프로젝트 루트는 저장소의 `android/`입니다 (`android/settings.gradle.kts`).
+
 ```
 :app                    # 통합 셸 (JupJupApplication, MainActivity, 테마·아이콘)
 :services:common        # 공통 라이브러리 (Throttler·NetMeter·AI·검색 등)
@@ -58,7 +60,7 @@ JDK가 PATH에 없으면 Android Studio 번들 JBR(`/Applications/Android Studio
 ./build_and_run.sh clean
 ```
 
-디버그 APK: `app/build/outputs/apk/debug/app-debug.apk`
+디버그 APK: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## 🔄 CI·배포
 

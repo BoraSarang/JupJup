@@ -31,6 +31,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: 릴리스 APK 빌드
+        working-directory: android
         run: ./gradlew :app:assembleRelease --console=plain
 
       - name: 태그에 해당하는 CHANGELOG 섹션 추출
@@ -59,5 +60,5 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/*.apk
+          files: android/app/build/outputs/apk/release/*.apk
           body_path: ${{ runner.temp }}/release_body.md

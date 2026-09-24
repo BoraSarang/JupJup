@@ -10,6 +10,8 @@ The start screen **Dashboard** shows all four services (status, address, stats, 
 
 ## Architecture
 
+Gradle project root is `android/` in this repository (`android/settings.gradle.kts`).
+
 ```
 :app                    # Shell — MainActivity, JupJupApplication, shared theme/icon
 :services:common        # Shared library (Throttler, NetMeter, AI, search, …)
@@ -30,7 +32,7 @@ All services run in the same process but are fully isolated (ports, databases, D
 ./build_and_run.sh clean
 ```
 
-Output APK: `app/build/outputs/apk/debug/app-debug.apk`
+Output APK: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## CI
 

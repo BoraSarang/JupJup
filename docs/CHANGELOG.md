@@ -1,5 +1,13 @@
 # CHANGELOG — JupJup
 
+## 저장소 재구조: Gradle 루트 → `android/` (perf/stability-refactor)
+
+- **이동**: `app`·`services`·`build-logic`·`settings.gradle.kts`·`build.gradle.kts`·`gradle.properties`·`gradle/`·`gradlew`·`local.properties` → `android/` (모듈 path·include `:app`/`:services:*` 불변)
+- **유지(루트)**: `docs/`·`README*`·`AGENTS.local.md`·`error_message_ko.json`·`.github/`·`.agent/`·`build_and_run.sh`·`.gitignore`
+- **경로 수정**: `build_and_run.sh`(`cd android`), CI `working-directory: android`, release APK 경로 `android/app/build/...`, README 구조/AGENTS.local 빌드 경로
+- **검증**: assembleDebug · testDebugUnitTest · lintDebug · `./build_and_run.sh lint|test` — unit **273/0**
+- 잔여: 루트 빈 `build-logic`·`.gradle` 캐시 제거 · `local.properties` untracked이므로 순수 `mv`
+
 ## 내부 패키지 재그룹 1~4단계 (perf/stability-refactor)
 
 - **1단계** `10b7618`: Room 마이그레이션 `*Migration.kt` → `data/db/migration/` (mac 9·plan 5·community 6, pj 인라인 유지) — `*Database.kt`에 FQN import
