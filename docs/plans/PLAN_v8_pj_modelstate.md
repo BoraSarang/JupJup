@@ -25,3 +25,5 @@
 - `:services:promptjournal:testDebugUnitTest` + `./build_and_run.sh build` + 설치.
 - 실기: NIM/Google 모두 투입 → 재시작(앱 kill 후 기동) → 투입 유지 확인 →
   1개 해제 → 갱신 → 해제 유지 확인. `/api/providers` enabled 카운트로 판정.
+
+> **상태: 서비스 삭제됨 (2026-09).** 아래 내용은 역사 기록. 재사용 조각은 `:services:common` 승격됨.

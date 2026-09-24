@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
 /**
  * 줍줍 시리즈 통합 홈 (서비스-우선 내비게이션).
  *
- * - 상단 세그먼트: 서비스 선택 (맥줍줍 / 요금줍줍 / 프롬프트 저널 / 커뮤니티) — 항상 표시
+ * - 상단 세그먼트: 서비스 선택 (맥줍줍 / 요금줍줍) — 항상 표시
  * - 하단 탭: 대시보드(통합) / 홈 / 설정 (R45: 수집·알림은 웹 이관으로 삭제)
  * - 세그먼트 변경 시 대시보드로 강제 이동 (컨텍스트 모호성 제거)
  *
@@ -60,8 +60,6 @@ class MainActivity : AppCompatActivity() {
             if (suppressNavCallbacks || !isChecked) return@addOnButtonCheckedListener
             val next = when (checkedId) {
                 R.id.seg_plan -> Service.PLAN
-                R.id.seg_pj -> Service.PROMPTJOURNAL
-                R.id.seg_community -> Service.COMMUNITY
                 else -> Service.MAC
             }
             if (next == currentService) return@addOnButtonCheckedListener
@@ -109,8 +107,6 @@ class MainActivity : AppCompatActivity() {
         try {
             val segId = when (currentService) {
                 Service.PLAN -> R.id.seg_plan
-                Service.PROMPTJOURNAL -> R.id.seg_pj
-                Service.COMMUNITY -> R.id.seg_community
                 else -> R.id.seg_mac
             }
             if (binding.serviceSegment.checkedButtonId != segId) {
@@ -128,8 +124,6 @@ class MainActivity : AppCompatActivity() {
     private fun serviceTitle(): String = when (currentService) {
         Service.MAC -> getString(R.string.nav_mac)
         Service.PLAN -> getString(R.string.nav_plan)
-        Service.PROMPTJOURNAL -> getString(R.string.nav_pj)
-        Service.COMMUNITY -> getString(R.string.nav_community)
     }
 
     private fun tabItemId(tab: ServiceTab): Int = when (tab) {
@@ -158,24 +152,16 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             var macPort = MacConstants.DEFAULT_PORT
             var planPort = PlanConstants.DEFAULT_PORT
-            var pjPort = com.borasarang.promptjournaljupjup.Constants.DEFAULT_PORT
-            var cmPort = com.borasarang.communityjupjup.util.Constants.DEFAULT_PORT
             var ip: String? = null
             var macToken = ""
             var planToken = ""
-            var pjToken = ""
-            var cmToken = ""
             try {
                 withContext(Dispatchers.IO) {
                     macPort = MacJupJupRuntime.preferences.getSettings().port
                     planPort = PlanJupJupRuntime.preferences.getSettings().port
-                    pjPort = com.borasarang.promptjournaljupjup.PromptJournalRuntime.preferences.getSettings().port
-                    cmPort = com.borasarang.communityjupjup.CommunityJupJupRuntime.preferences.getSettings().port
                     ip = NetUtils.getLocalIp(this@MainActivity)
                     macToken = MacJupJupRuntime.preferences.getAdminToken()
                     planToken = PlanJupJupRuntime.preferences.getAdminToken()
-                    pjToken = com.borasarang.promptjournaljupjup.PromptJournalRuntime.preferences.getAdminToken()
-                    cmToken = com.borasarang.communityjupjup.CommunityJupJupRuntime.preferences.getAdminToken()
                 }
             } catch (e: Exception) {
                 MacDebugLogger.e("내비", "E-AND-DB-0404", "앱 정보 포트 조회 실패: ${e.message}", e)
@@ -191,18 +177,8 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.about_service_row, getString(R.string.nav_plan), planPort)
             view.findViewById<TextView>(R.id.about_plan_address).text =
                 ip?.let { "http://$it:$planPort" } ?: getString(R.string.about_address_unknown)
-            view.findViewById<TextView>(R.id.about_pj_row).text =
-                getString(R.string.about_service_row, getString(R.string.nav_pj), pjPort)
-            view.findViewById<TextView>(R.id.about_pj_address).text =
-                ip?.let { "http://$it:$pjPort" } ?: getString(R.string.about_address_unknown)
-            view.findViewById<TextView>(R.id.about_cm_row).text =
-                getString(R.string.about_service_row, getString(R.string.nav_community), cmPort)
-            view.findViewById<TextView>(R.id.about_cm_address).text =
-                ip?.let { "http://$it:$cmPort" } ?: getString(R.string.about_address_unknown)
             bindTokenRow(view, R.id.about_token_mac, getString(R.string.nav_mac), macToken)
             bindTokenRow(view, R.id.about_token_plan, getString(R.string.nav_plan), planToken)
-            bindTokenRow(view, R.id.about_token_pj, getString(R.string.nav_pj), pjToken)
-            bindTokenRow(view, R.id.about_token_cm, getString(R.string.nav_community), cmToken)
             bindCredentialForm(view)
             view.findViewById<TextView>(R.id.about_repo_link).setOnClickListener {
                 openUrl(getString(R.string.about_repo_url))
@@ -214,7 +190,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 통합 관리자 ID/PW 등록 (R48, 4서비스 동일 저장) */
+    /** 통합 관리자 ID/PW 등록 (R48, 전 서비스 동일 저장) */
     private fun bindCredentialForm(view: android.view.View) {
         val idView = view.findViewById<android.widget.EditText>(R.id.about_cred_id)
         val pwView = view.findViewById<android.widget.EditText>(R.id.about_cred_pw)
@@ -246,8 +222,6 @@ class MainActivity : AppCompatActivity() {
                     withContext(Dispatchers.IO) {
                         MacJupJupRuntime.preferences.setAdminCredential(id, pw)
                         PlanJupJupRuntime.preferences.setAdminCredential(id, pw)
-                        com.borasarang.promptjournaljupjup.PromptJournalRuntime.preferences.setAdminCredential(id, pw)
-                        com.borasarang.communityjupjup.CommunityJupJupRuntime.preferences.setAdminCredential(id, pw)
                     }
                     pwView.text?.clear()
                     stateView.text = getString(R.string.about_cred_saved)

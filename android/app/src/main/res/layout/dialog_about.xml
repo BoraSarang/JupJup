@@ -76,36 +76,6 @@
         android:textColor="?attr/colorOnSurfaceVariant" />
 
     <TextView
-        android:id="@+id/about_pj_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-    <TextView
-        android:id="@+id/about_pj_address"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorOnSurfaceVariant" />
-
-    <TextView
-        android:id="@+id/about_cm_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-    <TextView
-        android:id="@+id/about_cm_address"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorOnSurfaceVariant" />
-
-    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -181,28 +151,6 @@
 
     <TextView
         android:id="@+id/about_token_plan"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:paddingVertical="4dp"
-        android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textIsSelectable="false" />
-
-    <TextView
-        android:id="@+id/about_token_pj"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:paddingVertical="4dp"
-        android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textIsSelectable="false" />
-
-    <TextView
-        android:id="@+id/about_token_cm"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"

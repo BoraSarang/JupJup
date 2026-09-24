@@ -109,3 +109,5 @@
 - **대응**: `GET /api/thumb?url=` — 서버가 직접 받아 전달 (Referer 미전송).
   image/*만·3MB 상한·http(s)만·로컬/메타 주소 차단. 웹은 전부 프록시 경유 + `referrerpolicy`
 - 검증: webp 138KB 200 응답, 로컬 URL 거부 확인
+
+> **상태: 서비스 삭제됨 (2026-09).** 아래 내용은 역사 기록. 재사용 조각은 `:services:common` 승격됨.

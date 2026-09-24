@@ -29,7 +29,7 @@ data class DashboardServiceUi(
     val lastCollectedLabel: String = "",
     val isCrawling: Boolean = false,
     val crawlEnabled: Boolean = true,
-    /** 네트워크 사용량 1줄 (R42b, 30일 합산·plan 24h·pj 프로세스 누적) */
+    /** 네트워크 사용량 1줄 (R42b) */
     val netLabel: String = "",
     /** 관리 토큰 (R48, 탭하여 복사 → 웹 관리 입력) */
     val adminToken: String = "",
@@ -39,19 +39,15 @@ data class DashboardUiState(
     val isChecking: Boolean = true,
     val mac: DashboardServiceUi = DashboardServiceUi(),
     val plan: DashboardServiceUi = DashboardServiceUi(),
-    val pj: DashboardServiceUi = DashboardServiceUi(),
-    val cm: DashboardServiceUi = DashboardServiceUi(),
 ) {
     fun forService(service: Service): DashboardServiceUi = when (service) {
         Service.MAC -> mac
         Service.PLAN -> plan
-        Service.PROMPTJOURNAL -> pj
-        Service.COMMUNITY -> cm
     }
 }
 
 /**
- * 줍줍 시리즈 대시보드 — 네 서비스 상태를 한 화면에서 병렬 조회.
+ * 줍줍 시리즈 대시보드 — 서비스 상태를 한 화면에서 병렬 조회.
  * R3: 서비스별 분기는 ServiceAdapter가 소유, 여기서는 Service 키로만 다룬다.
  * 테스트용 어댑터 주입을 위해 팩토리 경유 생성 ([Factory]).
  */
@@ -78,13 +74,10 @@ class DashboardViewModel(
                     NetUtils.getLocalIp(getApplication()) ?: ""
                 }
                 val fresh = withContext(ioDispatcher) {
-                    // 4개 서비스 순차 조회는 소켓 타임아웃(500ms)이 합산돼 p95를 초과한다 → 병렬 조회
                     coroutineScope {
                         listOf(
                             async { adapters.getValue(Service.MAC).loadState(ip) },
                             async { adapters.getValue(Service.PLAN).loadState(ip) },
-                            async { adapters.getValue(Service.PROMPTJOURNAL).loadState(ip) },
-                            async { adapters.getValue(Service.COMMUNITY).loadState(ip) },
                         ).awaitAll()
                     }
                 }
@@ -92,8 +85,6 @@ class DashboardViewModel(
                     isChecking = false,
                     mac = fresh[0],
                     plan = fresh[1],
-                    pj = fresh[2],
-                    cm = fresh[3],
                 )
                 val anyStopped = fresh.any { !it.isServerRunning }
                 if (retry && anyStopped) {
@@ -144,8 +135,6 @@ class DashboardViewModel(
         _uiState.value = when (service) {
             Service.MAC -> _uiState.value.copy(mac = _uiState.value.mac.copy(isCrawling = crawling))
             Service.PLAN -> _uiState.value.copy(plan = _uiState.value.plan.copy(isCrawling = crawling))
-            Service.PROMPTJOURNAL -> _uiState.value.copy(pj = _uiState.value.pj.copy(isCrawling = crawling))
-            Service.COMMUNITY -> _uiState.value.copy(cm = _uiState.value.cm.copy(isCrawling = crawling))
         }
     }
 

@@ -1,5 +1,7 @@
 package com.borasarang.macjupjup.crawler.community
 
+import com.borasarang.common.crawl.SelectorConfig
+import com.borasarang.common.crawl.TimeParser
 import com.borasarang.common.util.HostThrottler
 import com.borasarang.common.util.parallelFetch
 import com.borasarang.macjupjup.crawler.CrawlHttp
@@ -23,7 +25,7 @@ import java.security.MessageDigest
 class CommunityBoardCrawler(
     private val source: CrawlSource,
     private val db: MacDatabase,
-    private val config: CommunitySelectorConfig = CommunitySelectorConfig.parse(source.selectorConfigJson),
+    private val config: SelectorConfig = SelectorConfig.parse(source.selectorConfigJson),
     private val throttler: HostThrottler = sharedThrottler,
 ) {
 
@@ -118,7 +120,7 @@ class CommunityBoardCrawler(
     internal fun parseList(
         html: String,
         baseUrl: String,
-        cfg: CommunitySelectorConfig,
+        cfg: SelectorConfig,
         mainOverride: String? = null,
     ): List<CommunityPost> {
         val doc = Jsoup.parse(html, baseUrl)
@@ -141,7 +143,7 @@ class CommunityBoardCrawler(
 
     private fun extractRow(
         row: Element,
-        cfg: CommunitySelectorConfig,
+        cfg: SelectorConfig,
         baseUrl: String,
         main: String,
         now: Long,
@@ -166,7 +168,7 @@ class CommunityBoardCrawler(
             ?.let { firstText(row, it) }
             ?: row.select(".post-meta-text").mapNotNull { el ->
                 val t = el.text().trim()
-                CommunityTimeParser.parse(t)?.let { t }
+                TimeParser.parse(t)?.let { t }
             }.firstOrNull()
             ?: row.text().take(80)
 
@@ -181,7 +183,7 @@ class CommunityBoardCrawler(
             ?.let { firstText(row, it) }
             ?: titleEl?.text()?.take(Constants.MAX_SUMMARY_LEN)
 
-        val publishedAt = CommunityTimeParser.parse(timeText) ?: now
+        val publishedAt = TimeParser.parse(timeText) ?: now
 
         return CommunityPost(
             id = sha256Hex(href),
