@@ -35,8 +35,8 @@ describe('pg parity (live)', async (t) => {
     const r2 = await post('/ingest/apps', { drafts: [d2] });
     assert.equal(r2.body.updated, 1);
     const detail = await get('/api/apps/a1');
-    assert.equal(detail.body.app.license, 'OSS');
-    assert.equal(detail.body.app.version, '2.0');
+    assert.equal(detail.body.license, 'OSS');
+    assert.equal(detail.body.version, '2.0');
     assert.equal(detail.body.sources[0].sourceName, 'github');
     assert.equal(detail.body.versions[0].version, '2.0');
     // game exclusion
@@ -52,10 +52,11 @@ describe('pg parity (live)', async (t) => {
       { id: 'n2', sourceId: 's', sourceName: 'S', main: 'mac', sub: '전체', title: 'new', originalUrl: 'u2', publishedAt: 50, collectedAt: 10 },
     ], relations: [{ newsId: 'n2', appId: 'a1' }] }) });
     const news = await get('/api/news');
-    assert.equal(news.body.items[0].id, 'n2');
-    assert.deepEqual((await get('/api/news/n2')).body.relatedAppIds, ['a1']);
+    assert.equal(news.body.news[0].id, 'n2');
+    assert.deepEqual((await get('/api/news/n2')).body.relatedApps.map((a) => a.id), ['a1']);
     const main = await get('/api/main');
-    assert.equal(main.body.counts.apps, 1);
+    assert.equal(main.body.totalApps, 2);
     assert.equal(main.body.counts.games, 1);
+    assert.ok(Array.isArray(main.body.updatedApps));
   });
 });

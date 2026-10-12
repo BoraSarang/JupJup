@@ -108,7 +108,64 @@ export function createMemoryStore() {
     if (q) { const s = q.toLowerCase(); rows = rows.filter((a) => (`${a.title} ${a.summary ?? ''}`).toLowerCase().includes(s)); }
     rows.sort((x, y) => ((y.publishedAt || 0) || y.collectedAt) - ((x.publishedAt || 0) || x.collectedAt));
     const total = rows.length;
-    return { items: rows.slice((page - 1) * pageSize, page * pageSize), total, page, pageSize };
+    const items = rows.slice((page - 1) * pageSize, page * pageSize).map((a) => ({ ...a, relatedApps: relatedFor(a.id) }));
+    return { items, total, page, pageSize };
+  }
+
+  function relatedFor(newsId) {
+    const ids = [...(newsRel.get(newsId) ?? [])];
+    return ids.map((id) => apps.get(id)).filter(Boolean).map((a) => ({
+      id: a.id, name: a.name, category: a.category,
+      ...(a.version ? { version: a.version } : {}),
+      ...(a.iconUrl ? { iconUrl: a.iconUrl } : {}),
+    }));
+  }
+
+  function appsByIds(ids) {
+    return ids.map((id) => apps.get(id)).filter(Boolean);
+  }
+
+  function mainDetail() {
+    const all = [...apps.values()].filter((a) => !isGame(a));
+    const games = [...apps.values()].filter(isGame).sort((x, y) => effTime(y) - effTime(x)).slice(0, 8);
+    const byMain = (m) => [...news.values()].filter((a) => a.main === m)
+      .sort((x, y) => ((y.publishedAt || 0) || y.collectedAt) - ((x.publishedAt || 0) || x.collectedAt))
+      .slice(0, 4).map((a) => ({ ...a, relatedApps: relatedFor(a.id) }));
+    const dayStart = new Date().setHours(0, 0, 0, 0);
+    return {
+      todayNews: [...news.values()].filter((a) => (a.collectedAt ?? 0) >= dayStart).length,
+      totalApps: apps.size,
+      counts: {
+        mac: [...news.values()].filter((a) => a.main === 'mac').length,
+        ai: [...news.values()].filter((a) => a.main === 'ai').length,
+        sec: [...news.values()].filter((a) => a.main === 'sec').length,
+        games: apps.size - all.length,
+      },
+      mac: byMain('mac'), ai: byMain('ai'), sec: byMain('sec'),
+      games,
+      updatedApps: [...all].sort((x, y) => (y.lastUpdatedAt ?? 0) - (x.lastUpdatedAt ?? 0)).slice(0, 8),
+    };
+  }
+
+  function trends() {
+    const all = [...apps.values()].filter((a) => !isGame(a));
+    const byCategory = {}, byLicense = {};
+    for (const a of all) {
+      byCategory[a.category] = (byCategory[a.category] ?? 0) + 1;
+      byLicense[a.license] = (byLicense[a.license] ?? 0) + 1;
+    }
+    const bySrc = {};
+    for (const list of mappings.values()) for (const m of list) bySrc[m.sourceName] = (bySrc[m.sourceName] ?? 0) + 1;
+    const weekAgo = Date.now() - 7 * 86400_000;
+    return {
+      byCategory, byLicense,
+      bySource: Object.entries(bySrc).map(([k, v]) => ({ sourceId: k, sourceName: k, count: v })),
+      newLast7d: all.filter((a) => (a.firstSeenAt ?? 0) >= weekAgo).length,
+      updatedLast7d: all.filter((a) => (a.lastUpdatedAt ?? 0) >= weekAgo).length,
+      versionBumpsLast7d: 0,
+      aiTagCount: all.filter((a) => String(a.tags ?? '').includes('AI')).length,
+      menuBarTagCount: all.filter((a) => String(a.tags ?? '').includes('MenuBar')).length,
+    };
   }
 
   function listCommunity({ main = '', sourceId = '', page = 1, pageSize = 20 } = {}) {
@@ -123,17 +180,20 @@ export function createMemoryStore() {
   return {
     ingestApps, ingestNews, ingestCommunity,
     listApps, listGames, listNews, listCommunity,
+    appsByIds, trends, mainDetail,
     getApp: (id) => (apps.get(id) ? { app: apps.get(id), sources: mappings.get(id) ?? [], versions: versions.get(id) ?? [] } : null),
-    getNews: (id) => (news.get(id) ? { ...news.get(id), relatedAppIds: [...(newsRel.get(id) ?? [])] } : null),
+    getNews: (id) => {
+      const a = news.get(id);
+      if (!a) return null;
+      return { ...a, relatedAppIds: [...(newsRel.get(id) ?? [])], relatedApps: relatedFor(id) };
+    },
     getCommunity: (id) => community.get(id) ?? null,
     upsertSources: (list) => { for (const s of list) sources.set(s.id, { ...(sources.get(s.id) ?? {}), ...s }); },
     watchlist: () => [...sources.values()],
-    stats: () => ({ totalApps: apps.size, totalNews: news.size, totalCommunity: community.size }),
-    main: () => {
-      const all = [...apps.values()].filter((a) => !isGame(a));
-      const byTime = [...all].sort((x, y) => effTime(y) - effTime(x));
-      return { counts: { apps: all.length, games: apps.size - all.length, news: news.size }, latest: byTime.slice(0, 8) };
-    },
+    stats: () => ({ totalApps: [...apps.values()].filter((a) => !isGame(a)).length, activeSources: [...sources.values()].filter((s) => s.enabled).length, netRxBytes: 0, netTxBytes: 0 }),
+    collect: () => ({ days: [], total: { found: 0, new: 0, updated: 0, rxBytes: 0, txBytes: 0 } }),
+    insights: () => ({ insights: [] }),
+    main: () => mainDetail(),
     state,
   };
 }

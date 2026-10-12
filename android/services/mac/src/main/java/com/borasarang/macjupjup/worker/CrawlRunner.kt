@@ -234,13 +234,21 @@ class CrawlRunner(
     }
 
     /** PLAN_v27 클라우드 push (best-effort) — 설정 없으면 noop, 실패 시 id 재시도 예약 */
+    private suspend fun catalog(): List<com.borasarang.macjupjup.data.db.entity.CrawlSource> {
+        return try {
+            app.database.crawlSourceDao().getAll()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     private suspend fun pushApps(
         apps: List<com.borasarang.macjupjup.data.db.entity.App>,
         mappings: List<com.borasarang.macjupjup.data.db.entity.AppSourceMapping>,
     ) {
         if (apps.isEmpty()) return
         try {
-            val body = CloudUploader.appsPayload(apps, mappings)
+            val body = CloudUploader.appsPayload(apps, mappings, catalog())
             if (!UploadWorker.pushNow(UploadWorker.KIND_APPS, body)) {
                 UploadWorker.enqueueRetry(UploadWorker.KIND_APPS, apps.map { it.id })
             }
@@ -255,7 +263,7 @@ class CrawlRunner(
     ) {
         if (articles.isEmpty()) return
         try {
-            val body = CloudUploader.newsPayload(articles, relations)
+            val body = CloudUploader.newsPayload(articles, relations, catalog())
             if (!UploadWorker.pushNow(UploadWorker.KIND_NEWS, body)) {
                 UploadWorker.enqueueRetry(UploadWorker.KIND_NEWS, articles.map { it.id })
             }
@@ -267,7 +275,7 @@ class CrawlRunner(
     private suspend fun pushCommunity(posts: List<com.borasarang.macjupjup.data.db.entity.CommunityPost>) {
         if (posts.isEmpty()) return
         try {
-            val body = CloudUploader.communityPayload(posts)
+            val body = CloudUploader.communityPayload(posts, catalog())
             if (!UploadWorker.pushNow(UploadWorker.KIND_COMMUNITY, body)) {
                 UploadWorker.enqueueRetry(UploadWorker.KIND_COMMUNITY, posts.map { it.id })
             }

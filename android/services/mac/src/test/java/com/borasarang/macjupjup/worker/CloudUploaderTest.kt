@@ -67,6 +67,18 @@ class CloudUploaderTest {
     }
 
     @Test
+    fun `appsPayload_소스포함`() {
+        val s = com.borasarang.macjupjup.data.db.entity.CrawlSource(
+            id = "github", name = "GitHub", type = "GITHUB_SEARCH", baseUrl = "https://x",
+            enabled = true, intervalHours = 1, intervalMinutes = 60, lastRunAt = null,
+            lastStatus = "SUCCESS", errorMessage = null, selectorConfigJson = null,
+        )
+        val body = CloudUploader.appsPayload(listOf(app()), emptyList(), listOf(s))
+        assertTrue(body.contains("\"sources\""))
+        assertTrue(body.contains("\"type\":\"GITHUB_SEARCH\""))
+    }
+
+    @Test
     fun `post_라운드트립_및_401`() {
         val lastAuth = AtomicReference("")
         val lastPath = AtomicReference("")

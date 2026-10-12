@@ -4,6 +4,7 @@ import com.borasarang.common.util.net.NetMeter
 import com.borasarang.macjupjup.data.db.entity.App
 import com.borasarang.macjupjup.data.db.entity.AppSourceMapping
 import com.borasarang.macjupjup.data.db.entity.CommunityPost
+import com.borasarang.macjupjup.data.db.entity.CrawlSource
 import com.borasarang.macjupjup.data.db.entity.NewsAppRelation
 import com.borasarang.macjupjup.data.db.entity.NewsArticle
 import kotlinx.serialization.json.JsonObject
@@ -23,7 +24,11 @@ object CloudUploader {
 
     data class PostResult(val ok: Boolean, val code: Int, val body: String)
 
-    fun appsPayload(apps: List<App>, mappings: List<AppSourceMapping>): String {
+    fun appsPayload(
+        apps: List<App>,
+        mappings: List<AppSourceMapping>,
+        sources: List<CrawlSource> = emptyList(),
+    ): String {
         val byApp = mappings.groupBy { it.appId }
         return buildJsonObject {
             putJsonArray("drafts") {
@@ -43,10 +48,17 @@ object CloudUploader {
                     })
                 }
             }
+            if (sources.isNotEmpty()) {
+                putJsonArray("sources") { sources.forEach { add(sourceJson(it)) } }
+            }
         }.toString()
     }
 
-    fun newsPayload(articles: List<NewsArticle>, relations: List<NewsAppRelation>): String {
+    fun newsPayload(
+        articles: List<NewsArticle>,
+        relations: List<NewsAppRelation>,
+        sources: List<CrawlSource> = emptyList(),
+    ): String {
         return buildJsonObject {
             putJsonArray("articles") { articles.forEach { add(newsJson(it)) } }
             putJsonArray("relations") {
@@ -57,10 +69,16 @@ object CloudUploader {
                     })
                 }
             }
+            if (sources.isNotEmpty()) {
+                putJsonArray("sources") { sources.forEach { add(sourceJson(it)) } }
+            }
         }.toString()
     }
 
-    fun communityPayload(posts: List<CommunityPost>): String {
+    fun communityPayload(
+        posts: List<CommunityPost>,
+        sources: List<CrawlSource> = emptyList(),
+    ): String {
         return buildJsonObject {
             putJsonArray("posts") {
                 posts.forEach { p ->
@@ -82,7 +100,25 @@ object CloudUploader {
                     })
                 }
             }
+            if (sources.isNotEmpty()) {
+                putJsonArray("sources") { sources.forEach { add(sourceJson(it)) } }
+            }
         }.toString()
+    }
+
+    internal fun sourceJson(s: CrawlSource): JsonObject {
+        return buildJsonObject {
+            put("id", s.id)
+            put("name", s.name)
+            put("type", s.type)
+            put("baseUrl", s.baseUrl)
+            put("enabled", s.enabled)
+            put("intervalHours", s.intervalHours)
+            put("intervalMinutes", s.intervalMinutes)
+            s.lastRunAt?.let { put("lastRunAt", it) }
+            put("lastStatus", s.lastStatus)
+            s.errorMessage?.let { put("errorMessage", it) }
+        }
     }
 
     fun post(baseUrl: String, token: String, kind: String, body: String, timeoutMs: Int = 20_000): PostResult {
