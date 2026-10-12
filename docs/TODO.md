@@ -7,7 +7,7 @@
 - [x] T-27-1b PG 읽기 쿼리 — 실 PG(docker) 통합 테스트 포함 10/10
 - [x] T-27-2 기기 UploadWorker + CrawlRunner push 분기 — S22 실기 E2E 2소스 (9to5mac 15건·apple_newsroom 7건, PG 일치 확인)
 - [x] T-27-3a Vercel 정적 배포 — https://mac-jupjup.vercel.app live (껍데기, API placeholder)
-- [ ] T-27-3b 공용 API+PG (Supabase/Neon + cloud 서버 호스팅) 후 config.js 교체·재배포
+- [x] T-27-3b 공용 API+PG — Supabase(jupjup, Seoul) + https://jupjup-api.vercel.app(serverless) + 웹 실 API 재배포 + S22→공용 push E2E(macrumors 15건)
 
 - [x] **PLAN_v25** 본문 전체화 풀패치 (longDescription 스키마·크롤러·백필·렌더) / JupJup-qai
 - [x] **AppStorrent 소개 채움** DB 본문 id 우선순위 + DETAIL_LIMIT 60 + 체크포인트 저장 / JupJup-dui

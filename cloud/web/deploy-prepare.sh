@@ -5,8 +5,10 @@ set -eu
 CLOUD_API="${CLOUD_API:?CLOUD_API 환경변수 필요 (예: https://jupjup-api.example.com)}"
 SRC="$(cd "$(dirname "$0")/../../android/services/mac/src/main/assets/mac_web" && pwd)"
 DST="${DST:-/tmp/jupjup-web}"
+if [ -d "$DST/.vercel" ]; then cp -r "$DST/.vercel" /tmp/jupjup-web-link-bak; fi
 rm -rf "$DST"
 mkdir -p "$DST"
+if [ -d /tmp/jupjup-web-link-bak ]; then mv /tmp/jupjup-web-link-bak "$DST/.vercel"; fi
 cp "$SRC/index.html" "$SRC/app.js" "$SRC/style.css" "$SRC/favicon.svg" "$DST/"
 cp "$(dirname "$0")/vercel.json" "$DST/"
 sed "s|__CLOUD_API__|${CLOUD_API}|" "$(dirname "$0")/config.js.template" > "$DST/config.js"

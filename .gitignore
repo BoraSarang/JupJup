@@ -12,6 +12,8 @@ keystore.properties
 # Node (cloud/)
 node_modules/
 .env
+# Supabase CLI local
+cloud/supabase/
 # Agent 로그
 .agent/
 
