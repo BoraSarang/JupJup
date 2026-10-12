@@ -2519,6 +2519,15 @@
     });
     // 정렬/필터 (앱 스토어 — 사이드바·칩은 renderStoreSidebar/renderStoreChips에서 배선)
     // 헤더
+    // PLAN_v27: 설정 기어는 ?admin=1 1회 해제 후 표시 (localStorage 유지, ?admin=0 해제)
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get('admin') === '1') localStorage.setItem('macjupjup_admin', '1');
+      if (q.get('admin') === '0') localStorage.removeItem('macjupjup_admin');
+    } catch (e) {}
+    let adminUnlocked = false;
+    try { adminUnlocked = localStorage.getItem('macjupjup_admin') === '1'; } catch (e) {}
+    if (!adminUnlocked) $('adminBtn').style.display = 'none';
     $('adminBtn').onclick = () => openAdmin();
     $('adminClose').onclick = closeAdmin;
     $('adminBackdrop').onclick = closeAdmin;
