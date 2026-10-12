@@ -1,0 +1,2 @@
+// Vercel 배포용 API 베이스. __CLOUD_API__ 를 실제 클라우드 URL로 교체 (deploy.sh 자동 처리).
+window.JUPJUP_API_BASE = '__CLOUD_API__';

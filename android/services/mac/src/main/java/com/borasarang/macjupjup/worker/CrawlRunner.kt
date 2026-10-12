@@ -50,6 +50,10 @@ class CrawlRunner(
                     val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
                         app.appRepository.saveApps(apps, mappings)
                     }
+                    // PLAN_v27: 클라우드 push (best-effort, 실패 시 재시도 워커)
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                        pushApps(apps, mappings)
+                    }
                     val net = NetMeter.deltaSince("mac", netBefore)
                     app.sourceRepository.logResult(
                         sourceId = sourceId,
@@ -119,6 +123,10 @@ class CrawlRunner(
             val crawler = com.borasarang.macjupjup.crawler.news.NewsRssCrawler(source, app.database)
             val outcome = crawler.crawlNews().getOrThrow()
             val saved = app.newsRepository.saveArticles(outcome.articles, outcome.relations)
+            // PLAN_v27: 클라우드 push (best-effort)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                pushNews(outcome.articles, outcome.relations)
+            }
             val net = NetMeter.deltaSince("mac", netBefore)
             app.sourceRepository.logResult(
                 sourceId = sourceId,
@@ -178,6 +186,10 @@ class CrawlRunner(
         return try {
             val crawler = com.borasarang.macjupjup.crawler.community.CommunityBoardCrawler(source, app.database)
             val outcome = crawler.crawl().getOrThrow()
+            // PLAN_v27: 클라우드 push (best-effort)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                pushCommunity(outcome.posts)
+            }
             val net = NetMeter.deltaSince("mac", netBefore)
             app.sourceRepository.logResult(
                 sourceId = sourceId,
@@ -221,8 +233,58 @@ class CrawlRunner(
         }
     }
 
-    private fun retryOrFail(): ListenableWorker.Result {
-        return if (attempt() >= maxAttempts) {
+    /** PLAN_v27 클라우드 push (best-effort) — 설정 없으면 noop, 실패 시 id 재시도 예약 */
+    private suspend fun catalog(): List<com.borasarang.macjupjup.data.db.entity.CrawlSource> {
+        return try {
+            app.database.crawlSourceDao().getAll()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private suspend fun pushApps(
+        apps: List<com.borasarang.macjupjup.data.db.entity.App>,
+        mappings: List<com.borasarang.macjupjup.data.db.entity.AppSourceMapping>,
+    ) {
+        if (apps.isEmpty()) return
+        try {
+            val body = CloudUploader.appsPayload(apps, mappings, catalog())
+            if (!UploadWorker.pushNow(UploadWorker.KIND_APPS, body)) {
+                UploadWorker.enqueueRetry(UploadWorker.KIND_APPS, apps.map { it.id })
+            }
+        } catch (e: Exception) {
+            DebugLogger.e("업로드", "E-AND-NET-0302", "push 준비 실패: ${e.message}")
+        }
+    }
+
+    private suspend fun pushNews(
+        articles: List<com.borasarang.macjupjup.data.db.entity.NewsArticle>,
+        relations: List<com.borasarang.macjupjup.data.db.entity.NewsAppRelation>,
+    ) {
+        if (articles.isEmpty()) return
+        try {
+            val body = CloudUploader.newsPayload(articles, relations, catalog())
+            if (!UploadWorker.pushNow(UploadWorker.KIND_NEWS, body)) {
+                UploadWorker.enqueueRetry(UploadWorker.KIND_NEWS, articles.map { it.id })
+            }
+        } catch (e: Exception) {
+            DebugLogger.e("업로드", "E-AND-NET-0302", "push 준비 실패: ${e.message}")
+        }
+    }
+
+    private suspend fun pushCommunity(posts: List<com.borasarang.macjupjup.data.db.entity.CommunityPost>) {
+        if (posts.isEmpty()) return
+        try {
+            val body = CloudUploader.communityPayload(posts, catalog())
+            if (!UploadWorker.pushNow(UploadWorker.KIND_COMMUNITY, body)) {
+                UploadWorker.enqueueRetry(UploadWorker.KIND_COMMUNITY, posts.map { it.id })
+            }
+        } catch (e: Exception) {
+            DebugLogger.e("업로드", "E-AND-NET-0302", "push 준비 실패: ${e.message}")
+        }
+    }
+
+    private fun retryOrFail(): ListenableWorker.Result {        return if (attempt() >= maxAttempts) {
             ListenableWorker.Result.failure()
         } else {
             ListenableWorker.Result.retry()

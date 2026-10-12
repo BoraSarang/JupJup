@@ -18,6 +18,10 @@ interface CommunityPostDao {
     @Query("SELECT * FROM community_posts WHERE id = :id")
     suspend fun getById(id: String): CommunityPost?
 
+    /** 클라우드 push 재조회용 (PLAN_v27) */
+    @Query("SELECT * FROM community_posts WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<CommunityPost>
+
     /** 신규 상세 백필 대상 (contentHtml 없는 최근 N건) */
     @Query(
         """SELECT * FROM community_posts
