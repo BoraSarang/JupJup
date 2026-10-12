@@ -3,7 +3,7 @@
 // Auth: GET open, POST /ingest/* requires Bearer INGEST_TOKEN.
 import http from 'node:http';
 
-export function createServer(store, opts = {}) {
+export function createHandler(store, opts = {}) {
   const ingestToken = opts.ingestToken ?? process.env.INGEST_TOKEN ?? '';
   const allowOrigin = opts.allowOrigin ?? process.env.ALLOW_ORIGIN ?? '*';
 
@@ -25,7 +25,7 @@ export function createServer(store, opts = {}) {
     req.on('error', reject);
   });
 
-  return http.createServer(async (req, res) => {
+  return async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://x');
       const q = (k, d = '') => url.searchParams.get(k) ?? d;
@@ -84,5 +84,9 @@ export function createServer(store, opts = {}) {
     } catch (e) {
       return send(res, 500, { error: String(e?.message ?? e) });
     }
-  });
+  };
+}
+
+export function createServer(store, opts = {}) {
+  return http.createServer(createHandler(store, opts));
 }
