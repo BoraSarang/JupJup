@@ -81,6 +81,17 @@ internal fun HttpServerService.macSettingsRoutes(route: Route) {
                 ?: current.notifNews,
             notifFailure = obj["notifFailure"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
                 ?: current.notifFailure,
+            // 클라우드 키가 없으면 기존 유지, 빈 문자열이면 삭제 (PLAN_v27)
+            cloudUrl = if (obj.containsKey("cloudUrl")) {
+                obj["cloudUrl"]?.jsonPrimitive?.content?.trim().orEmpty()
+            } else {
+                current.cloudUrl
+            },
+            cloudToken = if (obj.containsKey("cloudToken")) {
+                obj["cloudToken"]?.jsonPrimitive?.content.orEmpty()
+            } else {
+                current.cloudToken
+            },
         )
         application.preferences.saveSettings(next)
         if (tokenRaw != null) {

@@ -27,6 +27,13 @@ internal fun HttpServerService.macAssetRoutes(route: Route) {
     route.get("/favicon.svg") {
         serveAsset(call, "mac_web/favicon.svg", ContentType.Image.SVG)
     }
+    // PLAN_v27: config.js 기본값 (기기 직결은 same-origin, Vercel 배포본이 override)
+    route.get("/config.js") {
+        call.respondText(
+            "window.JUPJUP_API_BASE='';\n",
+            ContentType.Text.JavaScript.withCharset(Charsets.UTF_8),
+        )
+    }
 }
 
 private suspend fun HttpServerService.serveAsset(

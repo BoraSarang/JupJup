@@ -297,14 +297,20 @@
     if (h < 24) return h + '시간 전';
     return Math.floor(h / 24) + '일 전';
   }
+  /* Vercel 분리 (PLAN_v27): config.js가 window.JUPJUP_API_BASE를 주면 절대 URL, 없으면 same-origin */
+  const API_BASE = (window.JUPJUP_API_BASE || '').replace(/\/$/, '');
+  function apiUrl(path) { return API_BASE + path; }
+  function isApi(url) {
+    return url.indexOf('/api/') === 0 || (API_BASE && url.indexOf(API_BASE + '/api/') === 0);
+  }
   function api(path) {
-    return fetch(path).then(r => {
+    return fetch(apiUrl(path)).then(r => {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     });
   }
   function apiPost(path, body) {
-    return fetch(path, {
+    return fetch(apiUrl(path), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body === undefined ? {} : body)
@@ -314,7 +320,7 @@
     });
   }
   function apiDel(path) {
-    return fetch(path, { method: 'DELETE' }).then(r => {
+    return fetch(apiUrl(path), { method: 'DELETE' }).then(r => {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     });
@@ -335,7 +341,7 @@
     window.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       const method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-      if (url.indexOf('/api/') !== 0 || method === 'GET' || method === 'HEAD') return origFetch(input, init);
+      if (!isApi(url) || method === 'GET' || method === 'HEAD') return origFetch(input, init);
       const headers = {};
       if (init && init.headers) {
         if (init.headers.forEach) init.headers.forEach((v, k) => { headers[k] = v; });

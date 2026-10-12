@@ -169,6 +169,8 @@ data class SettingsData(
     val notifNews: Boolean = true,
     val notifFailure: Boolean = true,
     val crawlEnabled: Boolean = true,
+    val cloudUrl: String = "",
+    val cloudToken: String = "",
 )
 
 /** 토큰 설정 여부만 노출 (값은 절대 외부 반환 금지) */
@@ -183,6 +185,8 @@ data class SettingsView(
     val notifNewApp: Boolean,
     val notifNews: Boolean,
     val notifFailure: Boolean,
+    val cloudUrl: String,
+    val cloudTokenSet: Boolean,
 )
 
 fun SettingsData.toView() = SettingsView(
@@ -196,6 +200,8 @@ fun SettingsData.toView() = SettingsView(
     notifNewApp = notifNewApp,
     notifNews = notifNews,
     notifFailure = notifFailure,
+    cloudUrl = cloudUrl,
+    cloudTokenSet = cloudToken.isNotBlank(),
 )
 
 data class RecentLog(

@@ -146,6 +146,8 @@ internal fun settingsJson(s: SettingsView): String {
         put("notifNewApp", s.notifNewApp)
         put("notifNews", s.notifNews)
         put("notifFailure", s.notifFailure)
+        put("cloudUrl", s.cloudUrl)
+        put("cloudTokenSet", s.cloudTokenSet)
     }.toString()
 }
 

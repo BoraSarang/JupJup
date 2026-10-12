@@ -41,6 +41,8 @@ class PreferencesManager(private val context: Context) {
         val ADMIN_TOKEN = stringPreferencesKey("admin_token")
         val ADMIN_ID = stringPreferencesKey("admin_id")
         val ADMIN_PW = stringPreferencesKey("admin_pw")
+        val CLOUD_URL = stringPreferencesKey("cloud_url")
+        val CLOUD_TOKEN = stringPreferencesKey("cloud_token")
         val WATCHDOG_MIGRATED = booleanPreferencesKey("watchdog_migrated_v300")
     }
 
@@ -60,6 +62,8 @@ class PreferencesManager(private val context: Context) {
                 notifNews = prefs[Keys.NOTIF_NEWS] ?: true,
                 notifFailure = prefs[Keys.NOTIF_FAILURE] ?: true,
                 crawlEnabled = prefs[Keys.CRAWL_ENABLED] ?: true,
+                cloudUrl = prefs[Keys.CLOUD_URL]?.trim().orEmpty(),
+                cloudToken = prefs[Keys.CLOUD_TOKEN]?.trim().orEmpty(),
             )
         }.first()
     }
@@ -91,6 +95,10 @@ class PreferencesManager(private val context: Context) {
             prefs[Keys.NOTIF_NEW_APP] = settings.notifNewApp
             prefs[Keys.NOTIF_NEWS] = settings.notifNews
             prefs[Keys.NOTIF_FAILURE] = settings.notifFailure
+            val cu = settings.cloudUrl.trim().trimEnd('/')
+            if (cu.isEmpty()) prefs.remove(Keys.CLOUD_URL) else prefs[Keys.CLOUD_URL] = cu
+            // 토큰 키가 없으면 기존 유지가 필요하면 호출자가 기존값 전달 (githubToken과 동일 규약)
+            prefs[Keys.CLOUD_TOKEN] = settings.cloudToken.trim()
         }
     }
 
@@ -140,6 +148,23 @@ class PreferencesManager(private val context: Context) {
         context.settingsStore.edit { prefs ->
             prefs[Keys.SEED_STATUS] = status
             prefs[Keys.SEED_STARTED_AT] = startedAt
+        }
+    }
+
+    /** 클라우드 push 설정 조회 (PLAN_v27, 빈 값이면 push 비활성) */
+    suspend fun getCloud(): Pair<String, String> {
+        return context.settingsStore.data.map { prefs ->
+            (prefs[Keys.CLOUD_URL]?.trim().orEmpty()) to (prefs[Keys.CLOUD_TOKEN]?.trim().orEmpty())
+        }.first()
+    }
+
+    /** 클라우드 push 설정 저장 (빈 값이면 삭제) */
+    suspend fun saveCloud(url: String, token: String) {
+        context.settingsStore.edit { prefs ->
+            val u = url.trim().trimEnd('/')
+            val t = token.trim()
+            if (u.isEmpty()) prefs.remove(Keys.CLOUD_URL) else prefs[Keys.CLOUD_URL] = u
+            if (t.isEmpty()) prefs.remove(Keys.CLOUD_TOKEN) else prefs[Keys.CLOUD_TOKEN] = t
         }
     }
 

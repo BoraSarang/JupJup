@@ -2,6 +2,12 @@
 
 > v1.0 통합 작업 목록. 항목 완료 시 `[x]`.
 
+## T-27 크롤링 기기 분리 (PLAN_v27)
+- [x] T-27-1a 클라우드 DDL + ingest 3종 + 읽기 의미 패리티(메모리) — `cloud/` scaffold, `npm test` 7/7
+- [x] T-27-1b PG 읽기 쿼리 — 실 PG(docker) 통합 테스트 포함 10/10
+- [x] T-27-2 기기 UploadWorker + CrawlRunner push 분기 — S22 실기 E2E 2소스 (9to5mac 15건·apple_newsroom 7건, PG 일치 확인)
+- [ ] T-27-3 app.js API 베이스 + Vercel 정적 배포 — 코드 준비됨(`cloud/web/`), `vercel --prod`는 사용자 실행 대기
+
 - [x] **PLAN_v25** 본문 전체화 풀패치 (longDescription 스키마·크롤러·백필·렌더) / JupJup-qai
 - [x] **AppStorrent 소개 채움** DB 본문 id 우선순위 + DETAIL_LIMIT 60 + 체크포인트 저장 / JupJup-dui
 - [x] **본문 품질·표시 복구** 모달 EN 폴백·GitHub README 우선순위·id충돌·preferSnippet / JupJup-ggb

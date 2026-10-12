@@ -9,6 +9,9 @@ keystore.properties
 *.iml
 # OS
 .DS_Store
+# Node (cloud/)
+node_modules/
+.env
 # Agent 로그
 .agent/
 
